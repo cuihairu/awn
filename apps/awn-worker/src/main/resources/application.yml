@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: awn-worker
+  main:
+    web-application-type: none
+  datasource:
+    url: ${AWN_DB_URL:jdbc:postgresql://localhost:5432/awn}
+    username: ${AWN_DB_USER:awn}
+    password: ${AWN_DB_PASSWORD:awn}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    # 迁移只由 awn-api 进程执行，避免双进程并发迁移争锁
+    enabled: false
+  data:
+    redis:
+      host: ${AWN_REDIS_HOST:localhost}
+      port: ${AWN_REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  server:
+    port: 8081
+
+awn:
+  worker:
+    enabled: true
+    # 各任务开关与间隔在对应阶段实现时补充
+    tasks:
+      inventory-expiry: true
+      order-timeout: true
+      payment-reconciliation: true
+      refund-reconciliation: true
+      notification-dispatch: true
+      outbox-dispatch: true

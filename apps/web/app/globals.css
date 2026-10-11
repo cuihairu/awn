@@ -1,0 +1,95 @@
+/* AWN 网页端基础样式 —— 完整设计令牌见 design-system/awn/MASTER.md */
+:root {
+  --awn-ink: #1c1917;
+  --awn-ink-2: #57534e;
+  --awn-gold: #d59819;
+  --awn-gold-deep: #a16207;
+  --awn-gold-soft: rgba(213, 152, 25, 0.14);
+  --awn-bg: #fafaf9;
+  --awn-card: #ffffff;
+  --awn-border: #e7e5e4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--awn-bg);
+  color: var(--awn-ink);
+  font-family:
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    system-ui,
+    sans-serif;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logo-mark {
+  width: 56px;
+  height: 36px;
+  border: 3px solid var(--awn-gold);
+  border-radius: 10px;
+  position: relative;
+}
+
+.logo-mark::before,
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--awn-bg);
+  border: 3px solid var(--awn-gold);
+  transform: translateY(-50%);
+}
+
+.logo-mark::before {
+  left: -7px;
+}
+
+.logo-mark::after {
+  right: -7px;
+}
+
+h1 {
+  margin: 8px 0 0;
+  font-size: 40px;
+}
+
+p {
+  color: var(--awn-ink-2);
+  line-height: 1.6;
+}
+
+.placeholder {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--awn-card);
+  border: 1px solid var(--awn-border);
+  border-radius: 16px;
+}
+
+.placeholder a {
+  color: var(--awn-gold-deep);
+}
+
+li {
+  line-height: 1.8;
+}

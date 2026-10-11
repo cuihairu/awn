@@ -1,0 +1,6 @@
+packages:
+  - docs
+  - apps/web
+  - apps/admin
+  - apps/miniprogram
+  - packages/*

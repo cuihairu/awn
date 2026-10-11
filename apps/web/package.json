@@ -1,0 +1,26 @@
+{
+  "name": "@awn/web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AWN 网页端（Next.js）- 活动展示、SEO、专场页面、购票",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@awn/api-client": "workspace:*",
+    "@awn/campaign-renderer": "workspace:*",
+    "@awn/ticket-components": "workspace:*",
+    "@awn/ui": "workspace:*",
+    "next": "^15.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.9.0"
+  }
+}

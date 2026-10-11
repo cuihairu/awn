@@ -1,0 +1,21 @@
+# AWN 反向代理入口。
+# 域名占位 awn.example.com，部署时替换为真实域名（Caddy 自动签发 HTTPS）。
+
+awn.example.com {
+	# 网页端
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# 管理后台（建议叠加 IP 白名单 / SSO 中间件后再对外）
+	@admin path /admin* /admin/*
+	handle @admin {
+		reverse_proxy admin:80
+	}
+
+	# API（网页端/客户端共用 /api/v1）
+	@api path /api/v1* /actuator/*
+	handle @api {
+		reverse_proxy awn-api:8080
+	}
+}

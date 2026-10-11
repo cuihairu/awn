@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>site.awn</groupId>
+    <artifactId>awn-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>awn-worker</artifactId>
+  <name>awn-worker</name>
+  <description>AWN background worker application</description>
+
+  <dependencies>
+    <!-- 与 API 共享同一代码包：Worker 只启用后台任务 -->
+    <dependency><groupId>site.awn</groupId><artifactId>awn-identity</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-event</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-catalog</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-campaign</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-inventory</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-order</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-payment</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-fulfillment</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-marketplace</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-promotion</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-intelligence</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-notification</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-audit</artifactId><version>${project.version}</version></dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-starter-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>site.awn.worker.AwnWorkerApplication</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

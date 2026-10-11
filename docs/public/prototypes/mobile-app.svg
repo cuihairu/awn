@@ -1,0 +1,311 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 950" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <linearGradient id="mCanvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5F5F4"/><stop offset="1" stop-color="#E7E5E4"/>
+    </linearGradient>
+    <linearGradient id="mCover" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C2D12"/><stop offset="0.5" stop-color="#9A3412"/><stop offset="1" stop-color="#431407"/>
+    </linearGradient>
+    <linearGradient id="mCover2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4C1D95"/><stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B83F"/><stop offset="1" stop-color="#C8891A"/>
+    </linearGradient>
+    <linearGradient id="mDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0C0A09"/><stop offset="1" stop-color="#292524"/>
+    </linearGradient>
+    <filter id="mShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#1C1917" flood-opacity="0.18"/>
+    </filter>
+    <filter id="mShadowSm" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#1C1917" flood-opacity="0.08"/>
+    </filter>
+    <clipPath id="screenClip"><rect width="375" height="812" rx="36"/></clipPath>
+  </defs>
+
+  <rect width="1360" height="950" fill="url(#mCanvas)"/>
+  <text x="680" y="52" font-size="20" font-weight="700" fill="#1C1917" text-anchor="middle">AWN 客户端（Flutter）· 核心购票流程</text>
+  <text x="680" y="76" font-size="12.5" fill="#78716C" text-anchor="middle">首页发现 → 活动详情与票档选择（含情报参考）→ 统一订单支付</text>
+
+  <!-- ============ 屏幕A：首页 ============ -->
+  <g transform="translate(60,110)" filter="url(#mShadow)">
+    <rect width="375" height="812" rx="36" fill="#FFFFFF"/>
+    <g clip-path="url(#screenClip)">
+      <rect width="375" height="812" fill="#FAFAF9"/>
+      <!-- 状态栏 -->
+      <g transform="translate(24,16)">
+        <text font-size="13" font-weight="600" fill="#1C1917">9:41</text>
+        <g transform="translate(290,2)" fill="#1C1917">
+          <rect x="0" y="4" width="3" height="6" rx="1"/><rect x="4.5" y="2" width="3" height="8" rx="1"/><rect x="9" y="0" width="3" height="10" rx="1"/>
+          <rect x="18" y="1" width="20" height="9" rx="2.5" fill="none" stroke="#1C1917" stroke-width="1.2"/><rect x="20" y="3" width="13" height="5" rx="1" fill="#1C1917"/>
+        </g>
+      </g>
+      <!-- 顶部欢迎 -->
+      <g transform="translate(24,48)">
+        <rect x="0" y="0" width="28" height="20" rx="5" fill="none" stroke="#D59819" stroke-width="2.2"/>
+        <circle cx="5" cy="10" r="2" fill="#FAFAF9" stroke="#D59819" stroke-width="1.8"/><circle cx="23" cy="10" r="2" fill="#FAFAF9" stroke="#D59819" stroke-width="1.8"/>
+        <text x="38" y="16" font-size="17" font-weight="700" fill="#1C1917">麦芒网</text>
+        <g transform="translate(281,0)">
+          <path d="M8 2 a6 6 0 0 1 6 6 v3 l2 3 H0 l2 -3 V8 a6 6 0 0 1 6 -6" fill="none" stroke="#57534E" stroke-width="1.8" stroke-linejoin="round"/>
+          <circle cx="13" cy="3" r="3.4" fill="#DC2626"/>
+        </g>
+      </g>
+      <text x="24" y="102" font-size="22" font-weight="700" fill="#1C1917">发现精彩现场</text>
+      <!-- 搜索 -->
+      <g transform="translate(24,120)">
+        <rect width="327" height="40" rx="20" fill="#F5F5F4"/>
+        <circle cx="20" cy="20" r="7" fill="none" stroke="#78716C" stroke-width="2"/><line x1="25" y1="25" x2="31" y2="31" stroke="#78716C" stroke-width="2" stroke-linecap="round"/>
+        <text x="42" y="25" font-size="13" fill="#A8A29E">搜索活动 / 场馆 / 城市</text>
+      </g>
+      <!-- 分类 chips -->
+      <g transform="translate(24,176)" font-size="13">
+        <rect width="76" height="32" rx="16" fill="#F7ECD4"/><text x="38" y="21" fill="#A16207" text-anchor="middle" font-weight="600">演唱会</text>
+        <rect x="88" width="76" height="32" rx="16" fill="#FFFFFF"/><text x="126" y="21" fill="#57534E" text-anchor="middle">音乐节</text>
+        <rect x="176" width="76" height="32" rx="16" fill="#FFFFFF"/><text x="214" y="21" fill="#57534E" text-anchor="middle">体育</text>
+        <rect x="264" width="63" height="32" rx="16" fill="#FFFFFF"/><text x="295" y="21" fill="#57534E" text-anchor="middle">话剧</text>
+      </g>
+      <!-- Banner F1 -->
+      <g transform="translate(24,228)" filter="url(#mShadowSm)">
+        <rect width="327" height="132" rx="16" fill="url(#mDark)"/>
+        <rect width="327" height="132" rx="16" fill="url(#goldGlowM)" opacity="0.5"/>
+        <radialGradient id="goldGlowM" cx="0.8" cy="0.3" r="0.7">
+          <stop offset="0" stop-color="#D59819" stop-opacity="0.5"/><stop offset="1" stop-color="#D59819" stop-opacity="0"/>
+        </radialGradient>
+        <g stroke="#D59819" stroke-opacity="0.3" stroke-linecap="round">
+          <line x1="180" y1="30" x2="316" y2="30" stroke-width="2"/><line x1="200" y1="66" x2="330" y2="66" stroke-width="3"/><line x1="190" y1="102" x2="300" y2="102" stroke-width="2"/>
+        </g>
+        <text x="20" y="38" font-size="11" fill="#E5B95C" font-weight="600">F1 中国大奖赛 · 专场</text>
+        <text x="20" y="66" font-size="19" font-weight="700" fill="#FFFFFF">开票倒计时 12 天</text>
+        <text x="20" y="90" font-size="11.5" fill="#D6D3D1">票务动态已更新 · 3 个公开渠道在售</text>
+        <g transform="translate(20,102)">
+          <rect width="52" height="20" rx="10" fill="#292524"/><text x="26" y="14" font-size="11" fill="#E5B95C" text-anchor="middle">查看</text>
+        </g>
+      </g>
+      <!-- 正在热卖 -->
+      <text x="24" y="396" font-size="16" font-weight="700" fill="#1C1917">正在热卖</text>
+      <text x="351" y="396" font-size="12" fill="#A16207" text-anchor="end">全部 ›</text>
+      <!-- 卡片1 -->
+      <g transform="translate(24,412)" filter="url(#mShadowSm)">
+        <rect width="327" height="150" rx="14" fill="#FFFFFF"/>
+        <rect x="12" y="12" width="100" height="126" rx="10" fill="url(#mCover)"/>
+        <circle cx="62" cy="66" r="20" fill="#FED7AA" opacity="0.9"/><circle cx="62" cy="66" r="12" fill="#FB923C"/>
+        <text x="126" y="34" font-size="14.5" font-weight="700" fill="#1C1917">「灼热之声」音乐节</text>
+        <text x="126" y="56" font-size="11.5" fill="#78716C">11.21 - 11.22 · 上海世博公园</text>
+        <g transform="translate(126,68)">
+          <rect width="52" height="20" rx="10" fill="#DCFCE7"/><text x="26" y="14" font-size="11" fill="#16A34A" text-anchor="middle">售票中</text>
+          <rect x="60" width="64" height="20" rx="10" fill="#FEF3C7"/><text x="92" y="14" font-size="11" fill="#D97706" text-anchor="middle">已售 72%</text>
+        </g>
+        <text x="126" y="122" font-size="16" font-weight="700" fill="#A16207">¥480<tspan font-size="10.5" fill="#A8A29E" font-weight="400"> 起 · 情报: 近7天 ↓1.8%</tspan></text>
+      </g>
+      <!-- 卡片2 -->
+      <g transform="translate(24,576)" filter="url(#mShadowSm)">
+        <rect width="327" height="150" rx="14" fill="#FFFFFF"/>
+        <rect x="12" y="12" width="100" height="126" rx="10" fill="url(#mCover2)"/>
+        <g stroke="#C4B5FD" stroke-width="1.6" fill="none"><circle cx="62" cy="62" r="24" opacity="0.7"/><circle cx="62" cy="62" r="14" opacity="0.9"/></g>
+        <text x="126" y="34" font-size="14.5" font-weight="700" fill="#1C1917">「星夜交响」音乐会</text>
+        <text x="126" y="56" font-size="11.5" fill="#78716C">12.05 · 北京 国家大剧院</text>
+        <g transform="translate(126,68)">
+          <rect width="52" height="20" rx="10" fill="#FEF3C7"/><text x="26" y="14" font-size="11" fill="#D97706" text-anchor="middle">预售中</text>
+          <rect x="60" width="76" height="20" rx="10" fill="#F5F5F4"/><text x="98" y="14" font-size="11" fill="#57534E" text-anchor="middle">开票提醒 1.2w</text>
+        </g>
+        <text x="126" y="122" font-size="16" font-weight="700" fill="#A16207">¥280<tspan font-size="10.5" fill="#A8A29E" font-weight="400"> 起 · 官方票价公示中</tspan></text>
+      </g>
+      <!-- 底部 Tab -->
+      <g transform="translate(0,712)">
+        <rect width="375" height="100" fill="#FFFFFF"/>
+        <rect y="0" width="375" height="1" fill="#E7E5E4"/>
+        <g transform="translate(47,16)">
+          <rect x="2" y="4" width="18" height="13" rx="2.5" fill="none" stroke="#A16207" stroke-width="2.2"/><path d="M2 9 h18" stroke="#A16207" stroke-width="2.2"/>
+          <text x="11" y="42" font-size="10.5" fill="#A16207" text-anchor="middle" font-weight="600">首页</text>
+        </g>
+        <g transform="translate(140,16)">
+          <circle cx="11" cy="10" r="7" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M11 3 a10 10 0 0 1 0 14 M7 10 h8" stroke="#A8A29E" stroke-width="2" fill="none"/>
+          <text x="11" y="42" font-size="10.5" fill="#A8A29E" text-anchor="middle">发现</text>
+        </g>
+        <g transform="translate(233,16)">
+          <rect x="0" y="4" width="22" height="13" rx="4" fill="none" stroke="#A8A29E" stroke-width="2"/><circle cx="6" cy="10.5" r="1.8" fill="#FAFAF9" stroke="#A8A29E" stroke-width="1.6"/><circle cx="16" cy="10.5" r="1.8" fill="#FAFAF9" stroke="#A8A29E" stroke-width="1.6"/>
+          <text x="11" y="42" font-size="10.5" fill="#A8A29E" text-anchor="middle">订单</text>
+        </g>
+        <g transform="translate(316,16)">
+          <circle cx="11" cy="7" r="5" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M2 24 a9 9 0 0 1 18 0" fill="none" stroke="#A8A29E" stroke-width="2"/>
+          <text x="11" y="42" font-size="10.5" fill="#A8A29E" text-anchor="middle">我的</text>
+        </g>
+        <rect x="130" y="86" width="115" height="5" rx="2.5" fill="#1C1917"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============ 屏幕B：活动详情 ============ -->
+  <g transform="translate(490,110)" filter="url(#mShadow)">
+    <rect width="375" height="812" rx="36" fill="#FFFFFF"/>
+    <g clip-path="url(#screenClip)">
+      <rect width="375" height="812" fill="#FFFFFF"/>
+      <!-- 封面 -->
+      <rect width="375" height="290" fill="url(#mCover)"/>
+      <g stroke="#FED7AA" stroke-width="2" fill="none" opacity="0.8">
+        <circle cx="290" cy="80" r="46" opacity="0.5"/><circle cx="290" cy="80" r="30" opacity="0.75"/>
+      </g>
+      <text x="24" y="200" font-size="11" fill="#FED7AA" font-weight="600" letter-spacing="2">AWN · 官方授权经销</text>
+      <text x="24" y="236" font-size="24" font-weight="700" fill="#FFFFFF">「灼热之声」摇滚音乐节</text>
+      <!-- 返回/分享 -->
+      <g transform="translate(20,54)">
+        <rect width="32" height="32" rx="16" fill="#1C1917" opacity="0.5"/><path d="M18 10 l-6 6 6 6" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <g transform="translate(323,54)">
+        <rect width="32" height="32" rx="16" fill="#1C1917" opacity="0.5"/><circle cx="16" cy="12" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.8"/><circle cx="10" cy="21" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.8"/><circle cx="22" cy="21" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.8"/><path d="M13 14.5 l-1.5 4 M19 14.5 l1.5 4" stroke="#FFFFFF" stroke-width="1.8"/>
+      </g>
+      <!-- 信息行 -->
+      <g transform="translate(24,314)">
+        <rect width="327" height="76" rx="12" fill="#FAFAF9"/>
+        <g transform="translate(16,16)">
+          <rect x="0" y="2" width="14" height="12" rx="2" fill="none" stroke="#A16207" stroke-width="1.8"/><line x1="0" y1="7" x2="14" y2="7" stroke="#A16207" stroke-width="1.8"/>
+          <text x="26" y="11" font-size="12.5" fill="#57534E">2026.11.21 周六 14:00 - 22:30</text>
+        </g>
+        <g transform="translate(16,44)">
+          <path d="M7 0 a6.5 6.5 0 0 1 6.5 6.5 c0 5 -6.5 9.5 -6.5 9.5 s-6.5 -4.5 -6.5 -9.5 A6.5 6.5 0 0 1 7 0" fill="none" stroke="#A16207" stroke-width="1.8"/><circle cx="7" cy="6.5" r="2.2" fill="none" stroke="#A16207" stroke-width="1.8"/>
+          <text x="26" y="11" font-size="12.5" fill="#57534E">上海 · 世博公园 · 草地/看台/内场</text>
+        </g>
+      </g>
+      <!-- 票档 -->
+      <text x="24" y="424" font-size="15" font-weight="700" fill="#1C1917">选择票档</text>
+      <text x="351" y="424" font-size="11" fill="#A8A29E" text-anchor="end">统一库存 · 下单时再次校验</text>
+      <g transform="translate(24,440)">
+        <rect width="327" height="56" rx="12" fill="#FFF9EC"/>
+        <rect width="327" height="56" rx="12" fill="none" stroke="#D59819" stroke-width="2"/>
+        <text x="16" y="24" font-size="13.5" font-weight="700" fill="#1C1917">内场 VIP · 双日通票</text>
+        <text x="16" y="44" font-size="11" fill="#78716C">含赠品 · 优先通道</text>
+        <rect x="216" y="10" width="52" height="20" rx="10" fill="#DCFCE7"/><text x="242" y="24" font-size="11" fill="#16A34A" text-anchor="middle">售票中</text>
+        <text x="311" y="42" font-size="16" font-weight="700" fill="#A16207" text-anchor="end">¥1,280</text>
+      </g>
+      <g transform="translate(24,508)">
+        <rect width="327" height="56" rx="12" fill="#FFFFFF" stroke="#E7E5E4"/>
+        <text x="16" y="24" font-size="13.5" font-weight="700" fill="#1C1917">看台票 · 单日</text>
+        <text x="16" y="44" font-size="11" fill="#78716C">A/B/C 区随机</text>
+        <rect x="216" y="10" width="52" height="20" rx="10" fill="#DCFCE7"/><text x="242" y="24" font-size="11" fill="#16A34A" text-anchor="middle">售票中</text>
+        <text x="311" y="42" font-size="16" font-weight="700" fill="#A16207" text-anchor="end">¥480</text>
+      </g>
+      <g transform="translate(24,576)">
+        <rect width="327" height="56" rx="12" fill="#FFFFFF" stroke="#E7E5E4" opacity="0.75"/>
+        <text x="16" y="24" font-size="13.5" font-weight="700" fill="#1C1917" opacity="0.6">草地票 · 双日</text>
+        <text x="16" y="44" font-size="11" fill="#78716C" opacity="0.6">不指定区域</text>
+        <rect x="216" y="10" width="52" height="20" rx="10" fill="#F5F5F4"/><text x="242" y="24" font-size="11" fill="#78716C" text-anchor="middle">补货中</text>
+        <text x="311" y="42" font-size="16" font-weight="700" fill="#A8A29E" text-anchor="end">¥680</text>
+      </g>
+      <!-- 情报条 -->
+      <g transform="translate(24,650)">
+        <rect width="327" height="64" rx="12" fill="#F0F9FF" stroke="#BAE6FD"/>
+        <text x="16" y="26" font-size="12" font-weight="700" fill="#0369A1">票务情报</text>
+        <text x="16" y="46" font-size="11" fill="#475569">近 30 天第三方标价 <tspan fill="#16A34A" font-weight="700">↓ 4.2%</tspan> · 来源 3 个公开渠道</text>
+        <path d="M240 44 l14 -12 12 6 14 -14 14 8" fill="none" stroke="#0369A1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="294" cy="32" r="3" fill="#0369A1"/>
+      </g>
+      <!-- 规则 chips -->
+      <g transform="translate(24,726)" font-size="10.5">
+        <rect width="76" height="22" rx="11" fill="#F5F5F4"/><text x="38" y="15" fill="#57534E" text-anchor="middle">实名购票</text>
+        <rect x="84" width="76" height="22" rx="11" fill="#F5F5F4"/><text x="122" y="15" fill="#57534E" text-anchor="middle">有条件退</text>
+        <rect x="168" width="90" height="22" rx="11" fill="#F5F5F4"/><text x="213" y="15" fill="#57534E" text-anchor="middle">演出报备公示</text>
+      </g>
+      <!-- 底部 CTA -->
+      <g transform="translate(0,736)">
+        <rect width="375" height="76" fill="#FFFFFF"/>
+        <rect width="375" height="1" fill="#E7E5E4"/>
+        <g transform="translate(20,14)">
+          <path d="M10 16 C4 10 2 6 5 3 a5 5 0 0 1 7 0 l-2 2 2 -2 a5 5 0 0 1 7 0 c3 3 1 7 -5 13 l-2 2 z" fill="none" stroke="#78716C" stroke-width="2"/>
+        </g>
+        <g transform="translate(64,12)" filter="url(#mShadowSm)">
+          <rect width="290" height="44" rx="22" fill="url(#mGold)"/>
+          <text x="18" y="28" font-size="16" font-weight="700" fill="#1C1917">¥1280 起</text>
+          <text x="196" y="28" font-size="14.5" font-weight="700" fill="#1C1917">立即选购</text>
+        </g>
+        <rect x="140" y="70" width="95" height="5" rx="2.5" fill="#1C1917"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============ 屏幕C：确认订单 ============ -->
+  <g transform="translate(920,110)" filter="url(#mShadow)">
+    <rect width="375" height="812" rx="36" fill="#FFFFFF"/>
+    <g clip-path="url(#screenClip)">
+      <rect width="375" height="812" fill="#FAFAF9"/>
+      <!-- 顶栏 -->
+      <g transform="translate(0,44)">
+        <rect width="375" height="48" fill="#FFFFFF"/>
+        <path d="M28 16 l-6 7 6 7" stroke="#1C1917" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="187" y="30" font-size="16" font-weight="600" fill="#1C1917" text-anchor="middle">确认订单</text>
+      </g>
+      <!-- 倒计时警示条 -->
+      <g transform="translate(16,104)">
+        <rect width="343" height="40" rx="10" fill="#FEF3C7"/>
+        <circle cx="24" cy="20" r="9" fill="none" stroke="#D97706" stroke-width="2"/><path d="M24 14 v6 l4 3" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <text x="42" y="25" font-size="12.5" fill="#92400E" font-weight="600">请在 <tspan fill="#DC2626">14:52</tspan> 内完成支付，超时将释放库存</text>
+      </g>
+      <!-- 票品卡片 -->
+      <g transform="translate(16,160)">
+        <rect width="343" height="104" rx="12" fill="#FFFFFF"/>
+        <rect x="14" y="14" width="52" height="76" rx="8" fill="url(#mCover)"/>
+        <circle cx="40" cy="46" r="11" fill="#FED7AA" opacity="0.9"/><circle cx="40" cy="46" r="6" fill="#FB923C"/>
+        <text x="80" y="34" font-size="13.5" font-weight="700" fill="#1C1917">「灼热之声」摇滚音乐节</text>
+        <text x="80" y="54" font-size="11.5" fill="#78716C">11.21 - 11.22 · 上海世博公园</text>
+        <text x="80" y="76" font-size="11.5" fill="#57534E">内场 VIP · 双日通票 × 2</text>
+        <text x="80" y="92" font-size="10.5" fill="#A8A29E">实名观演人：张* 、李*</text>
+      </g>
+      <!-- 明细 -->
+      <g transform="translate(16,280)">
+        <rect width="343" height="150" rx="12" fill="#FFFFFF"/>
+        <g font-size="12.5">
+          <text x="16" y="30" fill="#78716C">票价 × 2</text><text x="327" y="30" fill="#1C1917" text-anchor="end" font-weight="600">¥2,560.00</text>
+          <text x="16" y="58" fill="#78716C">服务费</text><text x="327" y="58" fill="#1C1917" text-anchor="end" font-weight="600">¥60.00</text>
+          <text x="16" y="86" fill="#78716C">新客立减</text><text x="327" y="86" fill="#16A34A" text-anchor="end" font-weight="600">-¥100.00</text>
+          <line x1="16" y1="104" x2="327" y2="104" stroke="#F5F5F4" stroke-width="1.5"/>
+          <text x="16" y="132" fill="#1C1917" font-weight="700">应付金额</text><text x="327" y="132" fill="#A16207" text-anchor="end" font-size="17" font-weight="700">¥2,520.00</text>
+        </g>
+      </g>
+      <!-- 支付方式 -->
+      <g transform="translate(16,446)">
+        <rect width="343" height="128" rx="12" fill="#FFFFFF"/>
+        <g transform="translate(16,18)">
+          <circle cx="12" cy="12" r="12" fill="#07C160"/>
+          <path d="M5 10 l7 7 12 -12" stroke="#FFFFFF" stroke-width="0" fill="none"/>
+          <path d="M6.5 9 c1.5 -2 4 -3 6 -1.5 c1 -1 3 -1.5 4.5 -0.5 c1.5 1 1.5 2.5 0 3.5 l-2.5 2 l-2 -1.5 l-3 2.5 z" fill="#FFFFFF"/>
+          <text x="34" y="16" font-size="13.5" fill="#1C1917" font-weight="500">微信支付</text>
+          <circle cx="303" cy="12" r="9" fill="none" stroke="#D59819" stroke-width="2"/><circle cx="303" cy="12" r="4.5" fill="#D59819"/>
+        </g>
+        <g transform="translate(16,78)">
+          <rect width="24" height="24" rx="5" fill="#1677FF"/><text x="12" y="17" font-size="13" fill="#FFFFFF" text-anchor="middle" font-weight="700">支</text>
+          <text x="34" y="16" font-size="13.5" fill="#1C1917" font-weight="500">支付宝</text>
+          <circle cx="303" cy="12" r="9" fill="none" stroke="#D6D3D1" stroke-width="2"/>
+        </g>
+      </g>
+      <!-- 协议 -->
+      <g transform="translate(16,592)">
+        <rect width="18" height="18" rx="9" fill="#D59819"/>
+        <path d="M4.5 9.5 l3 3 6 -7" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="14" font-size="10.5" fill="#78716C">已阅读并同意 <tspan fill="#A16207">《购票须知》</tspan><tspan fill="#A16207">《退改规则》</tspan>，票品实名不可转赠</text>
+      </g>
+      <!-- 幂等提示 -->
+      <g transform="translate(16,624)">
+        <text font-size="10.5" fill="#A8A29E">下单使用幂等键，重复点击不会产生重复订单</text>
+      </g>
+      <!-- 底部支付 -->
+      <g transform="translate(0,712)">
+        <rect width="375" height="100" fill="#FFFFFF"/>
+        <rect width="375" height="1" fill="#E7E5E4"/>
+        <text x="24" y="46" font-size="12" fill="#78716C">合计</text>
+        <text x="24" y="74" font-size="22" font-weight="700" fill="#A16207">¥2,520.00</text>
+        <g transform="translate(205,26)" filter="url(#mShadowSm)">
+          <rect width="150" height="46" rx="23" fill="url(#mGold)"/>
+          <text x="75" y="29" font-size="15.5" font-weight="700" fill="#1C1917" text-anchor="middle">立即支付</text>
+        </g>
+        <rect x="140" y="86" width="95" height="5" rx="2.5" fill="#1C1917"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- 屏幕标注 -->
+  <g font-size="12" fill="#78716C">
+    <text x="247" y="946" text-anchor="middle">① 首页 · 专场与情报入口</text>
+    <text x="677" y="946" text-anchor="middle">② 详情 · 票档选择（统一库存）</text>
+    <text x="1107" y="946" text-anchor="middle">③ 订单 · 幂等支付与超时释放</text>
+  </g>
+</svg>

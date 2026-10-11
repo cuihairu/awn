@@ -1,0 +1,14 @@
+page {
+  --awn-ink: #1c1917;
+  --awn-gold: #d59819;
+  --awn-gold-deep: #a16207;
+  --awn-bg: #fafaf9;
+
+  background: var(--awn-bg);
+  color: var(--awn-ink);
+  font-family:
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif;
+}

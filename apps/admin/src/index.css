@@ -1,0 +1,83 @@
+/* AWN Admin 基础样式 —— 页面级规范见 design-system/awn/pages/dashboard.md */
+:root {
+  --awn-ink: #1c1917;
+  --awn-ink-2: #57534e;
+  --awn-gold: #d59819;
+  --awn-gold-deep: #a16207;
+  --awn-bg: #f8fafc;
+  --awn-card: #ffffff;
+  --awn-border: #e7e5e4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'PingFang SC',
+    'Microsoft YaHei',
+    'Noto Sans SC',
+    system-ui,
+    sans-serif;
+  background: var(--awn-bg);
+  color: var(--awn-ink);
+}
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: #1c1917;
+  color: #a8a29e;
+  padding: 20px 0;
+}
+
+.logo {
+  color: #fff;
+  font-weight: 700;
+  padding: 0 20px 16px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar nav span {
+  padding: 10px 20px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.sidebar nav span.active {
+  color: #e5b95c;
+  background: #292524;
+  border-left: 3px solid var(--awn-gold);
+}
+
+.content {
+  flex: 1;
+  padding: 32px;
+}
+
+h1 {
+  font-size: 19px;
+}
+
+p {
+  color: var(--awn-ink-2);
+  line-height: 1.7;
+}
+
+code {
+  background: var(--awn-card);
+  border: 1px solid var(--awn-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 13px;
+}

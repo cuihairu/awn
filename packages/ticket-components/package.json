@@ -1,0 +1,9 @@
+{
+  "name": "@awn/ticket-components",
+  "private": true,
+  "version": "0.1.0",
+  "description": "统一商品 / 票档组件：价格、可售状态、数量限制（展示缓存值，下单时后端再校验）",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "license": "UNLICENSED"
+}

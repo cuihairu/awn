@@ -1,0 +1,26 @@
+name: awn_client
+description: 麦芒网 AWN 移动客户端（用户手机 App，iOS / Android）
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # 网络与模型按 OpenAPI 契约生成（docs/api/contracts.md）
+  dio: ^5.8.0
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  json_serializable: ^6.9.0
+
+flutter:
+  uses-material-design: true
+  # 品牌色令牌：ink #1C1917 / gold #D59819 / goldDeep #A16207 / bg #FAFAF9

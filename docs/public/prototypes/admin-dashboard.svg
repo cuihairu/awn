@@ -1,0 +1,278 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',sans-serif">
+  <defs>
+    <linearGradient id="goldBtn2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B83F"/><stop offset="1" stop-color="#C8891A"/>
+    </linearGradient>
+    <linearGradient id="areaGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D59819" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#D59819" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="dashShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1C1917" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="960" fill="#F8FAFC"/>
+
+  <!-- ===== 侧边栏 ===== -->
+  <rect width="220" height="960" fill="#1C1917"/>
+  <g transform="translate(20,20)">
+    <rect x="0" y="5" width="26" height="19" rx="4.5" fill="none" stroke="#D59819" stroke-width="2.2"/>
+    <circle cx="4.8" cy="14.5" r="1.9" fill="#1C1917" stroke="#D59819" stroke-width="1.8"/>
+    <circle cx="21.2" cy="14.5" r="1.9" fill="#1C1917" stroke="#D59819" stroke-width="1.8"/>
+    <text x="36" y="19" font-size="15" font-weight="700" fill="#FFFFFF">麦芒运营台</text>
+  </g>
+  <!-- 导航 -->
+  <g font-size="13.5" fill="#A8A29E">
+    <!-- 总览（选中） -->
+    <g transform="translate(0,76)">
+      <rect width="220" height="40" fill="#292524"/>
+      <rect width="3" height="40" fill="#D59819"/>
+      <rect x="20" y="13" width="14" height="14" rx="3" fill="none" stroke="#E5B95C" stroke-width="2"/>
+      <text x="48" y="25" fill="#E5B95C" font-weight="600">运营总览</text>
+    </g>
+    <g transform="translate(20,132)">
+      <rect x="0" y="6" width="14" height="12" rx="2" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M0 10 h14" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">活动管理</text>
+    </g>
+    <g transform="translate(20,172)">
+      <rect x="0" y="5" width="16" height="14" rx="3" fill="none" stroke="#A8A29E" stroke-width="2"/><line x1="5" y1="5" x2="5" y2="19" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">专场编辑</text>
+    </g>
+    <g transform="translate(20,212)">
+      <rect x="0" y="4" width="16" height="16" rx="3" fill="none" stroke="#A8A29E" stroke-width="2"/><line x1="0" y1="9" x2="16" y2="9" stroke="#A8A29E" stroke-width="2"/><line x1="0" y1="14" x2="16" y2="14" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">商品票档</text>
+    </g>
+    <g transform="translate(20,252)">
+      <rect x="2" y="6" width="12" height="12" rx="2" fill="none" stroke="#A8A29E" stroke-width="2"/><rect x="0" y="10" width="16" height="8" rx="2" fill="#1C1917" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">库存中心</text>
+    </g>
+    <g transform="translate(20,292)">
+      <path d="M2 6 h12 v8 a2 2 0 0 1 -2 2 h-8 a2 2 0 0 1 -2 -2 z" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M2 9 a3 3 0 0 0 6 0 a3 3 0 0 0 6 0" fill="none" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">订单管理</text>
+    </g>
+    <g transform="translate(20,332)">
+      <circle cx="8" cy="8" r="6" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M8 5 v3 l2 2" stroke="#A8A29E" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="28" y="16">支付对账</text>
+    </g>
+    <g transform="translate(20,372)">
+      <circle cx="8" cy="5" r="3.4" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M2 16 a6 6 0 0 1 12 0" fill="none" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">卖家与挂牌</text>
+    </g>
+    <g transform="translate(20,412)">
+      <path d="M2 14 V8 a2 2 0 0 1 2-2 h8 a2 2 0 0 1 2 2 v6" fill="none" stroke="#A8A29E" stroke-width="2"/><path d="M0 14 h16 M5 6 V4 a3 3 0 0 1 6 0 v2" fill="none" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">票务情报</text>
+    </g>
+    <g transform="translate(20,452)">
+      <rect x="2" y="2" width="12" height="14" rx="2" fill="none" stroke="#A8A29E" stroke-width="2"/><line x1="5.5" y1="7" x2="10.5" y2="7" stroke="#A8A29E" stroke-width="2"/><line x1="5.5" y1="11" x2="10.5" y2="11" stroke="#A8A29E" stroke-width="2"/>
+      <text x="28" y="16">审计日志</text>
+    </g>
+  </g>
+  <!-- 侧栏底部用户 -->
+  <g transform="translate(20,900)">
+    <circle cx="12" cy="0" r="12" fill="#44403C"/>
+    <text x="12" y="4.5" font-size="11" fill="#E7E5E4" text-anchor="middle">运</text>
+    <text x="32" y="0" font-size="13" fill="#D6D3D1">运营 · 阿麦</text>
+    <text x="32" y="17" font-size="11" fill="#78716C">超级管理员</text>
+  </g>
+
+  <!-- ===== 顶栏 ===== -->
+  <g transform="translate(220,0)">
+    <rect width="1220" height="64" fill="#FFFFFF"/>
+    <rect y="63" width="1220" height="1" fill="#E7E5E4"/>
+    <text x="32" y="39" font-size="19" font-weight="700" fill="#1C1917">运营总览</text>
+    <g transform="translate(160,16)">
+      <rect width="200" height="32" rx="16" fill="#F5F5F4"/>
+      <circle cx="18" cy="16" r="6" fill="none" stroke="#78716C" stroke-width="2"/><line x1="22" y1="20" x2="27" y2="25" stroke="#78716C" stroke-width="2" stroke-linecap="round"/>
+      <text x="38" y="21" font-size="12.5" fill="#A8A29E">搜索订单 / 活动 / 用户</text>
+    </g>
+    <g transform="translate(940,16)">
+      <rect x="0" y="0" width="150" height="32" rx="16" fill="#F5F5F4"/>
+      <text x="20" y="21" font-size="12.5" fill="#57534E">近 30 天</text>
+      <path d="M112 13 l7 6 -7 6" fill="none" stroke="#78716C" stroke-width="2"/>
+    </g>
+    <g transform="translate(1120,17)">
+      <path d="M8 2 a6 6 0 0 1 6 6 v3 l2 3 H0 l2 -3 V8 a6 6 0 0 1 6 -6" fill="none" stroke="#57534E" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="13" cy="4" r="4" fill="#DC2626"/><text x="13" y="6.5" font-size="6.5" fill="#fff" text-anchor="middle">5</text>
+    </g>
+    <circle cx="1180" cy="32" r="16" fill="#F7ECD4"/>
+    <text x="1180" y="37" font-size="12" fill="#A16207" text-anchor="middle" font-weight="600">麦</text>
+  </g>
+
+  <!-- ===== KPI 行 ===== -->
+  <!-- KPI 1 -->
+  <g transform="translate(252,88)" filter="url(#dashShadow)">
+    <rect width="226" height="104" rx="12" fill="#FFFFFF"/>
+    <text x="20" y="30" font-size="13" fill="#57534E">今日 GMV</text>
+    <text x="20" y="66" font-size="26" font-weight="700" fill="#1C1917">¥1,284,650</text>
+    <g transform="translate(20,80)">
+      <rect width="52" height="18" rx="9" fill="#DCFCE7"/><path d="M12 13 l4 -6 4 6 z" fill="#16A34A"/><text x="36" y="13.5" font-size="11" fill="#16A34A" text-anchor="middle" font-weight="600">12.4%</text>
+      <text x="62" y="13.5" font-size="11" fill="#A8A29E">较昨日</text>
+    </g>
+  </g>
+  <!-- KPI 2 -->
+  <g transform="translate(498,88)" filter="url(#dashShadow)">
+    <rect width="226" height="104" rx="12" fill="#FFFFFF"/>
+    <text x="20" y="30" font-size="13" fill="#57534E">今日订单</text>
+    <text x="20" y="66" font-size="26" font-weight="700" fill="#1C1917">8,642</text>
+    <g transform="translate(20,80)">
+      <rect width="48" height="18" rx="9" fill="#DCFCE7"/><path d="M11 13 l4 -6 4 6 z" fill="#16A34A"/><text x="34" y="13.5" font-size="11" fill="#16A34A" text-anchor="middle" font-weight="600">8.1%</text>
+      <text x="58" y="13.5" font-size="11" fill="#A8A29E">较昨日</text>
+    </g>
+  </g>
+  <!-- KPI 3 -->
+  <g transform="translate(744,88)" filter="url(#dashShadow)">
+    <rect width="226" height="104" rx="12" fill="#FFFFFF"/>
+    <text x="20" y="30" font-size="13" fill="#57534E">支付成功率</text>
+    <text x="20" y="66" font-size="26" font-weight="700" fill="#1C1917">97.8%</text>
+    <g transform="translate(20,80)">
+      <rect width="48" height="18" rx="9" fill="#FEE2E2"/><path d="M11 7 l4 6 -4 6 z" fill="#DC2626" transform="translate(0,-6)"/><text x="34" y="13.5" font-size="11" fill="#DC2626" text-anchor="middle" font-weight="600">0.3%</text>
+      <text x="58" y="13.5" font-size="11" fill="#A8A29E">较昨日</text>
+    </g>
+  </g>
+  <!-- KPI 4 -->
+  <g transform="translate(990,88)" filter="url(#dashShadow)">
+    <rect width="226" height="104" rx="12" fill="#FFFFFF"/>
+    <text x="20" y="30" font-size="13" fill="#57534E">库存预警 SKU</text>
+    <text x="20" y="66" font-size="26" font-weight="700" fill="#D97706">23</text>
+    <g transform="translate(20,80)">
+      <rect width="64" height="18" rx="9" fill="#FEF3C7"/><text x="32" y="13.5" font-size="11" fill="#D97706" text-anchor="middle" font-weight="600">待补货审核</text>
+      <text x="74" y="13.5" font-size="11" fill="#A8A29E">4 场活动</text>
+    </g>
+  </g>
+  <!-- KPI 5 -->
+  <g transform="translate(1236,88)" filter="url(#dashShadow)">
+    <rect width="172" height="104" rx="12" fill="#FFFFFF"/>
+    <text x="20" y="30" font-size="13" fill="#57534E">对账差异</text>
+    <text x="20" y="66" font-size="26" font-weight="700" fill="#DC2626">3 笔</text>
+    <g transform="translate(20,80)">
+      <rect width="64" height="18" rx="9" fill="#FEE2E2"/><text x="32" y="13.5" font-size="11" fill="#DC2626" text-anchor="middle" font-weight="600">需人工复核</text>
+    </g>
+  </g>
+
+  <!-- ===== 图表行 ===== -->
+  <!-- GMV 趋势 -->
+  <g transform="translate(252,216)" filter="url(#dashShadow)">
+    <rect width="772" height="300" rx="12" fill="#FFFFFF"/>
+    <text x="24" y="34" font-size="15" font-weight="700" fill="#1C1917">GMV 趋势</text>
+    <g transform="translate(560,16)">
+      <rect width="60" height="28" rx="14" fill="#F7ECD4"/><text x="30" y="18.5" font-size="12" fill="#A16207" text-anchor="middle" font-weight="600">日</text>
+      <text x="86" y="18.5" font-size="12" fill="#A8A29E">周</text>
+      <text x="112" y="18.5" font-size="12" fill="#A8A29E">月</text>
+    </g>
+    <!-- 网格 -->
+    <g stroke="#F5F5F4" stroke-width="1">
+      <line x1="60" y1="80" x2="740" y2="80"/><line x1="60" y1="130" x2="740" y2="130"/><line x1="60" y1="180" x2="740" y2="180"/><line x1="60" y1="230" x2="740" y2="230"/><line x1="60" y1="270" x2="740" y2="270"/>
+    </g>
+    <g font-size="10.5" fill="#A8A29E">
+      <text x="52" y="84" text-anchor="end">160w</text><text x="52" y="134" text-anchor="end">120w</text><text x="52" y="184" text-anchor="end">80w</text><text x="52" y="234" text-anchor="end">40w</text><text x="52" y="274" text-anchor="end">0</text>
+    </g>
+    <!-- 面积 + 折线 -->
+    <path d="M60 240 L120 226 L180 232 L240 200 L300 210 L360 176 L420 186 L480 150 L540 160 L600 120 L660 130 L740 96 L740 270 L60 270 Z" fill="url(#areaGold)"/>
+    <path d="M60 240 L120 226 L180 232 L240 200 L300 210 L360 176 L420 186 L480 150 L540 160 L600 120 L660 130 L740 96" fill="none" stroke="#D59819" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 对比线（上周，虚线灰） -->
+    <path d="M60 250 L120 242 L180 246 L240 224 L300 230 L360 208 L420 214 L480 190 L540 198 L600 168 L660 176 L740 148" fill="none" stroke="#D6D3D1" stroke-width="2" stroke-dasharray="5 5"/>
+    <circle cx="600" cy="120" r="5" fill="#FFFFFF" stroke="#D59819" stroke-width="3"/>
+    <!-- 提示框 -->
+    <g transform="translate(520,58)">
+      <rect width="150" height="52" rx="8" fill="#1C1917"/>
+      <text x="12" y="20" font-size="10.5" fill="#A8A29E">10月8日 · GMV</text>
+      <text x="12" y="40" font-size="13" font-weight="700" fill="#E5B95C">¥1,284,650 · ↑12.4%</text>
+    </g>
+    <!-- X 轴 -->
+    <g font-size="10.5" fill="#A8A29E">
+      <text x="60" y="290">09-10</text><text x="180" y="290">09-17</text><text x="300" y="290">09-24</text><text x="420" y="290">10-01</text><text x="540" y="290">10-08</text><text x="660" y="290">10-15</text>
+    </g>
+  </g>
+
+  <!-- 支付渠道 -->
+  <g transform="translate(1048,216)" filter="url(#dashShadow)">
+    <rect width="360" height="300" rx="12" fill="#FFFFFF"/>
+    <text x="24" y="34" font-size="15" font-weight="700" fill="#1C1917">支付渠道分布</text>
+    <!-- 环形图 -->
+    <g transform="translate(110,180)">
+      <circle r="70" fill="none" stroke="#16A34A" stroke-width="26" stroke-dasharray="272.7 166.9" transform="rotate(-90)"/>
+      <circle r="70" fill="none" stroke="#D59819" stroke-width="26" stroke-dasharray="131.9 307.7" transform="rotate(128)"/>
+      <circle r="70" fill="none" stroke="#E7E5E4" stroke-width="26" stroke-dasharray="35.2 404.4" transform="rotate(236)"/>
+      <text y="-2" font-size="18" font-weight="700" fill="#1C1917" text-anchor="middle">97.8%</text>
+      <text y="18" font-size="10.5" fill="#A8A29E" text-anchor="middle">支付成功率</text>
+    </g>
+    <!-- 图例 -->
+    <g transform="translate(220,120)" font-size="12.5">
+      <rect width="10" height="10" rx="2" fill="#16A34A"/><text x="20" y="9" fill="#57534E">微信支付</text><text x="120" y="9" font-weight="700" fill="#1C1917">62%</text>
+      <rect y="36" width="10" height="10" rx="2" fill="#D59819"/><text x="20" y="45" fill="#57534E">支付宝</text><text x="120" y="45" font-weight="700" fill="#1C1917">30%</text>
+      <rect y="72" width="10" height="10" rx="2" fill="#E7E5E4"/><text x="20" y="81" fill="#57534E">其他渠道</text><text x="120" y="81" font-weight="700" fill="#1C1917">8%</text>
+    </g>
+  </g>
+
+  <!-- ===== 最近订单表 ===== -->
+  <g transform="translate(252,540)" filter="url(#dashShadow)">
+    <rect width="1156" height="392" rx="12" fill="#FFFFFF"/>
+    <text x="24" y="38" font-size="15" font-weight="700" fill="#1C1917">最近订单</text>
+    <!-- 过滤器 -->
+    <g transform="translate(560,18)" font-size="12">
+      <rect width="90" height="28" rx="14" fill="#F5F5F4"/><text x="16" y="18.5" fill="#57534E">全部状态</text><path d="M70 11 l6 6 -6 6" fill="none" stroke="#78716C" stroke-width="1.8" transform="rotate(90 73 17)"/>
+      <rect x="102" width="90" height="28" rx="14" fill="#F5F5F4"/><text x="118" y="18.5" fill="#57534E">全部活动</text><path d="M172 11 l6 6 -6 6" fill="none" stroke="#78716C" stroke-width="1.8" transform="rotate(90 175 17)"/>
+      <rect x="204" width="110" height="28" rx="14" fill="#F5F5F4"/><text x="220" y="18.5" fill="#57534E">今天 10-11</text><path d="M294 11 l6 6 -6 6" fill="none" stroke="#78716C" stroke-width="1.8" transform="rotate(90 297 17)"/>
+      <rect x="326" width="110" height="28" rx="14" fill="#F7ECD4"/><text x="381" y="18.5" fill="#A16207" text-anchor="middle" font-weight="600">仅看异常 ⚠</text>
+    </g>
+    <!-- 表头 -->
+    <g transform="translate(0,64)">
+      <rect x="1" width="1154" height="36" fill="#FAFAF9"/>
+      <g font-size="12" fill="#78716C" font-weight="500">
+        <text x="24" y="23">订单号</text><text x="150" y="23">用户</text><text x="280" y="23">商品 / 场次</text><text x="600" y="23">数量</text><text x="690" y="23">金额</text><text x="810" y="23">状态</text><text x="950" y="23">创建时间</text><text x="1090" y="23">操作</text>
+      </g>
+    </g>
+    <!-- 行 -->
+    <g font-size="12.5">
+      <g transform="translate(0,100)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011001</text><text x="150" fill="#57534E">用户 138****2211</text><text x="280" fill="#57534E">F1 正赛日 · 主看台B</text><text x="606" fill="#57534E">2</text><text x="690" fill="#1C1917" font-weight="600">¥2,560.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#DCFCE7"/><text x="832" y="0" fill="#16A34A" font-size="11" text-anchor="middle" font-weight="500">已支付</text>
+        <text x="950" fill="#78716C">10-11 13:58:12</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+      <g transform="translate(0,138)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011002</text><text x="150" fill="#57534E">用户 186****0934</text><text x="280" fill="#57534E">灼热之声音乐节 · 双日票</text><text x="606" fill="#57534E">1</text><text x="690" fill="#1C1917" font-weight="600">¥780.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#FEF3C7"/><text x="832" y="0" fill="#D97706" font-size="11" text-anchor="middle" font-weight="500">待支付</text>
+        <text x="950" fill="#78716C">10-11 13:55:47</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+      <g transform="translate(0,176)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011003</text><text x="150" fill="#57534E">用户 150****7788</text><text x="280" fill="#57534E">星夜交响音乐会 · VIP</text><text x="606" fill="#57534E">2</text><text x="690" fill="#1C1917" font-weight="600">¥2,360.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#DBEAFE"/><text x="832" y="0" fill="#2563EB" font-size="11" text-anchor="middle" font-weight="500">履约中</text>
+        <text x="950" fill="#78716C">10-11 13:51:03</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+      <g transform="translate(0,214)">
+        <rect x="1" y="-18" width="1154" height="38" fill="#FFF7ED"/>
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011004</text><text x="150" fill="#57534E">用户 177****3321</text><text x="280" fill="#57534E">F1 正赛日 · 草地票</text><text x="606" fill="#57534E">4</text><text x="690" fill="#1C1917" font-weight="600">¥2,720.00</text>
+        <rect x="806" y="-14" width="64" height="20" rx="10" fill="#FEE2E2"/><text x="838" y="0" fill="#DC2626" font-size="11" text-anchor="middle" font-weight="500">支付异常</text>
+        <text x="950" fill="#78716C">10-11 13:47:29</text><text x="1090" fill="#DC2626" font-weight="600">人工复核</text>
+      </g>
+      <g transform="translate(0,252)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011005</text><text x="150" fill="#57534E">用户 189****6655</text><text x="280" fill="#57534E">灼热之声音乐节 · 单日票</text><text x="606" fill="#57534E">2</text><text x="690" fill="#1C1917" font-weight="600">¥960.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#DCFCE7"/><text x="832" y="0" fill="#16A34A" font-size="11" text-anchor="middle" font-weight="500">已支付</text>
+        <text x="950" fill="#78716C">10-11 13:44:18</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+      <g transform="translate(0,290)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011006</text><text x="150" fill="#57534E">用户 135****8802</text><text x="280" fill="#57534E">星夜交响音乐会 · 看台</text><text x="606" fill="#57534E">1</text><text x="690" fill="#1C1917" font-weight="600">¥1,280.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#F5F5F4"/><text x="832" y="0" fill="#57534E" font-size="11" text-anchor="middle" font-weight="500">已退款</text>
+        <text x="950" fill="#78716C">10-11 13:40:55</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+      <g transform="translate(0,328)">
+        <text x="24" fill="#1C1917" font-weight="600">AWN20261011007</text><text x="150" fill="#57534E">用户 188****4471</text><text x="280" fill="#57534E">F1 练习日 · 副看台</text><text x="606" fill="#57534E">2</text><text x="690" fill="#1C1917" font-weight="600">¥1,880.00</text>
+        <rect x="806" y="-14" width="52" height="20" rx="10" fill="#FEF3C7"/><text x="832" y="0" fill="#D97706" font-size="11" text-anchor="middle" font-weight="500">待支付</text>
+        <text x="950" fill="#78716C">10-11 13:36:41</text><text x="1090" fill="#A16207" font-weight="500">详情</text>
+      </g>
+    </g>
+    <!-- 分页 -->
+    <g transform="translate(0,356)">
+      <text x="24" y="16" font-size="12" fill="#A8A29E">共 8,642 条 · 每页 10 条</text>
+      <g transform="translate(1010,0)" font-size="12">
+        <rect width="28" height="28" rx="6" fill="#F5F5F4"/><text x="14" y="18" fill="#A8A29E" text-anchor="middle">‹</text>
+        <rect x="36" width="28" height="28" rx="6" fill="#1C1917"/><text x="50" y="18" fill="#FFFFFF" text-anchor="middle" font-weight="600">1</text>
+        <rect x="72" width="28" height="28" rx="6" fill="#F5F5F4"/><text x="86" y="18" fill="#57534E" text-anchor="middle">2</text>
+        <rect x="108" width="28" height="28" rx="6" fill="#F5F5F4"/><text x="122" y="18" fill="#57534E" text-anchor="middle">3</text>
+        <text x="148" y="18" fill="#A8A29E">…</text>
+        <rect x="164" width="28" height="28" rx="6" fill="#F5F5F4"/><text x="178" y="18" fill="#57534E" text-anchor="middle">›</text>
+      </g>
+    </g>
+  </g>
+</svg>

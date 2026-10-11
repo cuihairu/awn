@@ -1,0 +1,13 @@
+{
+  "name": "awn-monorepo",
+  "private": true,
+  "description": "麦芒网 AWN - 票务交易与情报平台 monorepo",
+  "scripts": {
+    "docs:dev": "pnpm -C docs dev",
+    "docs:build": "pnpm -C docs build",
+    "docs:preview": "pnpm -C docs preview"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

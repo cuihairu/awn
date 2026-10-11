@@ -1,0 +1,127 @@
+# AWN 单机部署编排（docker compose）
+#
+# 拓扑：caddy(80/443) → web(3000) / admin(5174) / awn-api(8080)
+#       awn-worker(8081 actuator) + postgresql(5432) + redis(6379) + rustfs(9000 S3 / 9001 控制台)
+#
+# 说明：
+# - PostgreSQL 是库存唯一权威；所有容器通过同一内网网络访问。
+# - 情报库使用独立 schema 与角色（awn_intel），见 docs/architecture/intelligence-isolation.md。
+# - 首次部署前复制 .env.example 为 .env 并填写密钥；.env 不入库。
+
+name: awn
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - admin
+      - awn-api
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/docker/web.Dockerfile
+    restart: unless-stopped
+    environment:
+      AWN_API_BASE: http://awn-api:8080
+    depends_on:
+      - awn-api
+
+  admin:
+    build:
+      context: ..
+      dockerfile: deploy/docker/admin.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - awn-api
+
+  awn-api:
+    build:
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      AWN_DB_URL: jdbc:postgresql://postgresql:5432/awn
+      AWN_DB_USERNAME: awn_app
+      AWN_DB_PASSWORD: ${AWN_DB_PASSWORD:?set in .env}
+      AWN_REDIS_HOST: redis
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  awn-worker:
+    build:
+      context: ..
+      dockerfile: deploy/docker/worker.Dockerfile
+    restart: unless-stopped
+    environment:
+      AWN_DB_URL: jdbc:postgresql://postgresql:5432/awn
+      AWN_DB_USERNAME: awn_app
+      AWN_DB_PASSWORD: ${AWN_DB_PASSWORD:?set in .env}
+      AWN_REDIS_HOST: redis
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      awn-api:
+        condition: service_healthy
+
+  postgresql:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: awn
+      POSTGRES_USER: awn_app
+      POSTGRES_PASSWORD: ${AWN_DB_PASSWORD:?set in .env}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # 情报独立 schema + 最小权限角色（应用启动前执行一次）
+      - ./config/postgres/init-intel.sql:/docker-entrypoint-initdb.d/10-init-intel.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U awn_app -d awn"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  # RustFS：S3 兼容对象存储（Rust 实现的 MinIO 替代）
+  # 镜像内以非 root 用户 rustfs(10001) 运行；9000=S3 API，9001=Web 控制台（仅内网）
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-awn_storage}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?set in .env}
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - rustfs_data:/data
+      - rustfs_logs:/logs
+
+volumes:
+  pg_data:
+  redis_data:
+  rustfs_data:
+  rustfs_logs:
+  caddy_data:
+  caddy_config:

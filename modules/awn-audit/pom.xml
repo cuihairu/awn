@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>site.awn</groupId>
+    <artifactId>awn-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>awn-audit</artifactId>
+  <name>awn-audit</name>
+  <description>操作审计、敏感业务操作记录</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>site.awn</groupId>
+      <artifactId>awn-shared</artifactId>
+    </dependency>
+  </dependencies>
+</project>

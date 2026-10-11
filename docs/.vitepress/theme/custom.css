@@ -1,0 +1,101 @@
+/* ============================================================
+   AWN 文档主题 —— 依据 design-system/awn/MASTER.md
+   品牌基调：高级黑 + 麦芒金（#D59819），石头色中性阶
+   ============================================================ */
+
+:root {
+  /* 品牌金：浅色模式下文字/链接用深金保证 4.5:1 对比 */
+  --vp-c-brand-1: #a16207;
+  --vp-c-brand-2: #8a5306;
+  --vp-c-brand-3: #d59819;
+  --vp-c-brand-soft: rgba(213, 152, 25, 0.14);
+
+  /* 中性阶：stone */
+  --vp-c-bg: #fafaf9;
+  --vp-c-bg-alt: #f5f5f4;
+  --vp-c-bg-soft: #f5f5f4;
+  --vp-c-text-1: #1c1917;
+  --vp-c-text-2: #57534e;
+  --vp-c-text-3: #78716c;
+  --vp-c-divider: #e7e5e4;
+  --vp-c-gutter: #e7e5e4;
+
+  /* 导航栏 */
+  --vp-nav-bg-color: #ffffff;
+
+  /* Hero */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #d59819 20%, #a16207 80%);
+}
+
+.dark {
+  --vp-c-brand-1: #e5b95c;
+  --vp-c-brand-2: #d59819;
+  --vp-c-brand-3: #b8860b;
+  --vp-c-brand-soft: rgba(213, 152, 25, 0.16);
+  --vp-c-bg: #0c0a09;
+  --vp-c-bg-alt: #1c1917;
+  --vp-c-bg-soft: #292524;
+  --vp-c-text-1: #fafaf9;
+  --vp-c-text-2: #d6d3d1;
+  --vp-c-text-3: #a8a29e;
+  --vp-c-divider: #44403c;
+  --vp-c-gutter: #44403c;
+}
+
+/* 代码块 / 自定义容器圆角统一 */
+.vp-doc div[class*='language-'],
+.vp-doc .tip,
+.vp-doc .warning,
+.vp-doc .info {
+  border-radius: 12px;
+}
+
+/* 首页原型展示区 */
+.prototype-gallery {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
+}
+
+.prototype-card {
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.prototype-card:hover {
+  border-color: var(--vp-c-brand-3);
+  box-shadow: 0 12px 32px rgba(28, 25, 23, 0.10);
+}
+
+.prototype-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.prototype-card figcaption {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  border-top: 1px solid var(--vp-c-divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prototype-card figcaption strong {
+  color: var(--vp-c-text-1);
+}
+
+@media (min-width: 960px) {
+  .prototype-gallery {
+    grid-template-columns: 1fr;
+  }
+}
