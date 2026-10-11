@@ -60,6 +60,8 @@ export default withMermaid(
             { text: 'ADR-0004 情报数据隔离', link: '/adr/0004-intelligence-isolation' },
             { text: 'ADR-0005 专场版本化发布', link: '/adr/0005-campaign-revision-publish' },
             { text: 'ADR-0006 多端 monorepo', link: '/adr/0006-multi-client-monorepo' },
+            { text: 'ADR-0007 JPA + 关键路径原生 SQL', link: '/adr/0007-jpa-with-native-sql' },
+            { text: 'ADR-0008 构建工具 Maven', link: '/adr/0008-maven-build' },
           ],
         },
       ],

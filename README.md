@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/public/logo.svg" alt="AWN logo" width="300"/>
+<img src="docs/public/logo.svg" alt="AWN logo" width="64"/>
 
 # AWN · 麦芒网
 
