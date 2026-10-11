@@ -4,9 +4,10 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 export default withMermaid(
   defineConfig({
     lang: 'zh-CN',
+    base: '/awn/',
     title: '麦芒网 AWN',
     description: '票务交易与情报平台 · 架构规范与实施文档',
-    head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
+    head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/awn/logo.svg' }]],
 
     themeConfig: {
       logo: '/logo.svg',
