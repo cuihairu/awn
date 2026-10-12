@@ -20,5 +20,9 @@
       <groupId>site.awn</groupId>
       <artifactId>awn-shared</artifactId>
     </dependency>
+    <dependency>
+      <groupId>site.awn</groupId>
+      <artifactId>awn-order</artifactId>
+    </dependency>
   </dependencies>
 </project>

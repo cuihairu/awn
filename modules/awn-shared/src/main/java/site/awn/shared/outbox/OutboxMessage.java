@@ -40,7 +40,8 @@ public class OutboxMessage {
 
     private int attempts;
 
-    @Column(insertable = false, updatable = false)
+    /** 插入时由数据库 DEFAULT 填充；重试调度由分发器更新 */
+    @Column(name = "next_attempt_at", insertable = false)
     private Instant nextAttemptAt;
 
     /** 审计列：由数据库 DEFAULT 维护，实体只读 */
@@ -87,5 +88,27 @@ public class OutboxMessage {
 
     public int getAttempts() {
         return attempts;
+    }
+
+    public Instant getNextAttemptAt() {
+        return nextAttemptAt;
+    }
+
+    /** 投递成功：同一事务内与消费者副作用一并提交 */
+    public void markProcessed(Instant processedAt) {
+        this.status = "PROCESSED";
+        this.processedAt = processedAt;
+    }
+
+    /** 投递失败：按退避重试；超上限后转 FAILED（告警路径，见 docs/architecture/async-outbox.md） */
+    public void reschedule(int attempts, Instant nextAttemptAt) {
+        this.status = "PENDING";
+        this.attempts = attempts;
+        this.nextAttemptAt = nextAttemptAt;
+    }
+
+    public void fail(int attempts) {
+        this.status = "FAILED";
+        this.attempts = attempts;
     }
 }

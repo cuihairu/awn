@@ -53,9 +53,11 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
         assertThat(names).containsExactlyInAnyOrder(
                 "VALIDATION_FAILED", "NOT_FOUND", "ORDER_NOT_FOUND", "INVENTORY_POOL_NOT_FOUND",
                 "EVENT_NOT_FOUND", "CAMPAIGN_NOT_FOUND",
+                "PAYMENT_NOT_FOUND", "REFUND_NOT_FOUND",
                 "ORDER_CONFLICT", "IDEMPOTENCY_CONFLICT", "INSUFFICIENT_INVENTORY",
-                "INVENTORY_CONFLICT", "CONFLICT", "INTERNAL_ERROR");
-        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(12);
+                "INVENTORY_CONFLICT", "PAYMENT_CONFLICT", "PAYMENT_CALLBACK_REJECTED",
+                "REFUND_CONFLICT", "CONFLICT", "INTERNAL_ERROR");
+        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(17);
     }
 
     @Test

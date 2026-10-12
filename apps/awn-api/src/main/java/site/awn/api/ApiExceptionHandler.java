@@ -15,6 +15,11 @@ import site.awn.event.domain.EventNotFoundException;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.inventory.domain.InventoryConflictException;
 import site.awn.inventory.domain.PoolNotFoundException;
+import site.awn.payment.domain.PaymentCallbackRejectedException;
+import site.awn.payment.domain.PaymentConflictException;
+import site.awn.payment.domain.PaymentNotFoundException;
+import site.awn.payment.domain.RefundConflictException;
+import site.awn.payment.domain.RefundNotFoundException;
 import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderNotFoundException;
@@ -64,6 +69,31 @@ public class ApiExceptionHandler {
     @ExceptionHandler(CampaignNotFoundException.class)
     public ResponseEntity<ErrorResponse> campaignNotFound(CampaignNotFoundException e) {
         return envelope(ErrorCode.CAMPAIGN_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> paymentNotFound(PaymentNotFoundException e) {
+        return envelope(ErrorCode.PAYMENT_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(RefundNotFoundException.class)
+    public ResponseEntity<ErrorResponse> refundNotFound(RefundNotFoundException e) {
+        return envelope(ErrorCode.REFUND_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(PaymentConflictException.class)
+    public ResponseEntity<ErrorResponse> paymentConflict(PaymentConflictException e) {
+        return envelope(ErrorCode.PAYMENT_CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(PaymentCallbackRejectedException.class)
+    public ResponseEntity<ErrorResponse> paymentCallbackRejected(PaymentCallbackRejectedException e) {
+        return envelope(ErrorCode.PAYMENT_CALLBACK_REJECTED, e.getMessage());
+    }
+
+    @ExceptionHandler(RefundConflictException.class)
+    public ResponseEntity<ErrorResponse> refundConflict(RefundConflictException e) {
+        return envelope(ErrorCode.REFUND_CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(InsufficientInventoryException.class)
