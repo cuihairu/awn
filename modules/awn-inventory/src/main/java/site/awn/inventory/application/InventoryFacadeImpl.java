@@ -56,6 +56,11 @@ public class InventoryFacadeImpl implements InventoryFacade {
     }
 
     @Override
+    public java.util.Optional<BalanceView> balanceOfProduct(String productId) {
+        return queryService.balanceOfProduct(productId);
+    }
+
+    @Override
     public ReconciliationReport reconcile() {
         return reconciliationService.reconcile();
     }

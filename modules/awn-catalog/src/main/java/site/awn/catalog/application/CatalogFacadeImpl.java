@@ -8,6 +8,7 @@ import site.awn.catalog.api.CreateProductCommand;
 import site.awn.catalog.api.ProductView;
 import site.awn.catalog.api.TicketCategoryView;
 import site.awn.catalog.domain.Product;
+import site.awn.catalog.domain.ProductNotFoundException;
 import site.awn.catalog.domain.ProductStatus;
 import site.awn.catalog.domain.TicketCategory;
 import site.awn.catalog.infrastructure.ProductRepository;
@@ -58,7 +59,7 @@ public class CatalogFacadeImpl implements CatalogFacade {
     public ProductView product(String productCode) {
         return products.findByProductCode(productCode)
                 .map(this::toView)
-                .orElseThrow(() -> new IllegalStateException("product not found: " + productCode));
+                .orElseThrow(() -> new ProductNotFoundException(productCode));
     }
 
     @Override

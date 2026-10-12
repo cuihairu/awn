@@ -1,5 +1,7 @@
 package site.awn.inventory.api;
 
+import java.util.Optional;
+
 /**
  * 库存模块对外唯一入口（跨模块只允许调用本接口，禁止引用内部实现）。
  * reserve / confirm / release 均在单数据库事务内完成"状态迁移 + 余额变更 + 流水"。
@@ -20,6 +22,12 @@ public interface InventoryFacade {
 
     /** 余额视图（含可用量） */
     BalanceView balanceOf(String poolCode);
+
+    /**
+     * 按商品查可售摘要（公共商品接口的缓存展示口径，下单仍需原子预留重校验）。
+     * 商品尚未建池时返回空。
+     */
+    Optional<BalanceView> balanceOfProduct(String productId);
 
     /**
      * Worker 库存对账：以预留记录（ACTIVE→reserved、CONFIRMED→sold）推导期望值，

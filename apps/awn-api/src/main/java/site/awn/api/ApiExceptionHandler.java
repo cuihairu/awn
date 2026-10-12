@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import site.awn.catalog.domain.ProductNotFoundException;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.inventory.domain.InventoryConflictException;
 import site.awn.inventory.domain.PoolNotFoundException;
@@ -66,6 +67,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> illegalArgument(IllegalArgumentException e) {
         return envelope(ErrorCode.VALIDATION_FAILED, e.getMessage());
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorResponse> productNotFound(ProductNotFoundException e) {
+        return envelope(ErrorCode.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
