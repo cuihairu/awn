@@ -2,6 +2,38 @@
 
 所有业务接口统一使用 `/api/v1`。所有接口在开发阶段形成 OpenAPI 契约，前后端根据同一契约开发，避免各端分别猜测字段和响应格式。
 
+## 错误信封与错误码
+
+所有非 2xx 响应使用统一信封，禁止返回裸堆栈：
+
+```json
+{
+  "code": "ORDER_NOT_FOUND",
+  "message": "order not found: ORD-1",
+  "traceId": "3f9c2a…"
+}
+```
+
+- `code`：机器可读错误码（下表），客户端据此分支处理；`message`：人可读描述；
+  `traceId`：请求追踪 ID，用于日志关联与排障（可能为空）。
+- 未预期的服务器异常统一返回 `INTERNAL_ERROR` 与固定文案，**不向客户端透出任何内部信息**，
+  堆栈只进服务端日志（按 `traceId` 关联）。
+
+| code | HTTP | 触发场景 |
+|------|------|----------|
+| VALIDATION_FAILED | 400 | 参数缺失、格式非法、请求体不可解析 |
+| NOT_FOUND | 404 | 资源不存在（通用） |
+| ORDER_NOT_FOUND | 404 | 订单不存在 |
+| INVENTORY_POOL_NOT_FOUND | 404 | 库存池不存在 |
+| ORDER_CONFLICT | 409 | 订单状态机冲突（非法迁移） |
+| IDEMPOTENCY_CONFLICT | 409 | 幂等键对应了不同的请求内容 |
+| INSUFFICIENT_INVENTORY | 409 | 库存不足 |
+| INVENTORY_CONFLICT | 409 | 预留状态机冲突（如确认已释放的预留） |
+| CONFLICT | 409 | 其他业务冲突（通用） |
+| INTERNAL_ERROR | 500 | 未预期异常 |
+
+错误码与 HTTP 状态的映射由后端唯一维护（`site.awn.shared.error`），各端不得自行推断。
+
 ## 公共接口
 
 ```text

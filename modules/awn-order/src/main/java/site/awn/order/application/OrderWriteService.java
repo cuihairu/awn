@@ -13,6 +13,7 @@ import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderItem;
 import site.awn.order.domain.OrderNotFoundException;
 import site.awn.order.domain.OrderStatus;
+import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
 import site.awn.shared.outbox.OutboxMessage;
@@ -64,7 +65,7 @@ public class OrderWriteService {
         Order existing = orders.findByIdempotencyKey(command.idempotencyKey()).orElse(null);
         if (existing != null) {
             if (!existing.getRequestHash().equals(requestHash)) {
-                throw new OrderConflictException(
+                throw new IdempotencyConflictException(
                         "idempotency key already used by a different request: " + command.idempotencyKey());
             }
             return OrderReadService.toView(existing, items.findByOrderId(existing.getId()));
