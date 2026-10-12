@@ -22,6 +22,11 @@ spring:
 server:
   port: 8080
 
+logging:
+  pattern:
+    # 日志级别后携带 traceId，一次请求所有日志行可关联（%X{traceId:-} 空值不输出内容）
+    level: "%5p [${spring.application.name:},%X{traceId:-}]"
+
 management:
   endpoints:
     web:

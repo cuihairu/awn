@@ -17,7 +17,7 @@ import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderNotFoundException;
 import site.awn.shared.error.ErrorCode;
 import site.awn.shared.error.ErrorResponse;
-import site.awn.shared.error.TraceId;
+import site.awn.shared.trace.TraceId;
 
 /**
  * 全局异常处理（组合根）：所有非 2xx 响应统一为错误信封

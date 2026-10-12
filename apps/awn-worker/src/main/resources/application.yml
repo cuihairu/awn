@@ -27,6 +27,11 @@ management:
   server:
     port: 8081
 
+logging:
+  pattern:
+    # Worker 任务由 Traces.withNewTrace 包装，每轮任务执行一个独立 traceId
+    level: "%5p [${spring.application.name:},%X{traceId:-}]"
+
 awn:
   worker:
     enabled: true
