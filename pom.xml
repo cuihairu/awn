@@ -58,6 +58,26 @@
         <artifactId>awn-shared</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>site.awn</groupId>
+        <artifactId>awn-event</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>site.awn</groupId>
+        <artifactId>awn-catalog</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>site.awn</groupId>
+        <artifactId>awn-inventory</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>site.awn</groupId>
+        <artifactId>awn-order</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
