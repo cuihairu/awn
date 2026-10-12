@@ -86,12 +86,15 @@
 
 ## Phase 05 · 履约与卖家挂牌
 
-- [ ] 卖家资料、供货审核、挂牌（awn-marketplace）
+- [x] 卖家资料、供货审核、挂牌（awn-marketplace）
   验收：未审核供货不能被标为「平台保证可交付」。期次：Phase 05
-- [ ] 独立票品状态与供货凭证
+  证据：MarketplaceModuleTests——PENDING 审核 + 平台保证被拒、未审核可挂但 platformGuaranteed=false、REJECTED 不得挂牌、APPROVED 后才可平台保证；beb11c7
+- [x] 独立票品状态与供货凭证
   验收：票品状态与挂牌解耦；凭证仅白名单存储域。期次：Phase 05
-- [ ] 交付流程与异常处理（卖家取消 / 履约失败 / 争议）
+  证据：ticket_units 独立状态机（IN_STOCK→RESERVED→SOLD→DELIVERED / INVALID）；挂牌下架与票品作废互不隐式改变对方状态；供货凭证经 StorageUrlValidator 白名单域校验（http/外域拒绝）；beb11c7
+- [x] 交付流程与异常处理（卖家取消 / 履约失败 / 争议）
   验收：支付成功不自动等于交付成功；履约失败进入异常流程而非静默吞掉。期次：Phase 05
+  证据：FulfillmentModuleTests——PAYMENT_SUCCEEDED → 履约单 PENDING_SELLER（非 COMPLETED）、交付凭证白名单校验、核验拒绝 / 卖家上报失败 → FAILED + FULFILLMENT_FAILED 事件 → 订单 REFUND_PENDING（事件闭环，重放幂等）；beb11c7
 
 ## Phase 06 · 票务情报与运营完善
 
