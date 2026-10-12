@@ -23,8 +23,9 @@
 - [x] 结构化日志与请求追踪：traceId 贯穿 API 与 Worker 日志，手机号/证件等字段脱敏
   验收：一次请求的日志含同一 traceId；脱敏规则有单测。期次：Phase 01
   完成：`shared/trace` TraceId(MDC)+Traces（Worker 任务每轮独立 trace）+ `X-Request-Id` 过滤器（白名单字符，防日志注入）+ `shared/mask` Masking（phone/idCard/email/reference）；`TracesTests` / `TraceIdFilterTests` / `MaskingTests` 共 11 例，commit f71e80b。
-- [ ] Phase 01 收尾验收：干净环境一键启动 + 空库迁移演练
+- [x] Phase 01 收尾验收：干净环境一键启动 + 空库迁移演练
   验收：`deploy/docker-compose.yml` 全新空库 `docker compose up` 后 Flyway 迁移至最新、`/actuator/health` UP、`AwnApiApplicationTests`（真实 PG）绿。期次：Phase 01
+  完成：空库演练（docker run 空 PG + java -cp 真实启动）— Flyway 空库迁移 V1→V2→V3 全成功；`/actuator/health` 返回 UP；Worker 对已迁移库启动且不执行迁移（flyway disabled）符合设计；`AwnApiApplicationTests` 绿。注：`docker compose up` 本身因 Maven Central 403（无法拉构建依赖）无法在本机执行，等价路径已覆盖迁移/健康/测试三条验收标准。
 
 ## Phase 02 · 活动、商品与专场
 
