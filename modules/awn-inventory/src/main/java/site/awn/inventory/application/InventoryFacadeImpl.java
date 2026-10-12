@@ -5,6 +5,7 @@ import site.awn.inventory.api.BalanceView;
 import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.PoolView;
+import site.awn.inventory.api.ReconciliationReport;
 import site.awn.inventory.api.ReservationView;
 import site.awn.inventory.api.ReserveInventoryCommand;
 
@@ -17,13 +18,16 @@ public class InventoryFacadeImpl implements InventoryFacade {
     private final InventoryWriteService writeService;
     private final ReservationLifecycleService lifecycleService;
     private final InventoryQueryService queryService;
+    private final InventoryReconciliationService reconciliationService;
 
     public InventoryFacadeImpl(InventoryWriteService writeService,
                                ReservationLifecycleService lifecycleService,
-                               InventoryQueryService queryService) {
+                               InventoryQueryService queryService,
+                               InventoryReconciliationService reconciliationService) {
         this.writeService = writeService;
         this.lifecycleService = lifecycleService;
         this.queryService = queryService;
+        this.reconciliationService = reconciliationService;
     }
 
     @Override
@@ -49,5 +53,10 @@ public class InventoryFacadeImpl implements InventoryFacade {
     @Override
     public BalanceView balanceOf(String poolCode) {
         return queryService.balanceOf(poolCode);
+    }
+
+    @Override
+    public ReconciliationReport reconcile() {
+        return reconciliationService.reconcile();
     }
 }

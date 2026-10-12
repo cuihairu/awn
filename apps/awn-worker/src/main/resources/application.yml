@@ -35,11 +35,14 @@ logging:
 awn:
   worker:
     enabled: true
-    # 各任务开关与间隔在对应阶段实现时补充
     tasks:
-      inventory-expiry: true
       order-timeout: true
+      inventory-expiry: true
+      inventory-reconciliation: true
       payment-reconciliation: true
       refund-reconciliation: true
       notification-dispatch: true
       outbox-dispatch: true
+    intervals:
+      order-timeout-ms: 60000
+      inventory-reconciliation-ms: 600000

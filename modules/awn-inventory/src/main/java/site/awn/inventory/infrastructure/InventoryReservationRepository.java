@@ -27,4 +27,13 @@ public interface InventoryReservationRepository extends JpaRepository<InventoryR
     int transition(@Param("reservationNo") String reservationNo,
                    @Param("from") ReservationStatus from,
                    @Param("to") ReservationStatus to);
+
+    /** 对账用：按池汇总某状态的预留数量（ACTIVE→期望 reserved，CONFIRMED→期望 sold） */
+    @Query("""
+            SELECT r.inventoryPoolId, SUM(r.quantity)
+              FROM InventoryReservation r
+             WHERE r.status = :status
+             GROUP BY r.inventoryPoolId
+            """)
+    java.util.List<Object[]> sumQuantitiesByStatus(@Param("status") ReservationStatus status);
 }

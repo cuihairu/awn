@@ -1,6 +1,6 @@
 # Flyway 迁移约定
 
-位置：`apps/awn-api/src/main/resources/db/migration/`（唯一迁移目录，交易库单一 schema）。
+位置：`modules/awn-shared/src/main/resources/db/migration/`（唯一迁移目录，交易库单一 schema；放在 shared 模块使 API 与 Worker 的测试进程都能解析到同一套脚本）。
 
 ## 命名与版本
 

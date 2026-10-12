@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -38,4 +39,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     int transition(@Param("orderNo") String orderNo,
                    @Param("from") OrderStatus from,
                    @Param("to") OrderStatus to);
+
+    /** Worker 超时任务扫描：支付截止期已过的待支付订单号（按截止期排序，配合分页限批） */
+    @Query("""
+            SELECT o.orderNo
+              FROM Order o
+             WHERE o.status = :status
+               AND o.expiresAt IS NOT NULL
+               AND o.expiresAt <= :now
+             ORDER BY o.expiresAt
+            """)
+    List<String> findExpiredPendingOrderNos(@Param("now") java.time.Instant now,
+                                            @Param("status") OrderStatus status,
+                                            org.springframework.data.domain.Pageable pageable);
 }

@@ -20,4 +20,10 @@ public interface InventoryFacade {
 
     /** 余额视图（含可用量） */
     BalanceView balanceOf(String poolCode);
+
+    /**
+     * Worker 库存对账：以预留记录（ACTIVE→reserved、CONFIRMED→sold）推导期望值，
+     * 与余额计数器逐池核对。发现差异即报告，不自动修复——修复是人工或升级流程的决策。
+     */
+    ReconciliationReport reconcile();
 }

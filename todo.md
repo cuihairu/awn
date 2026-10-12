@@ -17,10 +17,12 @@
 - [x] Testcontainers + Spring Modulith 结构测试（ModularityTests 本机通过）— commit acaf107
 - [x] CI 门禁三 job（backend mvn verify / frontend docs+web+admin / flutter analyze）— commit acaf107、7c5f50f
 - [x] 文档站 GitHub Pages 部署 — commit 2eef133
-- [ ] 统一异常体系与错误码：全局 `@RestControllerAdvice`，响应结构与错误码对齐 `docs/api/contracts.md`
+- [x] 统一异常体系与错误码：全局 `@RestControllerAdvice`，响应结构与错误码对齐 `docs/api/contracts.md`
   验收：任意未捕获异常返回统一错误信封；错误码枚举有单测；无裸 500 泄露堆栈。期次：Phase 01
-- [ ] 结构化日志与请求追踪：traceId 贯穿 API 与 Worker 日志，手机号/证件等字段脱敏
+  完成：`shared/error/ErrorCode` + `ErrorResponse`（code/message/traceId）+ `apps/awn-api` `ApiExceptionHandler`（业务异常→错误码、未知异常固定文案 `internal server error` 不泄堆栈）；`ApiExceptionHandlerTests` 4 例（含意外异常不泄露内部细节），commit 8789d10。
+- [x] 结构化日志与请求追踪：traceId 贯穿 API 与 Worker 日志，手机号/证件等字段脱敏
   验收：一次请求的日志含同一 traceId；脱敏规则有单测。期次：Phase 01
+  完成：`shared/trace` TraceId(MDC)+Traces（Worker 任务每轮独立 trace）+ `X-Request-Id` 过滤器（白名单字符，防日志注入）+ `shared/mask` Masking（phone/idCard/email/reference）；`TracesTests` / `TraceIdFilterTests` / `MaskingTests` 共 11 例，commit f71e80b。
 - [ ] Phase 01 收尾验收：干净环境一键启动 + 空库迁移演练
   验收：`deploy/docker-compose.yml` 全新空库 `docker compose up` 后 Flyway 迁移至最新、`/actuator/health` UP、`AwnApiApplicationTests`（真实 PG）绿。期次：Phase 01
 
@@ -51,8 +53,9 @@
 - [x] 订单创建同事务写预留记录与 Outbox
   验收：事务内任一步失败整体回滚（outbox 无残留）；与 `docs/architecture/inventory-consistency.md` 时序一致。期次：Phase 03
   完成：`OrderWriteService.createOrder` 幂等判重 → 逐行原子预留 → 订单与明细 → 同事务 Outbox（`outbox_messages` V3）；`insufficientInventoryRollsBackEverything` 验证全回滚无残留。
-- [ ] 订单超时释放与库存对账 Worker 任务
+- [x] 订单超时释放与库存对账 Worker 任务
   验收：超时未支付订单释放预留；任务重复执行幂等；与支付确认竞态时进入异常处理而非盲目释放。期次：Phase 03
+  完成：`OrderTimeoutService`（`TransactionTemplate` 单订单独立事务，守卫迁移裁决竞态，失败订单进 failed 清单不阻塞整批）+ `InventoryReconciliationService`（预留记录↔余额计数器逐池核对，只报告不修复）+ `apps/awn-worker` `OrderTimeoutTask` / `InventoryReconciliationTask`（`awn.worker.tasks.*` 开关、每轮独立 trace）；`OrderTimeoutServiceTests` 4 例 + `WorkerTasksTests` 5 例（释放+幂等+竞态+对账），迁移脚本移至 `modules/awn-shared` 供双入口共享，commit c90bb39。
 - [ ] Phase 03 验收：并发压测 + 一致性断言
   验收：压测后 `available = total - reserved - sold` 恒等式成立；超卖次数为 0。期次：Phase 03
 

@@ -24,4 +24,11 @@ public interface OrderFacade {
 
     /** 支付确认（Phase 04 支付模块接手调用）：转已售。重复确认幂等返回 false。 */
     boolean markPaid(String orderNo);
+
+    /**
+     * Worker 订单超时任务：将支付截止期已过的待支付订单迁入 EXPIRED 并逐行释放预留。
+     * 单订单独立事务：单个订单失败不影响其余订单；与支付确认竞态时由守卫迁移裁决，
+     * 输掉的路径记录为 skipped 而不是盲目释放（docs/architecture/inventory-consistency.md）。
+     */
+    OrderTimeoutResult releaseExpiredOrders(java.time.Instant now);
 }
