@@ -35,12 +35,15 @@
 - [x] 统一商品 API：详情、可售摘要（缓存展示值，下单重校验）——commit f08c3e8
   契约未定义公开商品列表端点（公开列表仅 events），列表能力由 CatalogFacade.products/publishedProductsBySession 承载供专场/管理端使用；HTTP 面按契约落地 `GET /api/v1/products/{productId}` 与 `GET /api/v1/products/{productId}/availability`。
   完成：`site.awn.api.PublicProductController`（组合根聚合 CatalogFacade+InventoryFacade）+ ProductResponse/AvailabilityResponse + `ProductNotFoundException`→404 NOT_FOUND 信封 + inventory 新增 `balanceOfProduct(productId)`（无池=未开售，多池=数据异常）；`ProductApiTests` 5 例（真实 PG：详情字段、可售数量、预留全部→available 0→释放回补、未建池未开售、未知商品 404 信封含 traceId）。
-- [ ] 专场草稿、配置 Schema、校验、发布版本（不可变 revision）
+- [x] 专场草稿、配置 Schema、校验、发布版本（不可变 revision）
   验收：发布生成快照；草稿修改不影响已发布版本；`validateCampaignConfig` 与后端白名单一致并有测试。期次：Phase 02
-- [ ] 模块白名单与受控资源引用（13 类 section）
+  完成：V5__campaign_tables.sql + campaigns/campaign_revisions（不可变快照，UNIQUE(campaign_id, revision_number)）+ 状态机 DRAFT→VALIDATED→PUBLISHED→UNPUBLISHED→ARCHIVED（未校验拒绝发布）+ `CampaignModuleTests.draftValidatePublishGeneratesImmutableRevision`（草稿改后已发布版本仍为原快照，二次发布生成 revision 2），commit beba0d7。
+- [x] 模块白名单与受控资源引用（13 类 section）
   验收：未命中白名单的 section 拒绝保存与渲染；资源引用仅允许白名单域。期次：Phase 02
-- [ ] 至少两种专场模板渲染
+  完成：`SectionWhitelist`（13 类：heroBanner…noticeBar）+ `CampaignConfigValidator`（未知 type、script/iframe 注入、重复 section id、schemaVersion≠1 均拒绝）+ `ResourceDomainWhitelist`（资源 URL 仅 https 白名单域/相对路径）；`CampaignRenderingTests` 8 例覆盖拒绝路径，commit beba0d7。
+- [x] 至少两种专场模板渲染
   验收：同一商品可出现在多个专场且不复制库存；模板渲染快照测试。期次：Phase 02
+  完成：`CampaignTemplates.motorsport`（5 模块）与 `concert`（6 模块）两种模板 + `CampaignTemplateRenderer` 渲染 13 类模块 + `CampaignFacade.renderPublished` 只读已发布版本渲染；`CampaignModuleTests.sameProductInMultipleCampaignsSharesInventory`（两专场引用同一商品，库存不复制）+ `CampaignRenderingTests` 快照断言（同配置渲染内容稳定），commit beba0d7。
 
 ## Phase 03 · 库存与订单核心（接入真实支付前的硬性门槛）
 
