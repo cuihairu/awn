@@ -32,8 +32,9 @@
 - [x] 活动、场次、票档、商品数据模型与迁移（V4 起，含 awn-event / awn-catalog 模块代码）
   验收：Flyway 迁移可从空库执行；JPA 映射 `ddl-auto: validate` 通过；实体级测试。期次：Phase 02
   完成：V4__catalog_tables.sql + Venue/Event/Session/TicketCategory/Product 实体 + Facade + 集成测试，commit e957603。
-- [ ] 统一商品 API：商品列表、详情、票档可售状态（缓存展示值，下单重校验）
-  验收：接口与 `docs/api/contracts.md` 一致；集成测试覆盖列表/详情/售罄态。期次：Phase 02
+- [x] 统一商品 API：详情、可售摘要（缓存展示值，下单重校验）——commit f08c3e8
+  契约未定义公开商品列表端点（公开列表仅 events），列表能力由 CatalogFacade.products/publishedProductsBySession 承载供专场/管理端使用；HTTP 面按契约落地 `GET /api/v1/products/{productId}` 与 `GET /api/v1/products/{productId}/availability`。
+  完成：`site.awn.api.PublicProductController`（组合根聚合 CatalogFacade+InventoryFacade）+ ProductResponse/AvailabilityResponse + `ProductNotFoundException`→404 NOT_FOUND 信封 + inventory 新增 `balanceOfProduct(productId)`（无池=未开售，多池=数据异常）；`ProductApiTests` 5 例（真实 PG：详情字段、可售数量、预留全部→available 0→释放回补、未建池未开售、未知商品 404 信封含 traceId）。
 - [ ] 专场草稿、配置 Schema、校验、发布版本（不可变 revision）
   验收：发布生成快照；草稿修改不影响已发布版本；`validateCampaignConfig` 与后端白名单一致并有测试。期次：Phase 02
 - [ ] 模块白名单与受控资源引用（13 类 section）
