@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="season-autumn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>周传雄「时不知归」巡回演唱会 · 活动页原型 · AWN</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .leaf { position:absolute; width:90px; height:90px; border-radius:0 100% 0 100%; background:rgba(255,255,255,.14); transform:rotate(35deg) }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="activity-f1.html">赛事</a>
+      <a class="nav-link" href="activity-zcx.html" aria-current="page">演唱会</a>
+    </nav>
+    <div class="row" style="margin-left:auto">
+      <span class="chip" aria-selected="true">📍 杭州</span>
+      <button class="btn btn-ghost btn-sm">登录</button>
+    </div>
+  </div>
+</header>
+
+<!-- 模板区块 1：Hero（秋季主题） -->
+<section class="hero">
+  <span class="leaf" style="right:140px;top:-20px" aria-hidden="true"></span>
+  <span class="leaf" style="right:60px;bottom:20px;transform:rotate(-25deg) scale(.7)" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff;margin-bottom:12px">原型 · 同一模板三实例之三（演唱会）· 主题：秋 · 数据为示例</div>
+    <h1 class="title">周传雄「时不知归」<br>巡回演唱会 · 杭州站</h1>
+    <p class="subtitle">两晚连唱 · 体育馆场 · 实名一票一证</p>
+    <div class="meta">
+      <span>📅 11 月 14 日 / 15 日 19:30</span>
+      <span>📍 杭州 · 黄龙体育中心体育馆</span>
+      <span>📏 距你 164 km</span>
+      <span>🎟 票价区间 <span class="num">280</span> — <span class="num">1180</span> 元（示例）</span>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-lg" href="purchase.html">立即购票</a>
+      <a class="btn btn-ghost btn-lg" href="seatmap-2d.html">查看座位图</a>
+    </div>
+  </div>
+</section>
+
+<main class="wrap stack-lg" style="padding-top:28px">
+
+  <!-- 模板区块 2：演出信息 -->
+  <section>
+    <div class="card">
+      <div class="demo-note">原型 · 文字占位 · 不使用艺人肖像素材</div>
+      <div class="grid grid-3" style="margin-top:14px">
+        <div>
+          <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">演出时长</div>
+          <strong style="font-size:var(--fs-lg)">约 120 分钟</strong>
+        </div>
+        <div>
+          <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">入场时间</div>
+          <strong style="font-size:var(--fs-lg)">18:30 开始</strong>
+        </div>
+        <div>
+          <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">场次形式</div>
+          <strong style="font-size:var(--fs-lg)">体育馆场 · 两晚</strong>
+        </div>
+      </div>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:12px">舞台为环绕式布置，A 区存在遮挡区（示例，具体以演出配置版本为准）</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 3：场次列表 -->
+  <section>
+    <h2>选择场次</h2>
+    <div class="grid grid-2">
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 14 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">14</div><div class="month">11 月 · 周五</div></div>
+          <span class="badge badge-success">票量充足</span>
+        </div>
+        <h3 style="margin-top:12px">杭州站 · 第一场</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          黄龙体育中心体育馆 · 浙江省杭州市西湖区黄龙路 1 号
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">纬度 <span class="num">30.2745</span> · 经度 <span class="num">120.1307</span></span>
+      </article>
+
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 15 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">15</div><div class="month">11 月 · 周六</div></div>
+          <span class="badge badge-warning">热门</span>
+        </div>
+        <h3 style="margin-top:12px">杭州站 · 第二场</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          黄龙体育中心体育馆 · 距你 164 km
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">19:30 开场 · 仅余 B 区与看台 2 层</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- 模板区块 4：票档与座位区 -->
+  <section>
+    <div class="row-between">
+      <h2>票档与座位区</h2>
+      <span class="demo-note">示例价格 · 以开票时为准</span>
+    </div>
+    <div class="card">
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-1"></span>
+          <div><strong>内场 A 区（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">1–8 排 · 中央通道两侧</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">1180</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-2"></span>
+          <div><strong>内场 B 区（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">9–18 排 · 部分视线遮挡</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">880</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-3"></span>
+          <div><strong>看台 1 层 东/西（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">1–15 排</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">580</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-4"></span>
+          <div><strong>看台 1 层 南/北（不选座）</strong><div class="muted" style="font-size:var(--fs-xs)">系统自动配座</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">380</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-5"></span>
+          <div><strong>看台 2 层（不选座）</strong><div class="muted" style="font-size:var(--fs-xs)">系统自动配座 · 早鸟已截止</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">280</span><button class="btn btn-soft btn-sm" style="margin-left:12px">选这张</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 模板区块 5：场馆与地理位置 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>场馆信息</h3>
+      <div class="geo-row" style="margin-bottom:10px">
+        <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+        <div><strong>黄龙体育中心体育馆</strong><div class="muted" style="font-size:var(--fs-sm)">浙江省杭州市西湖区黄龙路 1 号</div></div>
+      </div>
+      <p class="muted" style="font-size:var(--fs-sm)">坐标 <span class="num">30.2745, 120.1307</span> · 地铁 2/4 号线「黄龙体育中心」站 1 号口</p>
+      <p class="muted" style="font-size:var(--fs-sm)">场馆容量约 1.8 万（示例） · 散场后 60 分钟内</p>
+      <div class="map-box" role="img" aria-label="场馆位置示意地图（离线静态图）">
+        <div class="map-pin"><span class="dot"></span><span class="label">黄龙体育中心</span></div>
+        <span class="map-scale">离线静态图 · 联网地图为可选项</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>入场须知</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">实名观演人信息与证件必须一致</p>
+      <p class="muted" style="font-size:var(--fs-sm)">入场后请勿中途离场，离场后凭原票重新排队安检</p>
+      <p class="muted" style="font-size:var(--fs-sm)">禁止携带自拍杆、专业摄录设备、气球</p>
+      <p class="muted" style="font-size:var(--fs-sm)">看台 2 层部分位置视线受遮挡，请按需选择（示例）</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 6：购票须知 / 退换规则 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>购票须知</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 每张订单限购 4 张，同一证件每场限 1 张</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 内场与看台 1 层东区、西区为选座</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 不选座票档由系统自动配座，出票后告知座位</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 电子票支持二维码与刷证入场</p>
+    </div>
+    <div class="card">
+      <h3>退换规则</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 开票后 24 小时内可全额退款（示例）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 演出开始前 5 天起不接受退款与改签</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 演出延期或取消由票务方全额退款</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 官方转赠：每场每人每单限 1 次（示例）</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 7：座位图入口 -->
+  <section class="sunken">
+    <div class="row-between" style="flex-wrap:wrap">
+      <div>
+        <h3 style="margin:0">选座购票（内场 / 看台 1 层东西区）</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">2D / 3D 可切换座位图 · 共享同一批座位数据</p>
+      </div>
+      <div class="row">
+        <button class="chip" aria-selected="true">2D 座位图</button>
+        <button class="chip" aria-selected="false">3D 线框示意</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <a class="btn" href="seatmap-2d.html">进入座位图选座</a>
+      <a class="btn btn-ghost" href="purchase.html">直接选票档（不选座）</a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 活动页模板实例 3/3 · 数据为示例</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script src="../theme.js"></script>
+</body>
+</html>

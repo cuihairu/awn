@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2026 F1 中国大奖赛 · 活动页原型 · AWN</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .flag-strip { display:flex; height:6px; background:linear-gradient(90deg,#c8102e 0 33.3%,#f2f2f2 33.3% 66.6%,#1c6fb5 66.6% 100%); opacity:.9 }
+  .lap-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:var(--space-md) }
+  .lap-card { background:var(--t-card); border:1px solid var(--t-border); border-radius:var(--radius-lg); padding:var(--space-md) }
+  .lap-card .pos { font-family:var(--font-num); font-size:var(--fs-xs); color:var(--t-fg-muted); letter-spacing:.06em }
+  .lap-card .name { font-weight:700; font-size:var(--fs-lg); margin:2px 0 4px }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="activity-f1.html" aria-current="page">赛事</a>
+      <a class="nav-link" href="activity-jay.html">演唱会</a>
+    </nav>
+    <div class="row" style="margin-left:auto">
+      <span class="chip" aria-selected="true">📍 上海</span>
+      <button class="btn btn-ghost btn-sm">登录</button>
+    </div>
+  </div>
+</header>
+
+<!-- 模板区块 1：Hero -->
+<section class="hero">
+  <span class="deco deco-ring" style="width:340px;height:340px;right:-90px;top:-120px"></span>
+  <span class="deco deco-bar" style="width:120px;height:10px;right:180px;top:60px;border-radius:8px"></span>
+  <div class="wrap">
+    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff;margin-bottom:12px">原型 · 同一模板三实例之一（F1 赛事）· 数据为示例</div>
+    <h1 class="title">2026 F1 世界锦标赛<br>中国大奖赛 · 上海国际赛车场</h1>
+    <p class="subtitle">周末赛 · 资格赛 · 正赛三档观赛票 · 同一票池统一结算</p>
+    <div class="meta">
+      <span>📅 10 月 30 日 — 11 月 1 日</span>
+      <span>📍 上海 · 嘉定区 · 上海国际赛车场</span>
+      <span>📏 距你 38 km</span>
+      <span>🎟 票价区间 <span class="num">380</span> — <span class="num">2880</span> 元（示例）</span>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-lg" href="purchase.html">立即购票</a>
+      <a class="btn btn-ghost btn-lg" href="seatmap-2d.html">查看座位图</a>
+    </div>
+  </div>
+</section>
+<div class="flag-strip" aria-hidden="true"></div>
+
+<main class="wrap stack-lg" style="padding-top:28px">
+
+  <!-- 模板区块 2：赛事信息（赛程 / 分站 / 车队车手） -->
+  <section>
+    <div class="row-between">
+      <h2>本周赛程</h2>
+      <span class="badge badge-info">第 21 站 · 赛季收官</span>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">10 月 30 日 星期五</div>
+        <h3 style="margin-top:4px">自由练习 + 排位赛</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:0">练习 13:00–14:00 · 排位赛 14:00–15:00</p>
+      </div>
+      <div class="card">
+        <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">10 月 31 日 星期六</div>
+        <h3 style="margin-top:4px">冲刺赛</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:0">发车仪式 11:30 · 正赛 14:00</p>
+      </div>
+      <div class="card">
+        <div class="muted" style="font-size:var(--fs-xs);letter-spacing:.06em">11 月 1 日 星期日</div>
+        <h3 style="margin-top:4px">正赛（56 圈）</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:0">发车 15:00 · 预计 1 小时 40 分钟</p>
+      </div>
+    </div>
+
+    <h3 style="margin:20px 0 12px">赛季积分前列 · 车队与车手</h3>
+    <div class="lap-grid">
+      <div class="lap-card"><div class="pos">POS 1</div><div class="name">A. 维斯塔潘</div><div class="muted" style="font-size:var(--fs-sm)">红牛车队 · 412 分（示例）</div></div>
+      <div class="lap-card"><div class="pos">POS 2</div><div class="name">L. 汉密尔顿</div><div class="muted" style="font-size:var(--fs-sm)">梅赛德斯 · 318 分（示例）</div></div>
+      <div class="lap-card"><div class="pos">POS 3</div><div class="name">O. 皮亚斯特里</div><div class="muted" style="font-size:var(--fs-sm)">迈凯伦 · 245 分（示例）</div></div>
+      <div class="lap-card"><div class="pos">POS 4</div><div class="name">L. 诺里斯</div><div class="muted" style="font-size:var(--fs-sm)">迈凯伦 · 241 分（示例）</div></div>
+    </div>
+    <p class="hint" style="margin-top:10px">素材红线：不使用明星肖像与车队/品牌 logo 素材，一律文字占位；真实素材待运营提供后替换。</p>
+  </section>
+
+  <!-- 模板区块 3：场次列表（含地理位置与可售状态） -->
+  <section>
+    <h2>选择场次</h2>
+    <div class="grid grid-3">
+      <article class="session-card" style="cursor:pointer" aria-label="10 月 30 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">30</div><div class="month">10 月 · 周五</div></div>
+          <span class="badge badge-success">票量充足</span>
+        </div>
+        <h3 style="margin-top:12px">自由练习 / 排位赛日</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海国际赛车场 · 看台 A/B 区
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">纬度 <span class="num">31.3332</span> · 经度 <span class="num">121.2670</span></span>
+      </article>
+
+      <article class="session-card" style="cursor:pointer" aria-label="10 月 31 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">31</div><div class="month">10 月 · 周六</div></div>
+          <span class="badge badge-warning">剩余较少</span>
+        </div>
+        <h3 style="margin-top:12px">冲刺赛日</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海国际赛车场 · 全场通票
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">上海 · 嘉定区 · 银都西路 2080 号</span>
+      </article>
+
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 1 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">01</div><div class="month">11 月 · 周日</div></div>
+          <span class="badge badge-danger">即将售罄</span>
+        </div>
+        <h3 style="margin-top:12px">正赛日</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海国际赛车场 · 主看台优先
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">15:00 发车 · 全程观赛</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- 模板区块 4：票档 -->
+  <section>
+    <div class="row-between">
+      <h2>票档</h2>
+      <span class="demo-note">示例价格 · 以开票时为准</span>
+    </div>
+    <div class="card">
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-1"></span>
+          <div><strong>单日观赛票</strong><div class="muted" style="font-size:var(--fs-xs)">看台 A/B 区 · 不限具体座位</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">380</span><span class="muted" style="font-size:var(--fs-xs)">起</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-2"></span>
+          <div><strong>周末三日通票</strong><div class="muted" style="font-size:var(--fs-xs)">含冲刺赛 · 看台 A/B/C 区</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">980</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-3"></span>
+          <div><strong>正赛日选座票</strong><div class="muted" style="font-size:var(--fs-xs)">主看台指定座位 · 需选座</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">1680</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-4"></span>
+          <div><strong>围场体验套票</strong><div class="muted" style="font-size:var(--fs-xs)">示例票档 · 含围场通道</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">2880</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-5"></span>
+          <div><strong>儿童票</strong><div class="muted" style="font-size:var(--fs-xs)">1.2 米以下 · 需成人陪同</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">190</span><button class="btn btn-soft btn-sm" style="margin-left:12px">选这张</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 模板区块 5：场馆与地理位置 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>场馆信息</h3>
+      <div class="geo-row" style="margin-bottom:10px">
+        <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+        <div><strong>上海国际赛车场</strong><div class="muted" style="font-size:var(--fs-sm)">上海市嘉定区银都西路 2080 号</div></div>
+      </div>
+      <p class="muted" style="font-size:var(--fs-sm)">坐标 <span class="num">31.3332, 121.2670</span> · 地铁 11 号线赛车场站 2 号口</p>
+      <p class="muted" style="font-size:var(--fs-sm)">散场时间：正赛结束约 1.5 小时后</p>
+      <div class="map-box" role="img" aria-label="场馆位置示意地图（离线静态图）">
+        <div class="map-pin"><span class="dot"></span><span class="label">上海国际赛车场</span></div>
+        <span class="map-scale">离线静态图 · 联网地图为可选项</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>入场交通</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">地铁 11 号线「赛车场」站 2 号口步行 8 分钟</p>
+      <p class="muted" style="font-size:var(--fs-sm)">自驾：北门停车场 P1/P2，正赛日建议 13:00 前到达</p>
+      <p class="muted" style="font-size:var(--fs-sm)">大巴接驳：虹桥枢纽、上海火车站定点发车</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 6：购票须知 / 退换规则 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>购票须知</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 一人限购 6 张，实名观演人信息不可修改</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 儿童 1.2 米以下免票但需成人陪同（示例）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 凭身份证原件入场，人证票一致</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 场馆内禁止带玻璃瓶、自拍杆与专业摄影器材</p>
+    </div>
+    <div class="card">
+      <h3>退换规则</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 开票后 24 小时内可申请全额退款（示例）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 演出开始前 7 天起不接受退款与改签</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 因不可抗力延期或取消，票务方负责全额退款</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 退换手续费与退改次数以订单页面为准</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 7：座位图入口 -->
+  <section class="sunken">
+    <div class="row-between" style="flex-wrap:wrap">
+      <div>
+        <h3 style="margin:0">选座购票（正赛日选座票）</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">2D / 3D 可切换座位图 · 共享同一批座位数据</p>
+      </div>
+      <div class="row">
+        <button class="chip" aria-selected="true">2D 座位图</button>
+        <button class="chip" aria-selected="false">3D 线框示意</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <a class="btn" href="seatmap-2d.html">进入座位图选座</a>
+      <a class="btn btn-ghost" href="purchase.html">直接选票档（不选座）</a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 活动页模板实例 1/3 · 数据为示例</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script src="../theme.js"></script>
+</body>
+</html>

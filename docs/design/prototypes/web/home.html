@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>首页发现 · AWN 麦芒网 Web 原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="../index.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html" aria-current="page">发现</a>
+      <a class="nav-link" href="activity-f1.html">赛事</a>
+      <a class="nav-link" href="activity-jay.html">演唱会</a>
+      <a class="nav-link" href="seatmap-2d.html">选座</a>
+    </nav>
+    <div class="row" style="margin-left:auto">
+      <span class="chip" aria-selected="true">📍 上海</span>
+      <button class="btn btn-ghost btn-sm">登录</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px">
+  <div class="demo-note">原型 · 数据为示例 · 对应契约 docs/api/contracts.md「统一商品 API」</div>
+
+  <!-- 搜索与地理筛选/排序 -->
+  <section class="col" style="margin-top:16px">
+    <div class="row-between">
+      <h1>发现演出与赛事</h1>
+      <span class="muted" style="font-size:var(--fs-sm)">按地理位置筛选 · 距离近优先</span>
+    </div>
+    <div class="row" style="flex-wrap:wrap">
+      <input class="input" style="max-width:360px" type="search" placeholder="搜索活动、场馆、艺人…">
+      <div class="sort-tabs" role="tablist" aria-label="排序方式">
+        <button class="sort-tab" role="tab" aria-selected="true">距离最近</button>
+        <button class="sort-tab" role="tab" aria-selected="false">本周开售</button>
+        <button class="sort-tab" role="tab" aria-selected="false">最热</button>
+      </div>
+      <span class="hint">用户定位缺失时降级为城市名排序</span>
+    </div>
+    <div class="sort-tabs" role="tablist" aria-label="城市筛选">
+      <button class="chip" aria-selected="true">全部城市</button>
+      <button class="chip" aria-selected="false">上海</button>
+      <button class="chip" aria-selected="false">北京</button>
+      <button class="chip" aria-selected="false">深圳</button>
+      <button class="chip" aria-selected="false">杭州</button>
+      <button class="chip" aria-selected="false">成都</button>
+    </div>
+  </section>
+
+  <!-- 活动列表（含地理位置） -->
+  <section class="grid grid-3" style="margin-top:16px">
+    <article class="event-card">
+      <div class="cover" aria-hidden="true">
+        <span class="hero-demo-note">示例封面 · 几何装饰</span>
+      </div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>2026 F1 中国大奖赛</strong>
+          <span class="badge badge-success">售票中</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海 · 上海国际赛车场 · 距你 8.2 km
+        </div>
+        <div class="row-between">
+          <span class="price"><span class="price price-yuan num">380</span> 起</span>
+          <a class="btn btn-soft btn-sm" href="activity-f1.html">查看详情</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="cover" aria-hidden="true" style="filter:hue-rotate(200deg)">
+        <span class="hero-demo-note">示例封面 · 几何装饰</span>
+      </div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>周杰伦「嘉年华」世界巡回演唱会</strong>
+          <span class="badge badge-warning">即将开售</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海 · 虹口足球场 · 距你 5.1 km
+        </div>
+        <div class="row-between">
+          <span class="muted" style="font-size:var(--fs-sm)">10 月 20 日 12:00 开售</span>
+          <a class="btn btn-ghost btn-sm" href="activity-jay.html">查看详情</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="cover" aria-hidden="true" style="filter:hue-rotate(90deg)">
+        <span class="hero-demo-note">示例封面 · 几何装饰</span>
+      </div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>周传雄「时不知归」巡回演唱会</strong>
+          <span class="badge badge-success">售票中</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          杭州 · 黄龙体育中心 · 距你 164 km
+        </div>
+        <div class="row-between">
+          <span class="price"><span class="price price-yuan num">280</span> 起</span>
+          <a class="btn btn-soft btn-sm" href="activity-zcx.html">查看详情</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="cover" aria-hidden="true" style="filter:hue-rotate(300deg)"></div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>城市夏季音乐节</strong>
+          <span class="badge badge-success">售票中</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海 · 世博公园 · 距你 12.6 km
+        </div>
+        <div class="row-between">
+          <span class="price"><span class="price price-yuan num">199</span> 起</span>
+          <button class="btn btn-soft btn-sm" disabled>示例</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="cover" aria-hidden="true" style="filter:hue-rotate(140deg)"></div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>话剧《雷雨》经典版</strong>
+          <span class="badge badge-outline">售罄</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          北京 · 首都剧场 · 距你 1068 km
+        </div>
+        <div class="row-between">
+          <span class="muted" style="font-size:var(--fs-sm)">候补登记中</span>
+          <button class="btn btn-ghost btn-sm">候补</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="event-card">
+      <div class="cover" aria-hidden="true" style="filter:hue-rotate(30deg)"></div>
+      <div class="body stack-sm">
+        <div class="row-between">
+          <strong>中秋游园灯会</strong>
+          <span class="badge badge-success">售票中</span>
+        </div>
+        <div class="geo-row muted" style="font-size:var(--fs-sm)">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          上海 · 豫园 · 距你 6.8 km
+        </div>
+        <div class="row-between">
+          <span class="price"><span class="price price-yuan num">88</span> 起</span>
+          <button class="btn btn-soft btn-sm" disabled>示例</button>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- 四态示例 -->
+  <section style="margin-top:32px">
+    <h2>列表四态（关键流程）</h2>
+    <div class="state-grid">
+      <div class="state">
+        <div class="glyph">🔍</div>
+        <div class="title">没有找到相关活动</div>
+        <p class="desc">换个关键词，或清除城市筛选试试</p>
+        <button class="btn btn-soft btn-sm">清除筛选</button>
+      </div>
+      <div class="state">
+        <div class="glyph">⏳</div>
+        <div class="title">正在加载活动</div>
+        <div class="col" style="gap:8px;text-align:left">
+          <div class="skeleton" style="width:80%;height:14px"></div>
+          <div class="skeleton" style="width:60%;height:14px"></div>
+          <div class="skeleton" style="width:70%;height:14px"></div>
+        </div>
+      </div>
+      <div class="state">
+        <div class="glyph">⚠️</div>
+        <div class="title">加载失败</div>
+        <p class="desc">网络不太顺畅，请稍后重试</p>
+        <button class="btn btn-ghost btn-sm">重新加载</button>
+      </div>
+      <div class="state">
+        <div class="glyph">✅</div>
+        <div class="title">已定位到「上海」</div>
+        <p class="desc">为你按距离排序，共 24 场可售</p>
+        <button class="btn btn-soft btn-sm">查看全部</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 票务交易与情报平台（原型）</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script src="../theme.js"></script>
+</body>
+</html>

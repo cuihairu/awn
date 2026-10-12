@@ -1,0 +1,304 @@
+/* ============================================================
+   AWN 设计令牌 · 主题体系（docs/design/ui-system.md）
+   布局不随主题变化：所有主题只覆盖 --t-* 语义令牌。
+   用法：<html data-theme="dark"> 或 JS 切换 data-theme。
+   ============================================================ */
+
+/* ---------- 结构令牌（主题无关） ---------- */
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Noto Serif SC", "Songti SC", serif;
+  --font-num: ui-monospace, "SF Mono", Consolas, monospace;
+
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-2xl: 32px;
+  --fs-hero: 44px;
+
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-2: 0 6px 24px rgb(0 0 0 / 14%);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+}
+
+/* ---------- ① 默认 · 品牌金（浅色） ----------
+   场景：日常默认。高级黑 + 麦芒金，票根质感。 */
+[data-theme="default"], :root {
+  --t-bg: #fafaf9;
+  --t-sunken: #f0efed;
+  --t-card: #ffffff;
+  --t-fg: #1c1917;
+  --t-fg-muted: #57534e;
+  --t-fg-subtle: #a8a29e;
+  --t-brand: #d59819;
+  --t-brand-strong: #a16207;
+  --t-brand-soft: #f7edd4;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #1c1917 0%, #292524 55%, #453410 100%);
+  --t-border: #e7e5e4;
+  --t-border-strong: #d6d3d1;
+  --t-success: #16a34a;
+  --t-warning: #d97706;
+  --t-danger: #dc2626;
+  --t-info: #2563eb;
+  --t-shadow: rgb(28 25 23 / 10%);
+}
+
+/* ---------- ② 暗色 ----------
+   场景：夜间浏览 / 演出氛围。近黑底 + 金色高亮。 */
+[data-theme="dark"] {
+  --t-bg: #121110;
+  --t-sunken: #1c1a19;
+  --t-card: #201e1c;
+  --t-fg: #f5f5f4;
+  --t-fg-muted: #a8a29e;
+  --t-fg-subtle: #78716c;
+  --t-brand: #e3b341;
+  --t-brand-strong: #d59819;
+  --t-brand-soft: #3a2f14;
+  --t-on-brand: #1c1917;
+  --t-hero-grad: linear-gradient(135deg, #0c0a09 0%, #1c1917 55%, #3a2f14 100%);
+  --t-border: #35302c;
+  --t-border-strong: #4b443f;
+  --t-success: #4ade80;
+  --t-warning: #fbbf24;
+  --t-danger: #f87171;
+  --t-info: #60a5fa;
+  --t-shadow: rgb(0 0 0 / 45%);
+}
+
+/* ---------- ③ 中国节日主题 ----------
+   换主题不改布局：仅覆盖令牌。 */
+
+/* 春节：正红 + 金。场景：春节档演出/贺岁。 */
+[data-theme="cn-spring-festival"] {
+  --t-bg: #fff7f2;
+  --t-sunken: #fdeee4;
+  --t-card: #ffffff;
+  --t-fg: #3d0c0c;
+  --t-fg-muted: #8c4a3c;
+  --t-fg-subtle: #c09a8e;
+  --t-brand: #c8102e;
+  --t-brand-strong: #9e0c24;
+  --t-brand-soft: #fde3da;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #7f0d1e 0%, #c8102e 60%, #e8842c 100%);
+  --t-border: #f3d9cd;
+  --t-border-strong: #e5b8a6;
+  --t-success: #16a34a;
+  --t-warning: #e8842c;
+  --t-danger: #b91c1c;
+  --t-info: #9333ea;
+  --t-accent-2: #e8b33c; /* 节日金 */
+  --t-shadow: rgb(127 13 30 / 12%);
+}
+
+/* 元宵：夜幕绛紫 + 灯笼暖光。场景：元宵灯会/夜场演出。 */
+[data-theme="cn-lantern"] {
+  --t-bg: #fdf3ec;
+  --t-sunken: #f7e4d8;
+  --t-card: #fffaf6;
+  --t-fg: #401434;
+  --t-fg-muted: #7c4460;
+  --t-fg-subtle: #b08a9c;
+  --t-brand: #b3407a;
+  --t-brand-strong: #8f2d5f;
+  --t-brand-soft: #fadbe8;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #2b0b22 0%, #6b1f47 55%, #d4691f 100%);
+  --t-border: #f0d5c8;
+  --t-border-strong: #dfb4a0;
+  --t-success: #16a34a;
+  --t-warning: #d4691f;
+  --t-danger: #c0392b;
+  --t-info: #7c3aed;
+  --t-accent-2: #ffb347; /* 灯笼光 */
+  --t-shadow: rgb(64 20 52 / 12%);
+}
+
+/* 端午：粽叶青 + 雄黄。场景：端午档/国风演出。 */
+[data-theme="cn-dragon-boat"] {
+  --t-bg: #f4faf4;
+  --t-sunken: #e6f2e4;
+  --t-card: #ffffff;
+  --t-fg: #14311c;
+  --t-fg-muted: #3f6b4a;
+  --t-fg-subtle: #8fa896;
+  --t-brand: #1f7a45;
+  --t-brand-strong: #155c33;
+  --t-brand-soft: #ddefdf;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #0e2f1b 0%, #1f7a45 60%, #86a12d 100%);
+  --t-border: #d5e8d6;
+  --t-border-strong: #b3d4b6;
+  --t-success: #15803d;
+  --t-warning: #b8860b;
+  --t-danger: #c2410c;
+  --t-info: #0e7490;
+  --t-accent-2: #d9b23c; /* 雄黄 */
+  --t-shadow: rgb(20 49 28 / 12%);
+}
+
+/* 中秋：夜空靛蓝 + 月光银金。场景：中秋晚会/夜场。 */
+[data-theme="cn-mid-autumn"] {
+  --t-bg: #f5f7fc;
+  --t-sunken: #e8edf8;
+  --t-card: #ffffff;
+  --t-fg: #14203c;
+  --t-fg-muted: #45537a;
+  --t-fg-subtle: #8e97b5;
+  --t-brand: #2c4a8a;
+  --t-brand-strong: #1f3768;
+  --t-brand-soft: #dde6f7;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #0a1128 0%, #1c2c56 55%, #8c7853 100%);
+  --t-border: #d7deee;
+  --t-border-strong: #b4c1de;
+  --t-success: #15803d;
+  --t-warning: #b45309;
+  --t-danger: #b91c1c;
+  --t-info: #1d4ed8;
+  --t-accent-2: #d9c58c; /* 月光 */
+  --t-shadow: rgb(20 32 60 / 12%);
+}
+
+/* 国庆：国旗红 + 金（比春节更明快庄重）。场景：国庆档/ red 主题运营。 */
+[data-theme="cn-national-day"] {
+  --t-bg: #fff8f0;
+  --t-sunken: #fdeed9;
+  --t-card: #ffffff;
+  --t-fg: #4a1d05;
+  --t-fg-muted: #8a4a1c;
+  --t-fg-subtle: #c29670;
+  --t-brand: #de2910;
+  --t-brand-strong: #b3210c;
+  --t-brand-soft: #fde1d7;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #8f1d06 0%, #de2910 55%, #f7b32b 100%);
+  --t-border: #f6ddc4;
+  --t-border-strong: #e8c29c;
+  --t-success: #15803d;
+  --t-warning: #f7b32b;
+  --t-danger: #b91c1c;
+  --t-info: #1d4ed8;
+  --t-accent-2: #ffde00; /* 五星金 */
+  --t-shadow: rgb(143 29 6 / 12%);
+}
+
+/* ---------- ④ 季节主题 ---------- */
+
+/* 春季：樱粉 + 嫩绿。场景：春季音乐节/踏青档。 */
+[data-theme="season-spring"] {
+  --t-bg: #f7fbf5;
+  --t-sunken: #eaf5e8;
+  --t-card: #ffffff;
+  --t-fg: #243327;
+  --t-fg-muted: #55705a;
+  --t-fg-subtle: #9db4a3;
+  --t-brand: #4f9d69;
+  --t-brand-strong: #3a7d51;
+  --t-brand-soft: #e0f1e2;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #24352a 0%, #4f9d69 70%, #f2b8c6 100%);
+  --t-border: #dceadb;
+  --t-border-strong: #bcd4bf;
+  --t-success: #16a34a;
+  --t-warning: #d97706;
+  --t-danger: #dc2626;
+  --t-info: #0891b2;
+  --t-accent-2: #f2b8c6; /* 樱粉 */
+  --t-shadow: rgb(36 51 39 / 10%);
+}
+
+/* 夏季：青海蓝。场景：夏季音乐节/户外演出。 */
+[data-theme="season-summer"] {
+  --t-bg: #f3fafd;
+  --t-sunken: #e3f2fa;
+  --t-card: #ffffff;
+  --t-fg: #0e2a36;
+  --t-fg-muted: #33606f;
+  --t-fg-subtle: #7f9faa;
+  --t-brand: #0e7490;
+  --t-brand-strong: #0b5a70;
+  --t-brand-soft: #d7eef6;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #062430 0%, #0e7490 65%, #f7c948 100%);
+  --t-border: #d3e8f0;
+  --t-border-strong: #a8cfdd;
+  --t-success: #16a34a;
+  --t-warning: #f7c948;
+  --t-danger: #dc2626;
+  --t-info: #2563eb;
+  --t-accent-2: #f7c948; /* 阳光 */
+  --t-shadow: rgb(14 42 54 / 10%);
+}
+
+/* 秋季：暖橙 + 褐。场景：秋季巡演/丰收档。 */
+[data-theme="season-autumn"] {
+  --t-bg: #fbf7f2;
+  --t-sunken: #f3e9dd;
+  --t-card: #ffffff;
+  --t-fg: #362718;
+  --t-fg-muted: #6e563c;
+  --t-fg-subtle: #ab9070;
+  --t-brand: #c2661d;
+  --t-brand-strong: #9c4f14;
+  --t-brand-soft: #f8e5cf;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #2e1c0c 0%, #c2661d 65%, #e8b33c 100%);
+  --t-border: #ecdbc6;
+  --t-border-strong: #d8bd9e;
+  --t-success: #15803d;
+  --t-warning: #d97706;
+  --t-danger: #b91c1c;
+  --t-info: #0369a1;
+  --t-accent-2: #e8b33c; /* 落叶金 */
+  --t-shadow: rgb(54 39 24 / 10%);
+}
+
+/* 冬季：冷蓝 + 雪白。场景：跨年演出/冬季档。 */
+[data-theme="season-winter"] {
+  --t-bg: #f5f8fb;
+  --t-sunken: #e9eff5;
+  --t-card: #ffffff;
+  --t-fg: #1a2530;
+  --t-fg-muted: #4b5f70;
+  --t-fg-subtle: #90a3b3;
+  --t-brand: #38708f;
+  --t-brand-strong: #2a566f;
+  --t-brand-soft: #ddebf3;
+  --t-on-brand: #ffffff;
+  --t-hero-grad: linear-gradient(135deg, #0d1b26 0%, #38708f 70%, #cfe3ee 100%);
+  --t-border: #dbe5ee;
+  --t-border-strong: #b8cbd9;
+  --t-success: #15803d;
+  --t-warning: #b45309;
+  --t-danger: #b91c1c;
+  --t-info: #0369a1;
+  --t-accent-2: #a5d8e6; /* 冰蓝 */
+  --t-shadow: rgb(26 37 48 / 10%);
+}
+
+/* ---------- 主题无关的通用变量映射 ---------- */
+:root {
+  --tier-1: var(--t-brand);
+  --tier-2: #2f6f4f;
+  --tier-3: #3557a7;
+  --tier-4: #8a4fa8;
+  --tier-5: #b3552f;
+}

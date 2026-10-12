@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="cn-mid-autumn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>周杰伦「嘉年华」世界巡回演唱会 · 活动页原型 · AWN</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .moon { position:absolute; width:150px; height:150px; border-radius:50%; right:120px; top:-40px;
+          background:radial-gradient(circle at 40% 40%, #fdfdf4 0%, #e8e2c8 45%, #b8ab7c 100%);
+          box-shadow:0 0 60px 12px rgba(217,197,140,.45) }
+  .stage-block { background:var(--t-hero-grad); color:#fff; border-radius:var(--radius-lg); padding:var(--space-lg); position:relative; overflow:hidden }
+  .stage-block .setlist { font-size:var(--fs-sm); opacity:.85; line-height:1.9 }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="activity-f1.html">赛事</a>
+      <a class="nav-link" href="activity-jay.html" aria-current="page">演唱会</a>
+    </nav>
+    <div class="row" style="margin-left:auto">
+      <span class="chip" aria-selected="true">📍 上海</span>
+      <button class="btn btn-ghost btn-sm">登录</button>
+    </div>
+  </div>
+</header>
+
+<!-- 模板区块 1：Hero（中秋夜主题） -->
+<section class="hero">
+  <span class="moon" aria-hidden="true"></span>
+  <span class="deco deco-ring" style="width:420px;height:420px;left:-140px;bottom:-220px"></span>
+  <div class="wrap">
+    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff;margin-bottom:12px">原型 · 同一模板三实例之二（演唱会）· 主题：中秋 · 数据为示例</div>
+    <h1 class="title">周杰伦「嘉年华」<br>世界巡回演唱会 · 上海站</h1>
+    <p class="subtitle">三场连开 · 全场大合唱 · 实名一票一证</p>
+    <div class="meta">
+      <span>📅 11 月 6 日 / 7 日 / 8 日 19:30</span>
+      <span>📍 上海 · 虹口足球场</span>
+      <span>📏 距你 5.1 km</span>
+      <span>🎟 票价区间 <span class="num">480</span> — <span class="num">1680</span> 元（示例）</span>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-lg" href="purchase.html">立即购票</a>
+      <a class="btn btn-ghost btn-lg" href="seatmap-2d.html">查看座位图</a>
+    </div>
+  </div>
+</section>
+
+<main class="wrap stack-lg" style="padding-top:28px">
+
+  <!-- 模板区块 2：曲目信息（演唱会实例专用内容块） -->
+  <section class="stage-block">
+    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff">原型 · 文字占位 · 不使用艺人肖像素材</div>
+    <h3 style="color:#fff;margin-top:10px">演出信息</h3>
+    <div class="setlist">
+      时长约 150 分钟 · 全程约 18 首曲目（示例）<br>
+      开演 19:30 · 18:30 开始入场 · 散场 22:30 后<br>
+      现场为文字与几何视觉呈现，不含艺人肖像与品牌素材（素材红线）
+    </div>
+  </section>
+
+  <!-- 模板区块 3：场次列表 -->
+  <section>
+    <h2>选择场次</h2>
+    <div class="grid grid-3">
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 6 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">06</div><div class="month">11 月 · 周五</div></div>
+          <span class="badge badge-success">19:30</span>
+        </div>
+        <h3 style="margin-top:12px">上海站 · 第一场</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          虹口足球场 · 上海市虹口区花园石桥路 155 号
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">纬度 <span class="num">31.2640</span> · 经度 <span class="num">121.4890</span></span>
+      </article>
+
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 7 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">07</div><div class="month">11 月 · 周六</div></div>
+          <span class="badge badge-warning">热门</span>
+        </div>
+        <h3 style="margin-top:12px">上海站 · 第二场</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          虹口足球场 · 距你 5.1 km
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">19:30 开场 · 剩余票档 2 个</span>
+      </article>
+
+      <article class="session-card" style="cursor:pointer" aria-label="11 月 8 日 场次">
+        <div class="row-between">
+          <div class="session-date"><div class="day num">08</div><div class="month">11 月 · 周日</div></div>
+          <span class="badge badge-danger">即将售罄</span>
+        </div>
+        <h3 style="margin-top:12px">上海站 · 第三场</h3>
+        <div class="geo-row muted" style="font-size:var(--fs-sm);margin:6px 0">
+          <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+          虹口足球场 · 北广场入场
+        </div>
+        <span class="muted" style="font-size:var(--fs-xs)">仅余内场前三排</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- 模板区块 4：票档与座位区 -->
+  <section>
+    <div class="row-between">
+      <h2>票档与座位区</h2>
+      <span class="demo-note">示例价格 · 以开票时为准</span>
+    </div>
+    <div class="card">
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-1"></span>
+          <div><strong>内场 A 区（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">1–3 排 · 舞台正前方</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">1680</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-2"></span>
+          <div><strong>内场 B 区（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">4–10 排 · 视野最佳</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">1280</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-3"></span>
+          <div><strong>看台 1 层（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">108 看台 · 东看台</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">880</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-4"></span>
+          <div><strong>看台 2 层（选座）</strong><div class="muted" style="font-size:var(--fs-xs)">107 看台 · 西看台</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">680</span></div>
+      </div>
+      <div class="tier-row">
+        <div class="row" style="gap:12px">
+          <span class="tier-dot tier-dot-5"></span>
+          <div><strong>看台高层（不选座）</strong><div class="muted" style="font-size:var(--fs-xs)">座位区分配 · 系统自动配座</div></div>
+        </div>
+        <div class="row"><span class="price price-yuan num">480</span><button class="btn btn-soft btn-sm" style="margin-left:12px">选这张</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 模板区块 5：场馆与地理位置 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>场馆信息</h3>
+      <div class="geo-row" style="margin-bottom:10px">
+        <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+        <div><strong>虹口足球场</strong><div class="muted" style="font-size:var(--fs-sm)">上海市虹口区花园石桥路 155 号</div></div>
+      </div>
+      <p class="muted" style="font-size:var(--fs-sm)">坐标 <span class="num">31.2640, 121.4890</span> · 地铁 3/8 号线「虹口足球场」站 2 号口</p>
+      <p class="muted" style="font-size:var(--fs-sm)">散场：演出结束后 90 分钟内，东、西门均开</p>
+      <div class="map-box" role="img" aria-label="场馆位置示意地图（离线静态图）">
+        <div class="map-pin"><span class="dot"></span><span class="label">虹口足球场</span></div>
+        <span class="map-scale">离线静态图 · 联网地图为可选项</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>入场须知</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">实名观演人信息与证件必须一致，人证票一致入场</p>
+      <p class="muted" style="font-size:var(--fs-sm)">安检后不可离场，离场视为主动放弃</p>
+      <p class="muted" style="font-size:var(--fs-sm)">禁止携带液体、玻璃容器、专业摄录设备</p>
+      <p class="muted" style="font-size:var(--fs-sm)">场馆为文字与几何视觉呈现，实际画面以现场为准</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 6：购票须知 / 退换规则 -->
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>购票须知</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 每张订单限购 4 张，同一证件每场限 1 张</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 内场与看台低区座位区为选座，需进入座位图选择</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 儿童一律凭票入场，无儿童票</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 电子票入场，支持二维码与身份证刷证入场</p>
+    </div>
+    <div class="card">
+      <h3>退换规则</h3>
+      <p class="demo-note">示例规则 · 以开票公告为准</p>
+      <p class="muted" style="font-size:var(--fs-sm)">1. 开票后 48 小时内可全额退款（示例）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 演出开始前 3 天起不接受退款与改签</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 因演出延期或取消，票务方负责全额退款</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 因本人原因无法观演，可尝试官方转赠（单次免费）</p>
+    </div>
+  </section>
+
+  <!-- 模板区块 7：座位图入口 -->
+  <section class="sunken">
+    <div class="row-between" style="flex-wrap:wrap">
+      <div>
+        <h3 style="margin:0">选座购票（内场 / 看台选座区）</h3>
+        <p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">2D / 3D 可切换座位图 · 共享同一批座位数据</p>
+      </div>
+      <div class="row">
+        <button class="chip" aria-selected="true">2D 座位图</button>
+        <button class="chip" aria-selected="false">3D 线框示意</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <a class="btn" href="seatmap-2d.html">进入座位图选座</a>
+      <a class="btn btn-ghost" href="purchase.html">直接选票档（不选座）</a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 活动页模板实例 2/3 · 数据为示例</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script src="../theme.js"></script>
+</body>
+</html>

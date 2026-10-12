@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>购票全流程 · AWN 原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  /* 页面排版：仅使用 theme.css 令牌 */
+  .page-head { margin: var(--space-lg) 0 var(--space-md); }
+  .screen {
+    height: 790px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .scr-scroll { flex: 1; overflow: hidden; padding: 34px var(--space-md) var(--space-md); display: flex; flex-direction: column; gap: var(--space-md); }
+  .appbar { padding: 34px var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); }
+  .appbar .search { display: flex; align-items: center; gap: var(--space-sm); }
+  .search .input { flex: 1; }
+  .mini-hero { padding: var(--space-lg) var(--space-md) var(--space-md); }
+  .mini-hero .title { font-size: var(--fs-xl); }
+  .mini-hero .subtitle { font-size: var(--fs-sm); margin-bottom: var(--space-sm); }
+  .mini-hero .meta { font-size: var(--fs-xs); }
+  .sec-title { font-weight: 700; font-size: var(--fs-md); }
+  .act-bar { flex: none; }
+  .sunken.act-bar { border-radius: 0; }
+  .price-sum { font-size: var(--fs-sm); }
+  .price-sum .price { font-size: var(--fs-xl); }
+  .ticket-code {
+    width: 120px; height: 120px; margin: 0 auto var(--space-sm);
+    background: repeating-conic-gradient(var(--t-fg) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+    border: 1px solid var(--t-border-strong);
+    opacity: 0.85;
+  }
+  .demo-inline { margin-left: var(--space-xs); }
+  .event-card .cover .hero-demo-note { font-size: 10px; padding: 1px 6px; right: 6px; top: 6px; }
+  .pay-count { display: inline-flex; align-items: center; gap: 6px; }
+  .mini-badge-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .agree-row { display: flex; gap: var(--space-sm); align-items: flex-start; font-size: var(--fs-sm); }
+  .agree-row input { margin-top: 4px; flex: none; }
+  .demo-note.small { font-size: 10px; padding: 1px 6px; }
+  .scr-scroll::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="demo-note">原型 · Flutter 客户端购票全流程 · 数据为示例 · 素材红线：无明星肖像与品牌 logo，仅文字与几何</div>
+  <div class="page-head">
+    <h1>购票全流程（Flutter）</h1>
+    <p class="muted">六屏并排：① 发现首页 → ② 活动详情 → ③ 场次/票档 → ④ 实名下单 → ⑤ 支付 → ⑥ 出票结果。底部为客户端 tabbar。</p>
+  </div>
+
+  <div class="phone-row">
+
+    <!-- ① 发现首页 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="appbar">
+          <div class="row" style="justify-content:space-between;">
+            <span class="chip" aria-selected="true">深圳 ▾</span>
+            <span class="brand" style="font-size:var(--fs-sm);">AWN 麦芒网</span>
+          </div>
+          <div class="search">
+            <input class="input" type="search" placeholder="搜索演出 / 场馆 / 艺人" aria-label="搜索演出">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </div>
+          <div class="row" style="flex-wrap:wrap; gap:var(--space-sm);">
+            <span class="chip" aria-selected="true">推荐</span>
+            <span class="chip">演唱会</span>
+            <span class="chip">音乐节</span>
+            <span class="chip">话剧</span>
+            <span class="chip">展览</span>
+          </div>
+        </div>
+        <div class="scr-scroll">
+          <div class="row-between"><span class="sec-title">热门活动</span><span class="chip">筛选 ▾</span></div>
+          <div class="stagger">
+            <div class="event-card">
+              <div class="cover">
+                <span class="deco deco-ring" style="width:70px;height:70px;right:-20px;top:-20px;" aria-hidden="true"></span>
+                <span class="hero-demo-note">封面为色块示例</span>
+              </div>
+              <div class="body">
+                <div class="title">星河巡回演唱会 · 深圳站</div>
+                <div class="sub muted">11.21-11.22 · 深圳湾体育中心</div>
+                <div class="row-between" style="margin-top:var(--space-xs);">
+                  <span class="price price-yuan" style="color:var(--t-brand-strong);">280</span>
+                  <span class="badge">热卖</span>
+                </div>
+              </div>
+            </div>
+            <div class="event-card">
+              <div class="cover" style="background:linear-gradient(160deg,var(--tier-2),var(--t-hero-grad));">
+                <span class="deco deco-ring" style="width:50px;height:50px;left:-14px;bottom:-14px;" aria-hidden="true"></span>
+              </div>
+              <div class="body">
+                <div class="title">山海之间音乐节</div>
+                <div class="sub muted">12.05 · 星海广场</div>
+                <div class="row-between" style="margin-top:var(--space-xs);">
+                  <span class="price price-yuan" style="color:var(--t-brand-strong);">180</span>
+                  <span class="badge badge-info">开票</span>
+                </div>
+              </div>
+            </div>
+            <div class="event-card">
+              <div class="cover" style="background:linear-gradient(160deg,var(--tier-4),var(--t-hero-grad));">
+                <span class="deco deco-bar" style="width:80%;height:10px;right:-10px;bottom:14px;" aria-hidden="true"></span>
+              </div>
+              <div class="body">
+                <div class="title">茶馆 · 话剧之夜</div>
+                <div class="sub muted">11.28 · 大麦剧场</div>
+                <div class="row-between" style="margin-top:var(--space-xs);">
+                  <span class="price price-yuan" style="color:var(--t-brand-strong);">120</span>
+                  <span class="badge badge-outline">余票</span>
+                </div>
+              </div>
+            </div>
+            <div class="event-card">
+              <div class="cover" style="background:linear-gradient(160deg,var(--tier-5),var(--t-hero-grad));">
+                <span class="deco deco-ring" style="width:44px;height:44px;right:-10px;top:-10px;" aria-hidden="true"></span>
+              </div>
+              <div class="body">
+                <div class="title">亲子互动展：纸的旅行</div>
+                <div class="sub muted">12.12 · 城市展览馆</div>
+                <div class="row-between" style="margin-top:var(--space-xs);">
+                  <span class="price price-yuan" style="color:var(--t-brand-strong);">60</span>
+                  <span class="badge badge-success">充裕</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="demo-note">以上价格 / 票档 / 规则均为示例</div>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">① 发现首页 · 搜索 + 城市 + 瀑布流</div>
+    </div>
+
+    <!-- ② 活动详情 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="scr-scroll">
+          <header class="hero mini-hero">
+            <span class="hero-demo-note">文案为示例</span>
+            <div class="title">星河巡回演唱会 · 深圳站</div>
+            <div class="subtitle">大型室内演唱会 · 文字标题，无肖像素材</div>
+            <div class="meta"><span>11月21日-22日</span><span>深圳</span><span>约 120 分钟</span></div>
+          </header>
+          <div class="steps" aria-label="购买流程">
+            <span class="step" aria-current="true"><span class="n">1</span>选票</span><span class="sep"></span>
+            <span class="step"><span class="n">2</span>下单</span><span class="sep"></span>
+            <span class="step"><span class="n">3</span>支付</span><span class="sep"></span>
+            <span class="step"><span class="n">4</span>出票</span>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">选择场次</div>
+            <div class="session-card" aria-current="true" style="padding:var(--space-sm) 0;">
+              <div class="row-between">
+                <div class="session-date"><span class="day num">21</span> <span class="month">11月 周六 19:30</span></div>
+                <span class="badge badge-success">售票中</span>
+              </div>
+              <div class="geo-row" style="margin-top:var(--space-xs);">
+                <svg class="geo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                <div class="stack-sm">
+                  <div style="font-size:var(--fs-sm);">深圳湾体育中心 · 春茧体育馆</div>
+                  <div class="subtle" style="font-size:var(--fs-xs);">南山区滨海大道 3001 号 · 坐标 <span class="num">22.5129, 113.9430</span>（示例）</div>
+                </div>
+              </div>
+            </div>
+            <div class="session-card" aria-disabled="true" style="padding:var(--space-sm) 0; margin-top:var(--space-sm);">
+              <div class="row-between">
+                <div class="session-date"><span class="day num">22</span> <span class="month">11月 周日 19:30</span></div>
+                <span class="badge badge-danger">已售罄</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">票档 <span class="demo-note small">示例</span></div>
+            <div class="tier-row"><span><i class="tier-dot tier-dot-1"></i> 内场 A 区</span><span class="price price-yuan">580</span></div>
+            <div class="tier-row"><span><i class="tier-dot tier-dot-2"></i> 内场 B 区</span><span class="price price-yuan">480</span></div>
+            <div class="tier-row"><span><i class="tier-dot tier-dot-3"></i> 看台 一层</span><span class="price price-yuan">380</span></div>
+            <div class="tier-row"><span><i class="tier-dot tier-dot-4"></i> 看台 二层 <span class="badge badge-warning">余票紧张</span></span><span class="price price-yuan">280</span></div>
+            <div class="tier-row"><span><i class="tier-dot tier-dot-5"></i> 看台 山顶 <span class="badge badge-success">有票</span></span><span class="price price-yuan">180</span></div>
+          </div>
+        </div>
+        <div class="act-bar row-between sunken" style="padding:var(--space-sm) var(--space-md); margin-bottom:0;">
+          <span class="price-sum">合计 <span class="price price-yuan">280</span> <span class="subtle" style="font-size:var(--fs-xs);">起 · 示例</span></span>
+          <span class="btn btn-sm" style="min-height:36px;">立即购票</span>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">② 活动详情 · 场次 + 票档 + 场馆坐标</div>
+    </div>
+
+    <!-- ③ 选场次 / 票档 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="scr-scroll">
+          <header class="hero mini-hero" style="padding:var(--space-md) var(--space-md);">
+            <div class="title" style="font-size:var(--fs-lg);">星河巡回演唱会 · 深圳站</div>
+            <div class="subtitle">11.21-11.22 · 深圳湾体育中心（示例）</div>
+          </header>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">已选场次</div>
+            <div class="row-between">
+              <div class="session-date"><span class="day num">21</span> <span class="month">11月 周六 19:30</span></div>
+              <span class="badge badge-success">可售</span>
+            </div>
+          </div>
+          <div>
+            <div class="card-title" style="font-size:var(--fs-sm);">票档 <span class="demo-note small">示例</span></div>
+            <div class="row" style="flex-wrap:wrap; gap:var(--space-sm);">
+              <span class="chip" aria-selected="true">内场 A · ¥580</span>
+              <span class="chip">内场 B · ¥480</span>
+              <span class="chip">看台一层 · ¥380</span>
+              <span class="chip">看台二层 · ¥280</span>
+            </div>
+            <div class="hint" style="margin-top:var(--space-xs);">每人限购 4 张 · 座位随机分配（规则示例）</div>
+          </div>
+          <div class="row-between card-flat card" style="padding:var(--space-md);">
+            <span style="font-weight:600; font-size:var(--fs-sm);">购票数量</span>
+            <span class="stepper" role="group" aria-label="购票数量">
+              <button type="button" aria-label="减少" style="min-width:36px;">−</button>
+              <span class="val">2</span>
+              <button type="button" aria-label="增加" style="min-width:36px;">＋</button>
+            </span>
+          </div>
+          <div class="sunken">
+            <div class="card-title" style="font-size:var(--fs-sm);">已选汇总</div>
+            <div class="row-between stack-sm">
+              <span class="muted" style="font-size:var(--fs-sm);">内场 A · 11.21 周六 19:30 × 2 张</span>
+              <span class="price price-yuan" style="font-size:var(--fs-xl);">1160</span>
+            </div>
+            <div class="demo-note">价格为示例</div>
+          </div>
+        </div>
+        <div class="act-bar row-between sunken" style="padding:var(--space-sm) var(--space-md); margin-bottom:0;">
+          <span class="price-sum">合计 <span class="price price-yuan">1160</span></span>
+          <span class="btn btn-sm" style="min-height:36px;">下一步：填写实名信息</span>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">③ 场次 / 票档 / 数量 · 已选汇总</div>
+    </div>
+
+    <!-- ④ 实名信息与下单 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="scr-scroll">
+          <header class="hero mini-hero" style="padding:var(--space-md) var(--space-md);">
+            <div class="title" style="font-size:var(--fs-lg);">填写观演人信息</div>
+            <div class="subtitle">11.21 周六 · 内场 A · 2 张（示例）</div>
+          </header>
+          <div class="row-between card-flat card" style="padding:var(--space-md);">
+            <span style="font-weight:600; font-size:var(--fs-sm);">实名购票（一证一票）</span>
+            <span class="switch" role="switch" aria-checked="true" tabindex="0"><span class="track"></span></span>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">观演人 1</div>
+            <div class="field"><label for="name1">姓名</label><input class="input" id="name1" value="张三" aria-label="观演人姓名"></div>
+            <div class="row" style="flex-wrap:wrap; gap:var(--space-sm);">
+              <span class="chip" aria-selected="true">身份证</span>
+              <span class="chip">护照</span>
+              <span class="chip">港澳台证件</span>
+            </div>
+            <div class="field"><label for="id1">证件号码</label><input class="input num" id="id1" value="110***********1234" aria-label="证件号码（示例，已脱敏）">
+              <span class="hint">脱敏占位，仅作示例；用于入场核验</span></div>
+            <div class="demo-note">实名信息为示例数据</div>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">购买须知 <span class="demo-note small">规则示例</span></div>
+            <div class="agree-row"><input type="checkbox" id="agree1" checked><label for="agree1">我已阅读并同意 <a href="#">《购票须知》</a> 与 <a href="#">《退改规则》</a></label></div>
+            <div class="agree-row"><input type="checkbox" id="agree2"><label for="agree2">同意将实名信息用于入场安检核验</label></div>
+          </div>
+          <div class="sunken stack-sm">
+            <div class="row-between"><span class="muted" style="font-size:var(--fs-sm);">内场 A × 2</span><span class="price price-yuan">1160</span></div>
+            <div class="row-between"><span class="muted" style="font-size:var(--fs-xs);">服务费（示例）</span><span class="price price-yuan" style="font-size:var(--fs-sm);">10</span></div>
+            <hr class="divider" style="margin:var(--space-sm) 0;">
+            <div class="row-between"><span style="font-weight:600; font-size:var(--fs-sm);">应付合计</span><span class="price price-yuan" style="font-size:var(--fs-xl); color:var(--t-brand-strong);">1170</span></div>
+          </div>
+        </div>
+        <div class="act-bar row-between sunken" style="padding:var(--space-sm) var(--space-md); margin-bottom:0;">
+          <span class="price-sum">合计 <span class="price price-yuan">1170</span></span>
+          <span class="btn btn-sm" style="min-height:36px;">提交订单</span>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">④ 实名信息 + 购买须知 + 提交订单</div>
+    </div>
+
+    <!-- ⑤ 支付 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="scr-scroll">
+          <header class="hero mini-hero" style="padding:var(--space-md) var(--space-md);">
+            <div class="title" style="font-size:var(--fs-lg);">收银台</div>
+            <div class="subtitle">星河巡回演唱会 · 深圳站 · 内场 A × 2</div>
+          </header>
+          <div class="sunken row-between">
+            <span class="muted" style="font-size:var(--fs-sm);">支付剩余时间</span>
+            <span class="pay-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="num" style="font-weight:700; color:var(--t-warning);">15:00</span></span>
+          </div>
+          <div class="demo-note">超时未支付将自动关单（规则示例）</div>
+          <div class="card-flat card" style="padding:var(--space-md); text-align:center;">
+            <div class="subtle" style="font-size:var(--fs-sm);">应付金额（示例）</div>
+            <div class="price price-yuan" style="font-size:var(--fs-2xl);">1170.00</div>
+            <div class="subtle" style="font-size:var(--fs-xs);">订单号 AWN2026112100001234</div>
+          </div>
+          <div>
+            <div class="card-title" style="font-size:var(--fs-sm);">选择支付方式</div>
+            <div class="list-flat">
+              <div class="list-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="flex:none;"><path d="M4 9.5A8 8 0 0 1 12 4a8 8 0 0 1 7 5.5A8 8 0 0 1 12 20a8 8 0 0 1-8-5.5Z"/><circle cx="9" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/><path d="M9 16c1.8-1 4.2-1 6 0"/></svg>
+                <div class="main"><div class="title" style="font-size:var(--fs-sm);">微信支付</div><div class="sub">推荐 · 示例渠道</div></div>
+                <span class="chip" aria-selected="true">选中</span>
+              </div>
+              <div class="list-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="flex:none;"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+                <div class="main"><div class="title" style="font-size:var(--fs-sm);">支付宝</div><div class="sub">示例渠道</div></div>
+                <span class="chip">可选</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md);">
+            <div class="card-title" style="font-size:var(--fs-sm);">支付异常</div>
+            <div class="btn btn-danger btn-sm" style="width:100%; min-height:36px;">支付失败，点击重试</div>
+            <div class="hint" style="margin-top:var(--space-xs);">模拟失败态：余额不足 / 网络超时（示例）</div>
+          </div>
+        </div>
+        <div class="act-bar row-between sunken" style="padding:var(--space-sm) var(--space-md); margin-bottom:0;">
+          <span class="price-sum">合计 <span class="price price-yuan">1170</span></span>
+          <span class="btn btn-sm" style="min-height:36px;">确认支付</span>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">⑤ 支付方式 + 倒计时 + 失败态</div>
+    </div>
+
+    <!-- ⑥ 出票结果 -->
+    <div class="phone">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="screen">
+        <div class="scr-scroll">
+          <div class="state" style="padding:var(--space-xl) var(--space-md); border-style:solid; border-color:var(--t-success);">
+            <div class="glyph" aria-hidden="true" style="color:var(--t-success);">✓</div>
+            <div class="title">购票成功</div>
+            <div class="desc">电子票已出票，可在「我的订单」查看</div>
+          </div>
+          <div class="card-flat card" style="padding:var(--space-md); text-align:center;">
+            <div class="subtle" style="font-size:var(--fs-xs);">电子票码（占位为几何图案 · 示例）</div>
+            <div class="ticket-code" role="img" aria-label="电子票二维码占位，几何图案"></div>
+            <div class="row-between">
+              <span class="muted" style="font-size:var(--fs-sm);">取票方式</span>
+              <span style="font-size:var(--fs-sm);">场馆自助机 / 人工窗口</span>
+            </div>
+            <hr class="divider" style="margin:var(--space-sm) 0;">
+            <div class="row-between">
+              <span class="muted" style="font-size:var(--fs-sm);">观演人</span>
+              <span style="font-size:var(--fs-sm);">张三 等 2 人</span>
+            </div>
+            <div class="row-between">
+              <span class="muted" style="font-size:var(--fs-sm);">订单号</span>
+              <span class="num" style="font-size:var(--fs-sm);">AWN2026112100001234</span>
+            </div>
+            <div class="btn btn-sm btn-soft" style="margin-top:var(--space-md);">查看订单详情</div>
+          </div>
+          <div class="card-title" style="font-size:var(--fs-sm);">其他结果态（示例）</div>
+          <div class="state-grid">
+            <div class="state" style="padding:var(--space-md) var(--space-sm);">
+              <div class="glyph" aria-hidden="true" style="color:var(--t-danger);">✕</div>
+              <div class="title" style="font-size:var(--fs-sm);">支付失败</div>
+              <div class="desc">余额不足，请更换支付方式</div>
+              <span class="btn btn-sm btn-ghost">重新支付</span>
+            </div>
+            <div class="state" style="padding:var(--space-md) var(--space-sm);">
+              <div class="glyph" aria-hidden="true" style="color:var(--t-warning);">⏱</div>
+              <div class="title" style="font-size:var(--fs-sm);">超时关单</div>
+              <div class="desc">15 分钟内未支付，订单已关闭</div>
+              <span class="btn btn-sm btn-ghost">重新下单</span>
+            </div>
+            <div class="state" style="padding:var(--space-md) var(--space-sm);">
+              <div class="glyph" aria-hidden="true" style="color:var(--t-fg-subtle);">▦</div>
+              <div class="title" style="font-size:var(--fs-sm);">已售罄</div>
+              <div class="desc">所选票档已售完</div>
+              <span class="btn btn-sm btn-ghost">看看其他场次</span>
+            </div>
+            <div class="state" style="padding:var(--space-md) var(--space-sm);">
+              <div class="glyph" aria-hidden="true" style="color:var(--t-info);">⋯</div>
+              <div class="title" style="font-size:var(--fs-sm);">排队 / 抢购中</div>
+              <div class="desc">高峰期请耐心等待，勿重复提交</div>
+              <span class="btn btn-sm btn-ghost">继续等待</span>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" role="tablist" aria-label="底部导航">
+          <span class="t" aria-selected="true"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>首页</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>我的订单</span>
+          <span class="t" aria-selected="false"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的</span>
+        </div>
+      </div>
+      <div class="caption">⑥ 出票成功 + 支付失败 / 超时 / 售罄 / 排队</div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../theme.js"></script>
+</body>
+</html>

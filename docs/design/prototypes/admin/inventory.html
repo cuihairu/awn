@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>库存中心 · AWN 运营后台原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  /* 本页特有排版：仅使用 theme.css 令牌 */
+  .proto-topbar { padding-top: var(--space-md); }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-lg); }
+  .page-head h1 { margin-bottom: var(--space-xs); }
+  .page-head .ops { display: flex; align-items: center; gap: var(--space-sm); flex: none; }
+  .sidenav .brand { padding: var(--space-xs) var(--space-sm) var(--space-md); }
+  .sidenav .side-cap { font-size: var(--fs-xs); color: var(--t-fg-subtle); letter-spacing: 0.08em; padding: 0 var(--space-sm); margin: var(--space-md) 0 var(--space-xs); }
+  .sidenav .item { display: flex; align-items: center; gap: var(--space-sm); }
+  .sidenav .item svg { width: 16px; height: 16px; flex: none; }
+  .inv-cols { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr); gap: var(--space-lg); align-items: start; }
+  @media (max-width: 980px) { .inv-cols { grid-template-columns: 1fr; } }
+  .balance-cell { min-width: 150px; }
+  .pool-code { font-family: var(--font-num); font-size: var(--fs-xs); }
+  code.f { font-family: var(--font-num); font-size: var(--fs-xs); background: var(--t-sunken); border: 1px solid var(--t-border); border-radius: var(--radius-sm); padding: 1px 6px; }
+</style>
+</head>
+<body>
+<!-- 原型说明条：本页定位 + 数据为示例 -->
+<div class="wrap proto-topbar"><div class="demo-note">原型 · 数据为示例 · 对应契约 docs/api/contracts.md「运营接口」GET /api/v1/admin/inventory · POST /inventory/adjustments</div></div>
+
+<div class="layout-admin">
+  <nav class="sidenav" aria-label="后台导航">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2 18 22 12 17 6 22Z"/></svg>
+      <span>AWN 运营后台</span>
+    </div>
+    <div class="side-cap">运营</div>
+    <a class="item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg><span>订单</span></a>
+    <a class="item" href="inventory.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>库存</span></a>
+    <a class="item" href="anomalies.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 21 19H3Z"/><path d="M12 10v4M12 17h.01"/></svg><span>异常</span></a>
+    <a class="item" href="session-config.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z"/><circle cx="12" cy="11" r="2"/></svg><span>场次配置</span></a>
+    <div class="side-cap">规划中</div>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><span>审计</span><span class="badge badge-outline">规划中</span></span>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M7 5l-3 6a3.5 3.5 0 0 0 7 0L8 5M17 5l-3 6a3.5 3.5 0 0 0 7 0l-3-6M12 5v14M8 21h8"/></svg><span>对账</span><span class="badge badge-outline">规划中</span></span>
+  </nav>
+
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>库存中心</h1>
+        <p class="muted" style="margin:0">库存池余额 · 人工调整 · 调整留审计</p>
+      </div>
+      <div class="ops">
+        <span class="demo-note">池数据为示例</span>
+        <button class="btn btn-sm btn-ghost" type="button">刷新</button>
+      </div>
+    </div>
+
+    <!-- 顶部告警提示条 -->
+    <div class="card card-flat row-between" role="status" style="border-color: var(--t-warning); margin-bottom: var(--space-lg)">
+      <div class="row">
+        <span class="sev sev-WARN">WARN</span>
+        <span><strong>对账差异 1 项待处理</strong> · RECON-20261012-0031 渠道日账与平台订单总额差 <span class="num price price-yuan">1,280</span>，库存侧请先冻结 POOL-ZCX-SZ-B 手工调整</span>
+      </div>
+      <a class="btn btn-sm btn-soft" href="anomalies.html">去处理</a>
+    </div>
+
+    <div class="inv-cols">
+      <!-- 左：池余额表 + 审计记录 -->
+      <div class="col" style="gap: var(--space-lg)">
+        <section aria-labelledby="pool-title">
+          <div class="row-between" style="margin-bottom: var(--space-sm)">
+            <h2 id="pool-title" style="margin:0">库存池余额</h2>
+            <span class="demo-note">池编码与数量为示例</span>
+          </div>
+          <div class="table-wrap card-flat">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">池编码</th>
+                  <th scope="col">商品</th>
+                  <th scope="col">场次</th>
+                  <th scope="col">总量</th>
+                  <th scope="col">已预留</th>
+                  <th scope="col">已售</th>
+                  <th scope="col">可用</th>
+                  <th scope="col">可用量</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pool-code">POOL-F1-SH-MAIN</td>
+                  <td>F1 主看台票</td>
+                  <td>10-24 14:00</td>
+                  <td class="num">12,000</td>
+                  <td class="num">800</td>
+                  <td class="num">9,200</td>
+                  <td class="num">2,000</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 16.7%，低于 20% 预警线"><i class="low" style="width:16.7%"></i></div><span class="hint num">16.7% · 低于预警线</span></td>
+                </tr>
+                <tr>
+                  <td class="pool-code">POOL-F1-SH-P</td>
+                  <td>F1 草坪票</td>
+                  <td>10-24 14:00</td>
+                  <td class="num">4,000</td>
+                  <td class="num">40</td>
+                  <td class="num">880</td>
+                  <td class="num">3,080</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 77%"><i style="width:77%"></i></div><span class="hint num">77.0%</span></td>
+                </tr>
+                <tr>
+                  <td class="pool-code">POOL-JAY-HZ-1</td>
+                  <td>周杰伦内场票</td>
+                  <td>11-02 19:30</td>
+                  <td class="num">8,000</td>
+                  <td class="num">320</td>
+                  <td class="num">6,400</td>
+                  <td class="num">1,280</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 16%，低于 20% 预警线"><i class="low" style="width:16%"></i></div><span class="hint num">16.0% · 低于预警线</span></td>
+                </tr>
+                <tr>
+                  <td class="pool-code">POOL-JAY-HZ-2</td>
+                  <td>周杰伦看台票</td>
+                  <td>11-02 19:30</td>
+                  <td class="num">8,000</td>
+                  <td class="num">120</td>
+                  <td class="num">3,200</td>
+                  <td class="num">4,680</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 58.5%"><i style="width:58.5%"></i></div><span class="hint num">58.5%</span></td>
+                </tr>
+                <tr>
+                  <td class="pool-code">POOL-ZCX-SZ-A</td>
+                  <td>周传雄内场A票</td>
+                  <td>11-15 19:00</td>
+                  <td class="num">5,000</td>
+                  <td class="num">64</td>
+                  <td class="num">2,100</td>
+                  <td class="num">2,836</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 56.7%"><i style="width:56.7%"></i></div><span class="hint num">56.7%</span></td>
+                </tr>
+                <tr>
+                  <td class="pool-code">POOL-ZCX-SZ-B</td>
+                  <td>周传雄看台B票</td>
+                  <td>11-15 19:00</td>
+                  <td class="num">6,000</td>
+                  <td class="num">0</td>
+                  <td class="num">5,880</td>
+                  <td class="num">120</td>
+                  <td class="balance-cell"><div class="balance-bar" role="img" aria-label="可用量占比 2%，售罄预警"><i class="low" style="width:2%"></i></div><span class="hint num">2.0% · 售罄预警</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top: var(--space-sm)">可用量 = 总量 − 已预留 − 已售；进度条低于 20% 转为预警色（示例数据）。</p>
+        </section>
+
+        <section aria-labelledby="audit-title">
+          <div class="row-between" style="margin-bottom: var(--space-sm)">
+            <h2 id="audit-title" style="margin:0">审计记录</h2>
+            <span class="demo-note">动作枚举为示例</span>
+          </div>
+          <div class="table-wrap card-flat">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">操作人</th>
+                  <th scope="col">动作</th>
+                  <th scope="col">对象</th>
+                  <th scope="col">时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="num">op-chen</td>
+                  <td><span class="badge badge-info num">INVENTORY_ADJUSTED</span></td>
+                  <td>POOL-ZCX-SZ-B（盘盈 +120）</td>
+                  <td class="num">10-13 10:22</td>
+                </tr>
+                <tr>
+                  <td class="num">op-li</td>
+                  <td><span class="badge badge-success num">SUPPLY_REVIEW_APPROVED</span></td>
+                  <td>商品 SKU-F1-P（F1 草坪票）</td>
+                  <td class="num">10-13 09:40</td>
+                </tr>
+                <tr>
+                  <td class="num">op-wang</td>
+                  <td><span class="badge badge-danger num">SELLER_SUSPENDED</span></td>
+                  <td>商户 sh-2081（违规改价）</td>
+                  <td class="num">10-12 18:05</td>
+                </tr>
+                <tr>
+                  <td class="num">op-chen</td>
+                  <td><span class="badge badge-info num">INVENTORY_ADJUSTED</span></td>
+                  <td>POOL-JAY-HZ-1（核销纠错 −2）</td>
+                  <td class="num">10-12 15:31</td>
+                </tr>
+                <tr>
+                  <td class="num">op-zhao</td>
+                  <td><span class="badge badge-success num">SUPPLY_REVIEW_APPROVED</span></td>
+                  <td>商品 SKU-JAY-VIP（周杰伦内场 VIP）</td>
+                  <td class="num">10-12 11:18</td>
+                </tr>
+                <tr>
+                  <td class="num">op-li</td>
+                  <td><span class="badge badge-danger num">SELLER_SUSPENDED</span></td>
+                  <td>商户 sh-0917（超卖风险）</td>
+                  <td class="num">10-11 16:44</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- 右：库存调整 -->
+      <section class="card" aria-labelledby="adj-title">
+        <h2 id="adj-title" class="card-title" style="margin-top:0">库存调整</h2>
+        <p class="hint" style="margin-top: calc(var(--space-xs) * -1)">对应 POST /api/v1/admin/inventory/adjustments</p>
+        <form action="#" method="post">
+          <div class="field">
+            <label for="adj-pool">池编码</label>
+            <select class="select" id="adj-pool" name="pool_code">
+              <option value="POOL-F1-SH-MAIN">POOL-F1-SH-MAIN · F1 主看台票</option>
+              <option value="POOL-F1-SH-P">POOL-F1-SH-P · F1 草坪票</option>
+              <option value="POOL-JAY-HZ-1">POOL-JAY-HZ-1 · 周杰伦内场票</option>
+              <option value="POOL-JAY-HZ-2">POOL-JAY-HZ-2 · 周杰伦看台票</option>
+              <option value="POOL-ZCX-SZ-A">POOL-ZCX-SZ-A · 周传雄内场A票</option>
+              <option value="POOL-ZCX-SZ-B" selected>POOL-ZCX-SZ-B · 周传雄看台B票</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="adj-qty">调整数量</label>
+            <input class="input num" id="adj-qty" name="delta" type="number" inputmode="numeric" placeholder="正数加库存 / 负数减库存，如 +120">
+            <span class="hint">支持正负；「已预留」中的数量不可直接调减。</span>
+          </div>
+          <div class="field">
+            <label for="adj-reason">原因（必填）</label>
+            <textarea class="textarea" id="adj-reason" name="reason" required aria-required="true" placeholder="例：10-13 实物盘点，看台B盘盈 120 张，附盘点单 PD-20261013-07"></textarea>
+            <span class="hint">调整要求原因并留审计（生成 ADJUST 流水）。</span>
+          </div>
+          <div class="field">
+            <label for="adj-op">操作人</label>
+            <input class="input num" id="adj-op" name="operator" type="text" value="op-chen" readonly>
+          </div>
+          <button class="btn btn-block" type="submit">提交调整</button>
+          <p class="hint" style="margin-top: var(--space-sm)">提交成功后写入审计记录（INVENTORY_ADJUSTED），可在左侧「审计记录」中核对。</p>
+        </form>
+        <hr class="divider">
+        <div class="sunken stack-sm">
+          <div class="row" style="justify-content: space-between"><span class="muted">最近一次调整</span><span class="num">10-13 10:22</span></div>
+          <div class="row" style="justify-content: space-between"><span class="muted">对象</span><span class="pool-code">POOL-ZCX-SZ-B</span></div>
+          <div class="row" style="justify-content: space-between"><span class="muted">幅度</span><span class="num price price-yuan">+120 张</span></div>
+          <span class="demo-note">示例</span>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <div class="wrap row-between">
+        <span>AWN 麦芒网 · 运营后台静态原型 · 数据均为示例</span>
+        <span>「麦芒」三角标为几何占位，非最终 logo</span>
+      </div>
+    </footer>
+  </main>
+</div>
+<script src="../theme.js"></script>
+</body>
+</html>

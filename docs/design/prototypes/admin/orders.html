@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>订单视图 · AWN 运营后台原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  /* 本页特有排版：仅使用 theme.css 令牌 */
+  .proto-topbar { padding-top: var(--space-md); }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-lg); }
+  .page-head h1 { margin-bottom: var(--space-xs); }
+  .page-head .ops { display: flex; align-items: center; gap: var(--space-sm); flex: none; }
+  .avatar { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--t-brand-soft); color: var(--t-brand-strong); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-sm); }
+  .sidenav .brand { padding: var(--space-xs) var(--space-sm) var(--space-md); }
+  .sidenav .side-cap { font-size: var(--fs-xs); color: var(--t-fg-subtle); letter-spacing: 0.08em; padding: 0 var(--space-sm); margin: var(--space-md) 0 var(--space-xs); }
+  .sidenav .item { display: flex; align-items: center; gap: var(--space-sm); }
+  .sidenav .item svg { width: 16px; height: 16px; flex: none; }
+  .card .row-between { margin-bottom: var(--space-md); }
+</style>
+</head>
+<body>
+<!-- 原型说明条：本页定位 + 数据为示例 -->
+<div class="wrap proto-topbar"><div class="demo-note">原型 · 数据为示例 · 对应契约 docs/api/contracts.md「运营接口」GET /api/v1/admin/orders</div></div>
+
+<div class="layout-admin">
+  <nav class="sidenav" aria-label="后台导航">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2 18 22 12 17 6 22Z"/></svg>
+      <span>AWN 运营后台</span>
+    </div>
+    <div class="side-cap">运营</div>
+    <a class="item" href="orders.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg><span>订单</span></a>
+    <a class="item" href="inventory.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>库存</span></a>
+    <a class="item" href="anomalies.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 21 19H3Z"/><path d="M12 10v4M12 17h.01"/></svg><span>异常</span></a>
+    <a class="item" href="session-config.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z"/><circle cx="12" cy="11" r="2"/></svg><span>场次配置</span></a>
+    <div class="side-cap">规划中</div>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><span>审计</span><span class="badge badge-outline">规划中</span></span>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M7 5l-3 6a3.5 3.5 0 0 0 7 0L8 5M17 5l-3 6a3.5 3.5 0 0 0 7 0l-3-6M12 5v14M8 21h8"/></svg><span>对账</span><span class="badge badge-outline">规划中</span></span>
+  </nav>
+
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>订单视图</h1>
+        <p class="muted" style="margin:0">全部渠道订单的统一查询台 · 今日口径</p>
+      </div>
+      <div class="ops">
+        <span class="demo-note">金额与比率为示例</span>
+        <span class="avatar" aria-hidden="true">陈</span>
+        <span class="hint">值班运营 陈澈 · 原型只读</span>
+      </div>
+    </div>
+
+    <!-- KPI 一行 -->
+    <div class="grid grid-4" style="margin-bottom: var(--space-lg)">
+      <div class="kpi-card">
+        <div class="label">今日订单数</div>
+        <div class="value num">1,286</div>
+        <div class="delta">▲ 12.4% vs 昨日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">订单金额（元）</div>
+        <div class="value num price-yuan">862,450</div>
+        <div class="delta">▲ 8.1% vs 昨日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">支付成功率</div>
+        <div class="value num">96.8%</div>
+        <div class="delta" style="color: var(--t-danger)">▼ 0.4pp vs 昨日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">异常订单数</div>
+        <div class="value num" style="color: var(--t-danger)">7</div>
+        <div class="delta" style="color: var(--t-danger)">▲ 3 笔待人工复核</div>
+      </div>
+    </div>
+
+    <!-- 状态筛选 -->
+    <div class="row-between" style="margin-bottom: var(--space-sm)">
+      <div class="sort-tabs" role="tablist" aria-label="订单状态筛选">
+        <button class="sort-tab" type="button" role="tab" aria-selected="true">全部 <span class="num">1,286</span></button>
+        <button class="sort-tab" type="button" role="tab" aria-selected="false">待支付 <span class="num">214</span></button>
+        <button class="sort-tab" type="button" role="tab" aria-selected="false">已支付 <span class="num">612</span></button>
+        <button class="sort-tab" type="button" role="tab" aria-selected="false">履约中 <span class="num">388</span></button>
+        <button class="sort-tab" type="button" role="tab" aria-selected="false">已退款 <span class="num">65</span></button>
+        <button class="sort-tab" type="button" role="tab" aria-selected="false">异常 <span class="num">7</span></button>
+      </div>
+      <button class="btn btn-sm btn-ghost" type="button">导出 Excel</button>
+    </div>
+
+    <!-- 订单表 -->
+    <div class="table-wrap card-flat">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">订单号</th>
+            <th scope="col">活动</th>
+            <th scope="col">场次</th>
+            <th scope="col">件数</th>
+            <th scope="col">金额</th>
+            <th scope="col">状态</th>
+            <th scope="col">创建时间</th>
+            <th scope="col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">AWN-20261013-000418</td>
+            <td>F1 中国大奖赛·上海站</td>
+            <td>10-24 14:00 · 主看台</td>
+            <td class="num">2</td>
+            <td class="num price price-yuan">3,880</td>
+            <td><span class="badge badge-success">已支付</span></td>
+            <td class="num">10-13 09:47</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261013-000417</td>
+            <td>周杰伦嘉年华演唱会·杭州站</td>
+            <td>11-02 19:30 · 内场</td>
+            <td class="num">4</td>
+            <td class="num price price-yuan">2,040</td>
+            <td><span class="badge badge-warning">待支付</span></td>
+            <td class="num">10-13 09:41</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261013-000415</td>
+            <td>周传雄演唱会·苏州站</td>
+            <td>11-15 19:00 · 内场A</td>
+            <td class="num">2</td>
+            <td class="num price price-yuan">780</td>
+            <td><span class="badge badge-info">履约中</span></td>
+            <td class="num">10-13 09:35</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261013-000409</td>
+            <td>F1 中国大奖赛·上海站</td>
+            <td>10-25 14:00 · 草坪</td>
+            <td class="num">3</td>
+            <td class="num price price-yuan">2,040</td>
+            <td><span class="badge badge-outline">已退款</span></td>
+            <td class="num">10-13 09:21</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261013-000402</td>
+            <td>周杰伦嘉年华演唱会·杭州站</td>
+            <td>11-02 19:30 · 看台</td>
+            <td class="num">2</td>
+            <td class="num price price-yuan">1,080</td>
+            <td><span class="badge badge-danger">异常</span></td>
+            <td class="num">10-13 08:58</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button><button class="btn btn-sm btn-soft" type="button">人工复核</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261012-000398</td>
+            <td>周传雄演唱会·苏州站</td>
+            <td>11-16 19:00 · 看台B</td>
+            <td class="num">1</td>
+            <td class="num price price-yuan">380</td>
+            <td><span class="badge badge-success">已支付</span></td>
+            <td class="num">10-12 22:14</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261012-000391</td>
+            <td>F1 中国大奖赛·上海站</td>
+            <td>10-24 14:00 · 副看台东</td>
+            <td class="num">2</td>
+            <td class="num price price-yuan">3,760</td>
+            <td><span class="badge badge-info">履约中</span></td>
+            <td class="num">10-12 21:03</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261012-000387</td>
+            <td>周杰伦嘉年华演唱会·杭州站</td>
+            <td>11-03 19:30 · 内场</td>
+            <td class="num">2</td>
+            <td class="num price price-yuan">2,560</td>
+            <td><span class="badge badge-success">已支付</span></td>
+            <td class="num">10-12 20:47</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button><button class="btn btn-sm btn-soft" type="button">人工复核</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261012-000380</td>
+            <td>周传雄演唱会·苏州站</td>
+            <td>11-15 19:00 · 内场A</td>
+            <td class="num">4</td>
+            <td class="num price price-yuan">1,560</td>
+            <td><span class="badge badge-outline">已退款</span></td>
+            <td class="num">10-12 19:22</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button></div></td>
+          </tr>
+          <tr>
+            <td class="num">AWN-20261012-000376</td>
+            <td>F1 中国大奖赛·上海站</td>
+            <td>10-25 14:00 · 主看台</td>
+            <td class="num">1</td>
+            <td class="num price price-yuan">1,880</td>
+            <td><span class="badge badge-danger">异常</span></td>
+            <td class="num">10-12 18:36</td>
+            <td><div class="row" style="gap:6px"><button class="btn btn-sm btn-ghost" type="button">详情</button><button class="btn btn-sm btn-soft" type="button">人工复核</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top: var(--space-sm)">活动名、场次、金额均为示例数据（F1 中国大奖赛 / 周杰伦嘉年华演唱会 / 周传雄演唱会）。状态枚举：待支付 / 已支付 / 履约中 / 已退款 / 异常。</p>
+
+    <hr class="divider">
+
+    <!-- 空态 / 加载中 -->
+    <h2 style="margin-top: 0">列表状态示例</h2>
+    <div class="state-grid" style="margin-top: var(--space-md)">
+      <div class="state">
+        <div class="glyph" aria-hidden="true">◌</div>
+        <div class="title">暂无符合条件的订单</div>
+        <div class="desc">当前筛选（已退款）无记录，试试切换状态标签或清除筛选。</div>
+        <button class="btn btn-sm btn-ghost" type="button">清除筛选</button>
+      </div>
+      <div class="state" aria-label="加载中状态示例">
+        <div style="max-width: 280px; margin: 0 auto" class="col">
+          <div class="row"><span class="skeleton" style="height:14px; width:32%"></span><span class="skeleton" style="height:14px; flex:1"></span></div>
+          <div class="skeleton" style="height:12px"></div>
+          <div class="skeleton" style="height:12px; width:88%"></div>
+          <div class="skeleton" style="height:12px; width:64%"></div>
+        </div>
+        <div class="title" style="margin-top: var(--space-md)">加载中</div>
+        <div class="desc">订单列表正在拉取（GET /api/v1/admin/orders），骨架屏占位。</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="wrap row-between">
+        <span>AWN 麦芒网 · 运营后台静态原型 · 数据均为示例</span>
+        <span>「麦芒」三角标为几何占位，非最终 logo</span>
+      </div>
+    </footer>
+  </main>
+</div>
+<script src="../theme.js"></script>
+</body>
+</html>

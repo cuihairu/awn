@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2D 座位图（底图 + 可交互分区）· AWN 原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .seatmap-shell { display:grid; grid-template-columns:1fr 300px; gap:var(--space-lg); align-items:start }
+  .seatmap-toolbar { display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap }
+  .mode-btn[aria-selected="true"] { border-color:var(--t-brand); color:var(--t-brand); font-weight:600 }
+  #viewport { transition:transform .12s ease-out; transform-origin:0 0 }
+  .section-shape { cursor:pointer; transition:opacity .12s }
+  .section-shape:hover { opacity:.92 }
+  .section-shape:focus-visible { outline:2px solid var(--t-brand); outline-offset:2px }
+  .seat { transition:opacity .12s }
+  .row-bar { height:8px; border-radius:6px; background:var(--t-border); overflow:hidden }
+  .row-bar i { display:block; height:100%; background:var(--t-success) }
+  .row-bar i.mid { background:var(--t-warning) }
+  .row-bar i.low { background:var(--t-danger) }
+  .wire-note { border-style:dashed }
+  @media (max-width:900px){ .seatmap-shell { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="activity-f1.html">赛事</a>
+      <a class="nav-link" href="activity-jay.html">演唱会</a>
+      <a class="nav-link" href="seatmap-2d.html" aria-current="page">选座</a>
+    </nav>
+    <div class="row" style="margin-left:auto"><button class="btn btn-ghost btn-sm">登录</button></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px">
+  <div class="row-between" style="margin-bottom:14px">
+    <div>
+      <h1>2D 座位图 · 底图 + 可交互分区</h1>
+      <p class="muted" style="font-size:var(--fs-sm);margin:0">第一阶段主路径：选区 / 选排；逐座精确（L3）为后续等级 · 数据为示意，已标注来源与审核状态</p>
+    </div>
+    <span class="demo-note">同一份座位数据 · 2D 渲染 · 选座状态切换 3D 不丢失</span>
+  </div>
+
+  <!-- 切换按钮在座位图区右上（2D / 3D） -->
+  <div class="row-between" style="margin-bottom:10px">
+    <h3 style="margin:0">虹口足球场 · 内场 / 看台（示意底图 · 来源：公开资料重建 · 审核：待人工复核）</h3>
+    <div class="row" role="group" aria-label="视图切换">
+      <button class="chip mode-btn" aria-selected="true">2D 视图</button>
+      <button class="chip mode-btn" aria-selected="false" id="mode3d">3D 线框（待 2D 过目后制作）</button>
+    </div>
+  </div>
+
+  <div class="seatmap-shell">
+    <!-- 左：座位图画布 -->
+    <div class="card" style="padding:14px">
+      <div class="seatmap-toolbar" style="margin-bottom:10px">
+        <button class="btn btn-soft btn-sm" id="zoomIn" aria-label="放大">＋ 放大</button>
+        <button class="btn btn-soft btn-sm" id="zoomOut" aria-label="缩小">－ 缩小</button>
+        <button class="btn btn-ghost btn-sm" id="zoomReset">重置视图</button>
+        <span class="hint" id="zoomLevel">缩放 100%</span>
+        <span class="hint" style="margin-left:auto">可拖拽平移 · 点击分区选中</span>
+      </div>
+
+      <svg id="seatmap" class="seatmap-svg" viewBox="0 0 800 560" style="width:100%;height:auto;display:block;border-radius:var(--radius-md);background:var(--t-sunken)" role="group" aria-label="场馆分区座位图">
+        <g id="viewport"></g>
+      </svg>
+
+      <!-- 图例 -->
+      <div class="seat-legend" style="margin-top:10px">
+        <span><i class="seat seat-free"></i> 可选（后台确认可售）</span>
+        <span><i class="seat seat-sold"></i> 已售 / 不可售（置灰）</span>
+        <span><i class="seat seat-selected"></i> 本次选中</span>
+        <span><i class="tier-dot tier-dot-1"></i> 票档 1</span>
+        <span><i class="tier-dot tier-dot-2"></i> 票档 2</span>
+        <span><i class="tier-dot tier-dot-3"></i> 票档 3</span>
+        <span><i class="tier-dot tier-dot-4"></i> 票档 4（轮廓已知·排号待补）</span>
+        <span><i class="tier-dot tier-dot-5"></i> 票档 5（轮廓已知·排号待补）</span>
+      </div>
+      <p class="hint" style="margin-top:8px">「可选」仅表示座位图数据标记为可售区域；实际可售状态以后端库存为准 —— 显示可选 ≠ 后台有库存。</p>
+    </div>
+
+    <!-- 右：选区 / 选排面板 -->
+    <aside class="card" id="selPanel" aria-live="polite">
+      <h3 style="margin-top:0">选区 / 选排</h3>
+      <p class="hint" id="selEmpty" style="margin:6px 0 10px">点击左侧分区，查看该分区可确认的排号范围。</p>
+      <div id="selDetail" hidden></div>
+      <hr class="divider" style="margin:14px 0">
+      <div class="row-between">
+        <strong>已选</strong>
+        <span class="muted" style="font-size:var(--fs-sm)" id="selSummary">未选择</span>
+      </div>
+      <button class="btn btn-block" style="margin-top:12px" disabled>提交选择（后端校验商品 / 库存 / 购买规则）</button>
+      <p class="hint" style="margin-top:8px">选区 / 选排只是前端选择结果；提交后由 AWN 后端验证商品与库存，可售状态以后端为准。</p>
+    </aside>
+  </div>
+
+  <!-- 数据模型与来源说明 -->
+  <section class="grid grid-2" style="margin-top:28px">
+    <div class="card">
+      <h3>座位数据模型（同一份数据，两种渲染器）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">Venue（场馆身份）→ VenueLayoutVersion（基础布局版本：坐标系 / 原始资料 / 审核状态）→ Section（分区：多边形边界 / 名称 / 编号 / 楼层）→ RowRange（排号规则：起止排 / 编号方向 —— 仅在有可靠数据时维护）→ EventSeatingConfiguration（演出配置：舞台 / 开放区域 / 临时座席 / 分区↔票档映射）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">边界：<b>座位图 = 空间与编号，库存 = 可售状态</b>，两者不是一个模型。座位图里有某座位 ≠ 该演出开放销售。</p>
+      <p class="muted" style="font-size:var(--fs-sm)">精度等级：L1 轮廓 / 看台 / 分区（本原型南、北看台即 L1，不虚构排号）· L2 分区 / 排号 / 座号（内场 A/B、东西看台）· L3 逐座精确几何 + 库存映射（后续）。</p>
+    </div>
+    <div class="card">
+      <h3>本原型数据（示意 · 来源留档）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">· 虹口足球场：公开资料重建的分区结构 · 采集时间 2026-10 · 授权状态：示意数据，未经官方授权 · 审核：待人工复核</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· 内场 A 区：1–3 排（排号方向：舞台向前递增）· 来源：公开场次页面分区排座信息（示例）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· 南 / 北看台：仅看台轮廓已知，排号与座号未确认 → 只展示分区，不录入 RowRange，不开放选区 / 选排</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· 原始图仅用于辅助建模与复核，每张原始图对应一份结构化布局并记录来源；图片不单独作为数据</p>
+    </div>
+  </section>
+
+  <!-- 3D 状态（占位） -->
+  <section class="card wire-note" style="margin-top:28px">
+    <div class="row-between">
+      <h3 style="margin:0">3D 视图（P2 · 线框示意占位）</h3>
+      <span class="badge badge-outline">待 2D 过目后制作</span>
+    </div>
+    <p class="muted" style="font-size:var(--fs-sm);margin:8px 0 0">同一批座位数据换渲染器（WebGL / three.js 一类）：程序化几何生成座位（不引外部建模素材），支持视角旋转 / 俯仰与「跳到某区」。移动端低端机自动降级回 2D。帧率目标：桌面 ≥ 60fps，移动 ≥ 30fps（验收时实测）。风险与成本见 <code>docs/design/ui-system.md</code>。切换按钮位于座位图区右上；切换不丢选中状态。</p>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 2D 座位图原型 · 数据为示意</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script>
+/* 同一份座位数据：2D 渲染器与未来的 3D 渲染器共用；选区/选排结果在两者之间共享 */
+(function () {
+  var TIER_COLORS = { 1: '#d59819', 2: '#b9770e', 3: '#4a7fb5', 4: '#7a6a53', 5: '#5a5f6e' };
+  var SECTIONS = [
+    { id: 'A',  name: '内场 A 区', tier: 1, floor: '内场', polygon: '300,84 500,84 500,168 300,168',
+      rows: [{ from: 1, to: 3, perRow: 10, dir: '舞台向前递增', src: '公开场次页面（示例）' }] },
+    { id: 'B',  name: '内场 B 区', tier: 2, floor: '内场', polygon: '288,176 512,176 512,292 288,292',
+      rows: [{ from: 1, to: 8, perRow: 12, dir: '舞台向前递增', src: '公开场次页面（示例）' }] },
+    { id: 'E',  name: '东看台 1 层', tier: 3, floor: '1 层', polygon: '550,100 690,100 690,300 550,300',
+      rows: [{ from: 1, to: 15, perRow: 6, dir: '由东向西递增', src: '公开资料重建（示意）' }] },
+    { id: 'W',  name: '西看台 1 层', tier: 3, floor: '1 层', polygon: '120,100 250,100 250,300 120,300',
+      rows: [{ from: 1, to: 15, perRow: 6, dir: '由西向东递增', src: '公开资料重建（示意）' }] },
+    { id: 'S',  name: '南看台', tier: 4, floor: '2 层', polygon: '240,340 560,340 560,480 240,480',
+      rows: null },
+    { id: 'N',  name: '北看台', tier: 5, floor: '2 层', polygon: '34,64 104,64 104,196 34,196',
+      rows: null }
+  ];
+  var SEAT = { w: 9, h: 9, gap: 3 };
+  var SOLD_RATIO = { A: 0.55, B: 0.30, E: 0.45, W: 0.10 };
+
+  var viewport = document.getElementById('viewport');
+  var selPanel = document.getElementById('selDetail');
+  var selEmpty = document.getElementById('selEmpty');
+  var selSummary = document.getElementById('selSummary');
+  var selectedSection = null;
+  var selectedRow = null;
+  var scale = 1, tx = 0, ty = 0;
+
+  function applyView() {
+    viewport.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+    document.getElementById('zoomLevel').textContent = '缩放 ' + Math.round(scale * 100) + '%';
+  }
+
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  /* 舞台 */
+  el('rect', { x: 300, y: 18, width: 200, height: 46, rx: 10, fill: 'var(--t-brand-soft)', stroke: 'var(--t-brand)', 'stroke-width': 1.5 }, viewport);
+  var stageTitle = el('text', { x: 400, y: 37, 'text-anchor': 'middle', fill: 'var(--t-brand)', 'font-size': 14, 'font-weight': 700 }, viewport);
+  stageTitle.textContent = '舞台';
+  var stageNote = el('text', { x: 400, y: 54, 'text-anchor': 'middle', fill: 'var(--t-fg-muted)', 'font-size': 9 }, viewport);
+  stageNote.textContent = '位置 / 朝向 / 开放区域以场次 EventSeatingConfiguration 为准';
+
+  /* 分区多边形 + 座位（同一数据渲染；一行一排，不虚构） */
+  SECTIONS.forEach(function (sec) {
+    var g = el('g', { 'data-section': sec.id, tabindex: 0, role: 'button',
+      'aria-label': '分区 ' + sec.name }, viewport);
+    var poly = el('polygon', { points: sec.polygon, class: 'section-shape',
+      fill: TIER_COLORS[sec.tier], 'fill-opacity': 0.28,
+      stroke: TIER_COLORS[sec.tier], 'stroke-width': 2, 'data-poly': sec.id }, g);
+    var c = polygonCenter(sec.polygon);
+    var pts = sec.polygon.split(' ').map(function (p) { return p.split(',').map(Number); });
+    var x0 = Math.min(pts[0][0], pts[1][0], pts[2][0], pts[3][0]);
+    var x1 = Math.max(pts[0][0], pts[1][0], pts[2][0], pts[3][0]);
+    var y0 = Math.min(pts[0][1], pts[1][1], pts[2][1], pts[3][1]);
+    var y1 = Math.max(pts[0][1], pts[1][1], pts[2][1], pts[3][1]);
+
+    if (!sec.rows) { /* L1：只有轮廓，不虚构排号 */
+      var label = el('text', { x: c.x, y: c.y, 'text-anchor': 'middle', fill: 'var(--t-fg)',
+        'font-size': 13, 'font-weight': 700, 'pointer-events': 'none' }, g);
+      label.textContent = sec.name;
+      var l1 = el('text', { x: c.x, y: c.y + 16, 'text-anchor': 'middle', fill: 'var(--t-fg-muted)',
+        'font-size': 10, 'pointer-events': 'none' }, g);
+      l1.textContent = '仅轮廓（L1）· 排号待补';
+      return;
+    }
+
+    var nameTop = el('text', { x: (x0 + x1) / 2, y: y0 + 12, 'text-anchor': 'middle', fill: 'var(--t-fg)',
+      'font-size': 12, 'font-weight': 700, 'pointer-events': 'none' }, g);
+    nameTop.textContent = sec.name;
+
+    var totalRows = 0;
+    sec.rows.forEach(function (r) { totalRows += r.to - r.from + 1; });
+    var pitch = Math.min(12, (y1 - y0 - 44) / Math.max(totalRows - 1, 1));
+    var ratio = SOLD_RATIO[sec.id] || 0.3;
+    var rowIdx = 0;
+    sec.rows.forEach(function (row) {
+      for (var r = row.from; r <= row.to; r++) {
+        for (var i = 0; i < row.perRow; i++) {
+          var sx = x0 + 14 + i * ((x1 - x0 - 28 - SEAT.w) / Math.max(row.perRow - 1, 1));
+          var sy = y0 + 22 + rowIdx * pitch;
+          var sold = ((sec.id.charCodeAt(0) * 31 + r * 17 + i * 7) % 100) / 100 < ratio;
+          el('rect', { x: sx.toFixed(1), y: sy.toFixed(1), width: SEAT.w, height: 8, rx: 2,
+            class: 'seat ' + (sold ? 'seat-sold' : 'seat-free'), 'data-row': row.from + '-' + row.to }, g);
+        }
+        rowIdx++;
+      }
+    });
+    var rowLabel = el('text', { x: c.x, y: y1 - 4, 'text-anchor': 'middle', fill: 'var(--t-fg-muted)',
+      'font-size': 11, 'pointer-events': 'none' }, g);
+    var last = sec.rows[sec.rows.length - 1];
+    rowLabel.textContent = '第 ' + sec.rows[0].from + '–' + last.to + ' 排';
+  });
+
+  function polygonCenter(points) {
+    var pts = points.split(' ').map(function (p) { return p.split(',').map(Number); });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    return { x: (Math.min.apply(0, xs) + Math.max.apply(0, xs)) / 2,
+             y: (Math.min.apply(0, ys) + Math.max.apply(0, ys)) / 2 };
+  }
+
+  /* 选区 / 选排 */
+  function selectSection(sec) {
+    selectedSection = sec;
+    selectedRow = null;
+    viewport.querySelectorAll('[data-poly]').forEach(function (p) {
+      var on = p.getAttribute('data-poly') === sec.id;
+      p.setAttribute('fill-opacity', on ? 0.5 : 0.18);
+      p.setAttribute('stroke-width', on ? 3.5 : 2);
+    });
+    selEmpty.hidden = true;
+    selPanel.hidden = false;
+    selPanel.innerHTML = '';
+    var head = document.createElement('p');
+    head.innerHTML = '<strong>' + sec.name + '</strong> · 票档 ' + sec.tier + ' · ' + sec.floor +
+      ' <span class="muted" style="font-size:var(--fs-xs)">（来源：示意数据 · 待人工复核）</span>';
+    selPanel.appendChild(head);
+
+    if (!sec.rows) {
+      var l1 = document.createElement('p');
+      l1.className = 'hint';
+      l1.textContent = '该分区当前仅有看台轮廓（L1）：排号与座号未确认，暂不开放选区 / 选排。显示可选 ≠ 后台有库存。';
+      selPanel.appendChild(l1);
+      selSummary.textContent = sec.name + '（仅轮廓）';
+      return;
+    }
+    sec.rows.forEach(function (row) {
+      var box = document.createElement('div');
+      box.className = 'card';
+      box.style.cssText = 'padding:10px;margin-top:10px;cursor:pointer;border-color:var(--t-border)';
+      var left = Math.round(((row.from * 7 + row.perRow * 3) % 100));
+      var avail = 100 - left;
+      box.innerHTML = '<div class="row-between"><strong>第 ' + row.from + '–' + row.to + ' 排</strong>' +
+        '<span class="muted" style="font-size:var(--fs-xs)">每排 ' + row.perRow + ' 座 · ' + row.dir + '</span></div>' +
+        '<div class="row-bar" style="margin-top:8px"><i class="' + (avail > 50 ? '' : avail > 25 ? 'mid' : 'low') +
+        '" style="width:' + avail + '%"></i></div>' +
+        '<div class="row-between" style="margin-top:6px"><span class="hint">可售约 ' + avail + '%（示意，以后端库存为准）</span>' +
+        '<span class="hint">' + row.src + '</span></div>';
+      box.addEventListener('click', function () {
+        selectedRow = row;
+        selPanel.querySelectorAll('.card').forEach(function (c) { c.style.borderColor = 'var(--t-border)'; c.style.boxShadow = 'none'; });
+        box.style.borderColor = 'var(--t-brand)';
+        box.style.boxShadow = '0 0 0 2px var(--t-brand-soft)';
+        selSummary.textContent = sec.name + ' · 第 ' + row.from + '–' + row.to + ' 排 · 未提交（示例）';
+      });
+      selPanel.appendChild(box);
+    });
+    selSummary.textContent = sec.name + ' · 请选择排号范围';
+  }
+
+  viewport.querySelectorAll('[data-section]').forEach(function (g) {
+    g.addEventListener('click', function () {
+      var sec = SECTIONS.filter(function (s) { return s.id === g.getAttribute('data-section'); })[0];
+      selectSection(sec);
+    });
+    g.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.click(); }
+    });
+  });
+
+  /* 3D 切换占位 */
+  document.getElementById('mode3d').addEventListener('click', function () {
+    alert('3D 视图为 P2：待 2D 过目后再制作原型（线框示意）。同一份座位数据换渲染器，选中的分区 / 排号范围在切换时不丢失。');
+  });
+
+  /* 缩放 / 平移 */
+  document.getElementById('zoomIn').addEventListener('click', function () { scale = Math.min(scale * 1.25, 3); applyView(); });
+  document.getElementById('zoomOut').addEventListener('click', function () { scale = Math.max(scale / 1.25, 0.5); applyView(); });
+  document.getElementById('zoomReset').addEventListener('click', function () { scale = 1; tx = 0; ty = 0; applyView(); });
+  var drag = null;
+  var svg = document.getElementById('seatmap');
+  svg.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, tx: tx, ty: ty }; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var rect = svg.getBoundingClientRect();
+    var k = 800 / rect.width;
+    tx = drag.tx + (e.clientX - drag.x) * k;
+    ty = drag.ty + (e.clientY - drag.y) * k;
+    applyView();
+  });
+  svg.addEventListener('pointerup', function () { drag = null; });
+  applyView();
+})();
+</script>
+<script src="../theme.js"></script>
+</body>
+</html>

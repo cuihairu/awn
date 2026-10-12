@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>购买页全流程 · AWN 原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .cart-summary { position:sticky; top:76px; background:var(--t-card); border:1px solid var(--t-border); border-radius:var(--radius-lg); padding:var(--space-lg) }
+  .flow-grid { display:grid; grid-template-columns:1.6fr 1fr; gap:var(--space-xl); align-items:start }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="activity-f1.html">赛事</a>
+      <a class="nav-link" href="seatmap-2d.html">选座</a>
+    </nav>
+    <div class="row" style="margin-left:auto"><button class="btn btn-ghost btn-sm">登录</button></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px">
+  <div class="row-between" style="margin-bottom:16px">
+    <div>
+      <h1>购买流程（选场次 → 票档/座位 → 数量与实名 → 下单 → 支付 → 出票）</h1>
+      <p class="muted" style="font-size:var(--fs-sm);margin:0">原型 · 数据为示例 · 库存与价格以后端确认为准</p>
+    </div>
+    <span class="demo-note">示例流程 · 支付与库存由 AWN 后端统一确认</span>
+  </div>
+
+  <div class="steps" role="list" aria-label="购买步骤">
+    <span class="step" role="listitem" data-done="true"><span class="n">1</span>选场次</span>
+    <span class="sep"></span>
+    <span class="step" role="listitem" data-done="true"><span class="n">2</span>票档/座位</span>
+    <span class="sep"></span>
+    <span class="step" role="listitem" aria-current="true"><span class="n">3</span>数量与实名</span>
+    <span class="sep"></span>
+    <span class="step" role="listitem"><span class="n">4</span>下单</span>
+    <span class="sep"></span>
+    <span class="step" role="listitem"><span class="n">5</span>支付</span>
+    <span class="sep"></span>
+    <span class="step" role="listitem"><span class="n">6</span>出票</span>
+  </div>
+
+  <div class="flow-grid" style="margin-top:24px">
+    <section class="col">
+
+      <!-- 步骤 1：选场次 -->
+      <div class="card">
+        <div class="row-between">
+          <h3>① 选择场次</h3>
+          <span class="badge badge-success">已选 1 场</span>
+        </div>
+        <div class="col" style="gap:12px;margin-top:12px">
+          <label class="session-card" style="cursor:pointer;border-color:var(--t-brand)">
+            <div class="row-between">
+              <div class="row" style="gap:12px">
+                <strong>11 月 6 日 19:30 · 上海站第一场</strong>
+                <span class="badge badge-info">已选</span>
+              </div>
+              <span class="muted" style="font-size:var(--fs-sm)">虹口足球场</span>
+            </div>
+          </label>
+          <label class="session-card" style="cursor:pointer">
+            <div class="row-between">
+              <strong>11 月 7 日 19:30 · 第二场</strong>
+              <span class="badge badge-warning">热门 · 排队购票</span>
+            </div>
+          </label>
+          <label class="session-card" style="cursor:pointer" aria-disabled="true">
+            <div class="row-between">
+              <strong>11 月 8 日 19:30 · 第三场</strong>
+              <span class="badge badge-outline">已售罄</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 步骤 2：票档 / 座位 -->
+      <div class="card">
+        <div class="row-between">
+          <h3>② 票档与座位</h3>
+          <div class="row">
+            <button class="chip" aria-selected="true">选区/选排</button>
+            <button class="chip" aria-selected="false">逐座选座</button>
+            <a class="chip" href="seatmap-2d.html">座位图 ↗</a>
+          </div>
+        </div>
+        <p class="hint" style="margin:6px 0 0">第一阶段为主路径：选分区或排号范围；后端确认可售状态，座位图显示可选 ≠ 后台有库存。</p>
+        <div class="tier-row">
+          <div class="row" style="gap:12px">
+            <span class="tier-dot tier-dot-1"></span>
+            <div><strong>内场 A 区 · 1–3 排</strong><div class="muted" style="font-size:var(--fs-xs)">中央通道两侧 · 选座区</div></div>
+          </div>
+          <span class="price price-yuan num">1680</span>
+        </div>
+        <div class="tier-row">
+          <div class="row" style="gap:12px">
+            <span class="tier-dot tier-dot-2"></span>
+            <div><strong>内场 B 区 · 4–10 排</strong><div class="muted" style="font-size:var(--fs-xs)">选座区 · 部分视线遮挡</div></div>
+          </div>
+          <span class="price price-yuan num">1280</span>
+        </div>
+        <div class="tier-row">
+          <div class="row" style="gap:12px">
+            <span class="tier-dot tier-dot-3"></span>
+            <div><strong>看台 1 层东区 · 全部排</strong><div class="muted" style="font-size:var(--fs-xs)">不选座 · 系统自动配座</div></div>
+          </div>
+          <span class="price price-yuan num">880</span>
+        </div>
+
+        <!-- 逐座选座时的已选座位 -->
+        <div class="sunken" style="margin-top:12px">
+          <div class="row-between">
+            <strong>已选座位</strong>
+            <span class="muted" style="font-size:var(--fs-xs)">内场 A 区</span>
+          </div>
+          <div class="seat-canvas-wrap" style="margin-top:10px;padding:10px">
+            <div class="seat-cell" style="--cols:10">
+              <span class="seat seat-free"></span><span class="seat seat-free"></span><span class="seat seat-selected"></span><span class="seat seat-selected"></span><span class="seat seat-sold"></span><span class="seat seat-free"></span><span class="seat seat-sold"></span><span class="seat seat-free"></span><span class="seat seat-free"></span><span class="seat seat-locked"></span>
+            </div>
+            <div class="seat-cell" style="--cols:10;margin-top:3px">
+              <span class="seat seat-sold"></span><span class="seat seat-selected"></span><span class="seat seat-free"></span><span class="seat seat-sold"></span><span class="seat seat-free"></span><span class="seat seat-sold"></span><span class="seat seat-free"></span><span class="seat seat-sold"></span><span class="seat seat-free"></span><span class="seat seat-free"></span>
+            </div>
+            <div class="row-between" style="margin-top:8px">
+              <span class="seat-counts">A05 A06 · B02</span>
+              <span class="muted" style="font-size:var(--fs-xs)">点选可替换 · 单次最多 4 张</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 步骤 3：数量与实名 -->
+      <div class="card">
+        <h3>③ 数量与实名信息</h3>
+        <div class="row" style="justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
+          <div class="field" style="margin:0">
+            <label for="qty">购买数量</label>
+            <div class="stepper">
+              <button type="button" aria-label="减少">−</button>
+              <span class="val num">2</span>
+              <button type="button" aria-label="增加">+</button>
+            </div>
+            <span class="hint">本场次同一证件限 1 张 · 每单限购 4 张</span>
+          </div>
+          <label class="switch" aria-checked="true">
+            <span class="track"></span>
+            <span>需实名认证（实名购票）</span>
+          </label>
+        </div>
+        <div class="grid grid-2" style="margin-top:16px">
+          <div class="field">
+            <label for="name1">观演人 1</label>
+            <input id="name1" class="input" value="陈某某">
+          </div>
+          <div class="field">
+            <label for="id1">证件号</label>
+            <input id="id1" class="input" value="110***********1234">
+          </div>
+          <div class="field">
+            <label for="name2">观演人 2</label>
+            <input id="name2" class="input" value="李某某">
+          </div>
+          <div class="field">
+            <label for="id2">证件号</label>
+            <input id="id2" class="input" value="310***********5678">
+          </div>
+        </div>
+        <p class="hint">证件号仅用于实名校验，展示时脱敏；提交后不可修改。</p>
+      </div>
+
+      <!-- 步骤 4-5-6 -->
+      <div class="card">
+        <h3>④ 下单与 ⑤ 支付</h3>
+        <p class="muted" style="font-size:var(--fs-sm)">下单后 15 分钟内需完成支付，超时订单自动关单并释放库存（示例规则）</p>
+        <div class="grid grid-2" style="margin-top:8px">
+          <button class="btn btn-soft">微信支付</button>
+          <button class="btn btn-soft">支付宝</button>
+        </div>
+        <div class="state" style="margin-top:12px;text-align:left">
+          <div class="title">支付中</div>
+          <p class="desc">确认支付结果中，请勿重复提交（幂等下单键防重复扣款）</p>
+          <div class="row"><span class="skeleton" style="width:120px"></span><span class="skeleton" style="width:80px"></span></div>
+        </div>
+        <h3 style="margin-top:20px">⑥ 出票结果</h3>
+        <div class="state" style="text-align:left">
+          <div class="glyph">🎫</div>
+          <div class="title">支付成功，出票完成</div>
+          <p class="desc">订单号 <span class="num">202611061930210001</span>（示例）· 电子票已发送，凭二维码或身份证入场</p>
+          <div class="row"><button class="btn btn-sm">查看电子票</button><button class="btn btn-ghost btn-sm">加入购物车</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧结算卡 -->
+    <aside>
+      <div class="cart-summary">
+        <h3>结算摘要</h3>
+        <div class="row-between" style="margin:12px 0">
+          <span class="muted" style="font-size:var(--fs-sm)">内场 A 区 1–3 排 × 2</span>
+          <span class="price num">3,360</span>
+        </div>
+        <div class="row-between" style="margin-bottom:12px">
+          <span class="muted" style="font-size:var(--fs-sm)">服务费</span>
+          <span class="price num">48</span>
+        </div>
+        <hr class="divider" style="margin:12px 0">
+        <div class="row-between">
+          <strong>合计</strong>
+          <span class="price price-yuan" style="font-size:var(--fs-xl)"><span class="num">3,408</span></span>
+        </div>
+        <button class="btn btn-block" style="margin-top:16px">提交订单</button>
+        <p class="hint" style="margin-top:8px;text-align:center">提交前请确认实名信息与票档；价格以结算时为准（示例）</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 关键状态：售罄 / 排队 / 支付失败 / 超时关单 -->
+  <section style="margin-top:36px">
+    <h2>购买页关键状态</h2>
+    <div class="grid grid-2">
+      <div class="state">
+        <div class="glyph">🎫</div>
+        <div class="title">该场次已售罄</div>
+        <p class="desc">所选票档无剩余库存，可候补登记或换场次</p>
+        <div class="row"><button class="btn btn-sm">候补登记</button><button class="btn btn-ghost btn-sm">换场次</button></div>
+      </div>
+      <div class="state">
+        <div class="glyph">⏳</div>
+        <div class="title">正在排队 · 前方 128 人</div>
+        <p class="desc">热门场次排队购票，请保持页面开启</p>
+        <div class="row" style="justify-content:center"><span class="badge badge-warning">预计 2 分钟</span><button class="btn btn-ghost btn-sm">刷新位次</button></div>
+      </div>
+      <div class="state">
+        <div class="glyph">❌</div>
+        <div class="title">支付失败</div>
+        <p class="desc">支付请求未成功，库存已保留 5 分钟，可重试或更换支付方式</p>
+        <div class="row"><button class="btn btn-sm">重试支付</button><button class="btn btn-ghost btn-sm">更换支付方式</button></div>
+      </div>
+      <div class="state">
+        <div class="glyph">⌛</div>
+        <div class="title">订单已超时关单</div>
+        <p class="desc">下单后 15 分钟未完成支付，订单已自动关闭并释放库存（示例规则）</p>
+        <button class="btn btn-ghost btn-sm">重新选购</button>
+      </div>
+      <div class="state">
+        <div class="glyph">🔍</div>
+        <div class="title">空态：没有符合条件的票档</div>
+        <p class="desc">当前筛选条件下没有可购票档，试试放宽条件</p>
+        <button class="btn btn-soft btn-sm">清除筛选</button>
+      </div>
+      <div class="state">
+        <div class="glyph">✅</div>
+        <div class="title">下单成功</div>
+        <p class="desc">已锁定库存，请在 15 分钟内完成支付（示例规则）</p>
+        <button class="btn btn-sm">去支付</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:10px">支付超时、支付期限到期、渠道确认失败是三个不同事实：超时仅关单释放，渠道失败须先核实再决定，结果未知走对账（对应后端 UNKNOWN 状态）。</p>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 购买页原型 · 数据为示例</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script src="../theme.js"></script>
+</body>
+</html>

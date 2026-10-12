@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AWN 麦芒网 · 四端界面原型总览</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .proto-card .path { font-family:var(--font-num); font-size:var(--fs-xs); color:var(--t-fg-muted) }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="index.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <div class="row" style="margin-left:auto">
+      <span class="chip" aria-selected="true">右上角可切换 11 套主题</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:28px">
+  <section class="hero" style="padding:var(--space-xl)">
+    <span class="deco deco-ring" style="width:300px;height:300px;right:-80px;top:-120px"></span>
+    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff;margin-bottom:12px">原型先行 · 用户过目后才动实现 · 数据均为示例</div>
+    <h1 class="title">四端界面原型总览</h1>
+    <p class="subtitle">令牌化多主题体系 · 静态可打开 · 换主题不改布局</p>
+    <div class="meta">
+      <span>🧩 令牌见 theme.css（--t-* 语义令牌 + 结构令牌）</span>
+      <span>📚 组件见 components.css</span>
+      <span>📖 设计文档 docs/design/ui-system.md</span>
+    </div>
+  </section>
+
+  <section class="grid grid-2" style="margin-top:28px">
+    <article class="card proto-card">
+      <h3>Web（Next.js）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">发现列表 / 活动页模板三实例 / 购买页全流程 / 2D 座位图</p>
+      <div class="list-flat" style="margin-top:10px">
+        <a class="list-item" href="web/home.html">home.html <span class="path">发现列表 · 地理筛选排序 · 四态</span></a>
+        <a class="list-item" href="web/activity-f1.html">activity-f1.html <span class="path">活动页模板实例 1 · F1（暗色主题）</span></a>
+        <a class="list-item" href="web/activity-jay.html">activity-jay.html <span class="path">活动页模板实例 2 · 演唱会（中秋主题）</span></a>
+        <a class="list-item" href="web/activity-zcx.html">activity-zcx.html <span class="path">活动页模板实例 3 · 演唱会（秋季主题）</span></a>
+        <a class="list-item" href="web/purchase.html">purchase.html <span class="path">购买页六步流程 + 售罄/排队/支付失败/超时关单</span></a>
+        <a class="list-item" href="web/seatmap-2d.html">seatmap-2d.html <span class="path">2D 座位图 · 底图+可交互分区 · 选区/选排</span></a>
+      </div>
+    </article>
+
+    <article class="card proto-card">
+      <h3>Admin（Vite + React 19 运营后台）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">订单 / 库存 / 异常 / 场次配置</p>
+      <div class="list-flat" style="margin-top:10px">
+        <a class="list-item" href="admin/orders.html">admin/orders.html <span class="path">订单视图 · KPI · 六态筛选</span></a>
+        <a class="list-item" href="admin/inventory.html">admin/inventory.html <span class="path">库存中心 · 调整留审计 · 余额水位</span></a>
+        <a class="list-item" href="admin/anomalies.html">admin/anomalies.html <span class="path">异常视图 · 三分类告警 · 确认操作</span></a>
+        <a class="list-item" href="admin/session-config.html">admin/session-config.html <span class="path">场次配置 · geo 字段 · 座位分区 · 活动页字段清单</span></a>
+      </div>
+    </article>
+
+    <article class="card proto-card">
+      <h3>Client（Flutter App）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">手机端关键流程</p>
+      <div class="list-flat" style="margin-top:10px">
+        <a class="list-item" href="mobile/purchase-flow.html">mobile/purchase-flow.html <span class="path">购买流程（手机屏）</span></a>
+        <a class="list-item" href="mobile/seatmap-mobile.html">mobile/seatmap-mobile.html <span class="path">移动端 2D 座位图</span></a>
+      </div>
+    </article>
+
+    <article class="card proto-card">
+      <h3>Miniprogram（Taro 小程序）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">小程序端关键页面</p>
+      <div class="list-flat" style="margin-top:10px">
+        <a class="list-item" href="mobile/miniprogram.html">mobile/miniprogram.html <span class="path">小程序页面组</span></a>
+      </div>
+    </article>
+  </section>
+
+  <!-- 主题清单 -->
+  <section style="margin-top:32px">
+    <h2>主题清单（11 套 · 换主题不改布局）</h2>
+    <div class="grid grid-3">
+      <div class="card"><strong>default</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">品牌黑金 · 全站默认</p></div>
+      <div class="card"><strong>dark</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">暗色 · 夜间 / 赛事（F1 实例采用）</p></div>
+      <div class="card"><strong>cn-spring-festival</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">春节 · 正红+金 · 春节档/贺岁</p></div>
+      <div class="card"><strong>cn-lantern</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">元宵 · 暖橙+灯火 · 元宵灯会</p></div>
+      <div class="card"><strong>cn-dragon-boat</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">端午 · 粽绿+雄黄 · 端午档</p></div>
+      <div class="card"><strong>cn-mid-autumn</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">中秋 · 靛蓝+月光银金 · 中秋晚会/夜场（周杰伦实例采用）</p></div>
+      <div class="card"><strong>cn-national-day</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">国庆 · 国旗红金 · 国庆档</p></div>
+      <div class="card"><strong>season-spring</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">春 · 嫩绿+樱粉 · 春季档</p></div>
+      <div class="card"><strong>season-summer</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">夏 · 海蓝+日光 · 夏季音乐节</p></div>
+      <div class="card"><strong>season-autumn</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">秋 · 暖橙+桂黄 · 秋季档（周传雄实例采用）</p></div>
+      <div class="card"><strong>season-winter</strong><p class="muted" style="font-size:var(--fs-sm);margin:4px 0 0">冬 · 冷蓝+雪白 · 跨年/冬季档</p></div>
+    </div>
+    <p class="hint" style="margin-top:10px">主题切换 = html 的 data-theme 属性；所有页面右上角悬浮切换器（theme.js）实时预览。完整色板与适用场景见 docs/design/ui-system.md。</p>
+  </section>
+
+  <!-- 素材红线与待拍板 -->
+  <section class="grid grid-2" style="margin-top:32px">
+    <div class="card">
+      <h3>素材红线（全部原型已遵守）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">· 不生成明星肖像、照片或品牌 logo 代餐——文字占位 + 纯色/几何装饰</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· logo 仅用 docs/design/logo-candidates.md 仓内候选（最终选择待用户拍板，不自行替换）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· 价格、票档、退改规则一律标注「示例」</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· 座位图数据不抄官方座位图文件，用公开资料重建并标注「示意 · 待人工复核」</p>
+    </div>
+    <div class="card">
+      <h3>待拍板项</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">1. logo 选择（logo-candidates.md 三个方向）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">2. 原型整体过目 → 通过后才进入实现（逐屏报 已对上/有差异/未实现 + 截图）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">3. 座位图立项：先做三问验证（5 场馆来源明确底图 / 统一分区数据前端展示 / 同场馆两场复用基础布局），成立后再定 venue-seats 独立项目 —— 见 docs/research/venue-seatmaps.md</p>
+      <p class="muted" style="font-size:var(--fs-sm)">4. 3D 原型：等 2D 过目后再做（当前仅为线框示意占位）</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 原型总览 · 静态可打开 · 无第三方设计素材</span>
+    <a href="../ui-system.md">设计文档</a>
+  </div>
+</footer>
+
+<script src="theme.js"></script>
+</body>
+</html>

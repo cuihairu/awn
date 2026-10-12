@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>异常视图 · AWN 运营后台原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  /* 本页特有排版：仅使用 theme.css 令牌 */
+  .proto-topbar { padding-top: var(--space-md); }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-lg); }
+  .page-head h1 { margin-bottom: var(--space-xs); }
+  .sidenav .brand { padding: var(--space-xs) var(--space-sm) var(--space-md); }
+  .sidenav .side-cap { font-size: var(--fs-xs); color: var(--t-fg-subtle); letter-spacing: 0.08em; padding: 0 var(--space-sm); margin: var(--space-md) 0 var(--space-xs); }
+  .sidenav .item { display: flex; align-items: center; gap: var(--space-sm); }
+  .sidenav .item svg { width: 16px; height: 16px; flex: none; }
+  .alert-item .msg { min-width: 0; flex: 1; }
+  .alert-item .head-line { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+  .alert-item .ref { font-family: var(--font-num); font-size: var(--fs-xs); color: var(--t-fg-subtle); margin-top: var(--space-xs); }
+  code.f { font-family: var(--font-num); font-size: var(--fs-xs); background: var(--t-sunken); border: 1px solid var(--t-border); border-radius: var(--radius-sm); padding: 1px 6px; }
+</style>
+</head>
+<body>
+<!-- 原型说明条：本页定位 + 数据为示例 -->
+<div class="wrap proto-topbar"><div class="demo-note">原型 · 数据为示例 · 对应契约 docs/api/contracts.md「运营接口」GET /api/v1/admin/anomalies · POST /anomalies/{id}/acknowledge</div></div>
+
+<div class="layout-admin">
+  <nav class="sidenav" aria-label="后台导航">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2 18 22 12 17 6 22Z"/></svg>
+      <span>AWN 运营后台</span>
+    </div>
+    <div class="side-cap">运营</div>
+    <a class="item" href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg><span>订单</span></a>
+    <a class="item" href="inventory.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>库存</span></a>
+    <a class="item" href="anomalies.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 21 19H3Z"/><path d="M12 10v4M12 17h.01"/></svg><span>异常</span></a>
+    <a class="item" href="session-config.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z"/><circle cx="12" cy="11" r="2"/></svg><span>场次配置</span></a>
+    <div class="side-cap">规划中</div>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><span>审计</span><span class="badge badge-outline">规划中</span></span>
+    <span class="item" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M7 5l-3 6a3.5 3.5 0 0 0 7 0L8 5M17 5l-3 6a3.5 3.5 0 0 0 7 0l-3-6M12 5v14M8 21h8"/></svg><span>对账</span><span class="badge badge-outline">规划中</span></span>
+  </nav>
+
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>异常视图</h1>
+        <p class="muted" style="margin:0">库存异常 / 支付异常 / 对账差异 的统一告警台</p>
+      </div>
+      <span class="demo-note">告警内容与编号为示例</span>
+    </div>
+
+    <!-- 三分类计数 -->
+    <div class="grid grid-3" style="margin-bottom: var(--space-lg)">
+      <div class="kpi-card">
+        <div class="label">库存异常</div>
+        <div class="value num" style="color: var(--t-warning)">3</div>
+        <div class="delta" style="color: var(--t-danger)">▲ 1 vs 昨日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">支付异常</div>
+        <div class="value num">2</div>
+        <div class="delta">▼ 2 vs 昨日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">对账差异</div>
+        <div class="value num" style="color: var(--t-danger)">1</div>
+        <div class="hint">RECON-20261012-0031 待确认</div>
+      </div>
+    </div>
+
+    <!-- 告警列表 -->
+    <section class="card" aria-labelledby="alerts-title">
+      <div class="row-between" style="margin-bottom: var(--space-sm)">
+        <h2 id="alerts-title" class="card-title" style="margin:0">未确认告警 <span class="badge badge-danger num">9</span></h2>
+        <span class="hint">「确认」调用 <code class="f">POST /api/v1/admin/anomalies/{id}/acknowledge</code>（原型不动后端）</span>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-CRITICAL">CRITICAL</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-danger">对账差异</span><strong>渠道日账与平台订单总额差 ¥1,280.00，需出人工调账单</strong></div>
+          <div class="ref">REF RECON-20261012-0031 · 2026-10-13 08:05</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-CRITICAL">CRITICAL</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-warning">库存异常</span><strong>POOL-ZCX-SZ-B 账实不符：系统可用 120，场馆实盘 96，缺口 24 张</strong></div>
+          <div class="ref">REF INV-DISC-20261013-02 · 2026-10-13 07:48</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-WARN">WARN</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-warning">支付异常</span><strong>渠道回调超时：订单 AWN-20261013-000402 逾 15 分钟未收到异步通知，已进入补偿轮询</strong></div>
+          <div class="ref">REF PAY-TIMEOUT-20261013-07 · 2026-10-13 08:12</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-WARN">WARN</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-info">事件投递失败</span><strong>ORDER_PAID 重试 3 次后转 FAILED，下游履约未感知，待人工重投</strong></div>
+          <div class="ref">REF EVT-20261013-1182 · 2026-10-13 07:55</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-WARN">WARN</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-warning">库存异常</span><strong>POOL-F1-SH-MAIN 可用量 16.7%，低于 20% 预警线</strong></div>
+          <div class="ref">REF INV-LOW-20261013-11 · 2026-10-13 06:00</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-WARN">WARN</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-danger">对账差异</span><strong>渠道长款 ¥60.00 无匹配订单，待人工挂账</strong></div>
+          <div class="ref">REF RECON-20261012-0034 · 2026-10-12 23:40</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-INFO">INFO</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-warning">支付异常</span><strong>退款单 REFUND-20261012-088 渠道状态 12 小时未同步，已触发查询补偿</strong></div>
+          <div class="ref">REF REFUND-STALE-088 · 2026-10-12 21:10</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-INFO">INFO</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-info">事件投递失败</span><strong>INVENTORY_ADJUSTED 投递延迟 P99 32s，已自动恢复，无需处理</strong></div>
+          <div class="ref">REF EVT-20261013-1109 · 2026-10-12 20:02</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+
+      <div class="alert-item">
+        <span class="sev sev-INFO">INFO</span>
+        <div class="msg">
+          <div class="head-line"><span class="badge badge-warning">库存异常</span><strong>POOL-JAY-HZ-2 预留超时自动释放 2 笔（共 4 张），占用已回补</strong></div>
+          <div class="ref">REF INV-REL-20261013-03 · 2026-10-13 05:30</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" type="button">确认</button>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 全部已确认空态 + 一键确认 -->
+    <h2>处理完成后的状态</h2>
+    <div class="grid grid-2" style="margin-top: var(--space-md); align-items: stretch">
+      <div class="state">
+        <div class="glyph" aria-hidden="true">✓</div>
+        <div class="title">全部已确认</div>
+        <div class="desc">当前无未处理告警。新告警产生时会实时进入上方列表并标记未读。</div>
+        <button class="btn btn-sm btn-ghost" type="button" disabled>暂无可确认项</button>
+      </div>
+      <div class="sunken col" style="justify-content: center">
+        <h3 style="margin-top:0">批量处理</h3>
+        <p class="muted" style="margin:0">一键确认将当前 9 条未确认告警全部标记为已确认（逐条调用 acknowledge 接口），并记录操作人与时间，可在审计中追溯。CRITICAL 级告警建议逐条确认，避免遗漏调账。</p>
+        <div class="row" style="margin-top: var(--space-md)">
+          <button class="btn" type="button">一键全部确认（9）</button>
+          <button class="btn btn-ghost" type="button">仅确认 INFO 级</button>
+        </div>
+        <span class="demo-note" style="margin-top: var(--space-md)">按钮为原型示意，不触发真实请求</span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="wrap row-between">
+        <span>AWN 麦芒网 · 运营后台静态原型 · 数据均为示例</span>
+        <span>「麦芒」三角标为几何占位，非最终 logo</span>
+      </div>
+    </footer>
+  </main>
+</div>
+<script src="../theme.js"></script>
+</body>
+</html>
