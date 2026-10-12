@@ -9,7 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import site.awn.campaign.domain.CampaignNotFoundException;
 import site.awn.catalog.domain.ProductNotFoundException;
+import site.awn.event.domain.EventNotFoundException;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.inventory.domain.InventoryConflictException;
 import site.awn.inventory.domain.PoolNotFoundException;
@@ -52,6 +54,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(PoolNotFoundException.class)
     public ResponseEntity<ErrorResponse> poolNotFound(PoolNotFoundException e) {
         return envelope(ErrorCode.INVENTORY_POOL_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(EventNotFoundException.class)
+    public ResponseEntity<ErrorResponse> eventNotFound(EventNotFoundException e) {
+        return envelope(ErrorCode.EVENT_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(CampaignNotFoundException.class)
+    public ResponseEntity<ErrorResponse> campaignNotFound(CampaignNotFoundException e) {
+        return envelope(ErrorCode.CAMPAIGN_NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(InsufficientInventoryException.class)

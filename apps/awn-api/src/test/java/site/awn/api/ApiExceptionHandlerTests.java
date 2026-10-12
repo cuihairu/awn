@@ -52,9 +52,10 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
         // 契约表中的码一个不少
         assertThat(names).containsExactlyInAnyOrder(
                 "VALIDATION_FAILED", "NOT_FOUND", "ORDER_NOT_FOUND", "INVENTORY_POOL_NOT_FOUND",
+                "EVENT_NOT_FOUND", "CAMPAIGN_NOT_FOUND",
                 "ORDER_CONFLICT", "IDEMPOTENCY_CONFLICT", "INSUFFICIENT_INVENTORY",
                 "INVENTORY_CONFLICT", "CONFLICT", "INTERNAL_ERROR");
-        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(10);
+        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(12);
     }
 
     @Test
