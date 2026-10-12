@@ -98,6 +98,44 @@
 
 ---
 
+## 跨阶段缺口（本轮巡检补充，2026-10-13）
+
+以下为逐 Phase 表之外的真实缺口，均已在 a0ac9fd 上复核：
+
+### packages 与 apps（前端/客户端整体仍为占位）
+
+- [ ] 四个共享包零消费方、零测试：全仓 grep `@awn/` 在 apps/ 下无任何 import
+  验收：api-client 与 campaign-renderer 至少被一个真实端（web/admin/miniprogram）import，且各包有单测。期次：随 Phase 02
+- [ ] apps/web（Next.js）：`app/page.tsx` 仅 22 行占位，无数据层
+  验收：消费 api-client 渲染统一商品列表（contracts.md 对应端点）。期次：Phase 02 后
+- [ ] apps/admin（Vite+React）：`src/App.tsx` 仅 29 行静态侧边栏，无路由无 API
+  验收：最小活动/专场编辑 + 发布流。期次：Phase 02 后
+- [ ] apps/miniprogram（Taro）：`pages/index/index.tsx` 仅 22 行占位，未声明 @awn/* 依赖
+  验收：白名单 section 子集渲染 + 下单链路。期次：Phase 03 后
+- [ ] apps/client（Flutter）：`lib/main.dart` 86 行单页骨架，pubspec 声明 dio/json_serializable 但无生成代码
+  验收：从 OpenAPI 生成模型并跑通只读链路。期次：Phase 03 后
+
+### 设计文档自洽性
+
+- [ ] `campaign_assets` 表仅见于 campaign-rendering.md（1 处），domain-model.md 总表 0 处
+  验收：总表收录该表并标注归属模块。期次：Phase 02 内顺手
+- [ ] `inbox_messages` 已列入 domain-model.md，但 async-outbox.md 0 处提及——其去重职责（与渠道事务唯一约束的关系）无文档
+  验收：async-outbox.md 增补 Inbox 消费与去重时序，或补一条 ADR。期次：Phase 04 前
+- [ ] marketplace / notification 两模块在 domain-model.md 中 0 表设计
+  验收：Phase 05 动工前补齐两模块表设计。期次：Phase 05 前
+
+### 错误信封可选增强
+
+- [ ] ErrorResponse 无字段级校验明细：contracts.md 的 VALIDATION_FAILED 未规定字段明细，当前实现合规；但多端表单场景（admin/小程序）拿不到「哪个字段错」
+  验收：若多端接入后确认需要，扩展信封 `fieldErrors` 并同步 contracts.md；不需要则维持现状。期次：暂缓，待多端实际接入后裁决
+
+---
+
+## 本轮巡检记录（2026-10-13）
+
+- 本轮巡检前本地曾有两笔提交（旧版 todo.md 与一套独立的统一异常实现 `shared/api/error/*` + `GlobalExceptionHandler`）。经与远端比对：远端 8789d10 已以更贴合架构的实现覆盖同一需求（组合根 `ApiExceptionHandler` 映射领域异常、模块保持 HTTP 无关，且已被 order/inventory 消费、对齐 contracts.md 并带 4 例测试），远端 todo.md 亦远比本地版完整。**本地两笔提交已丢弃**，其中唯一的差异点（字段级校验明细）已转入上方「错误信封可选增强」。无其他可保留内容。
+- 本机验证：`mvn -B -ntp -pl modules/awn-shared -am test` 通过（含 10 例）；`mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am` 中 ModularityTests 2/2 通过；AwnApiApplicationTests 因本机 Testcontainers 无法发现 Docker 环境失败（环境级，远端 CI 绿）。
+
 ## 盘点口径说明
 
 - **已实现**：代码在仓且有 commit 证据；含测试的条目须测试通过。
