@@ -1,5 +1,13 @@
 # 测试清单
 
+## 本机运行集成测试
+
+集成测试需要本机可用的 Docker daemon。Docker Engine 28+ 将最低 API 版本提升到 1.44，
+而 Testcontainers 内置 docker-java 在未显式配置时以 API 1.32 握手，报错
+`client version 1.32 is too old. Minimum supported API version is 1.44`。
+解决方法：在 `~/.docker-java.properties` 写入 `api.version=1.44`（Docker 25+ 均支持），
+Testcontainers 检测到显式版本后不再回退到 1.32。
+
 ## 防超卖测试
 
 测试环境使用**真实 PostgreSQL**（Testcontainers），而不是用 H2 或模拟 Repository 替代。

@@ -134,7 +134,12 @@
 ## 本轮巡检记录（2026-10-13）
 
 - 本轮巡检前本地曾有两笔提交（旧版 todo.md 与一套独立的统一异常实现 `shared/api/error/*` + `GlobalExceptionHandler`）。经与远端比对：远端 8789d10 已以更贴合架构的实现覆盖同一需求（组合根 `ApiExceptionHandler` 映射领域异常、模块保持 HTTP 无关，且已被 order/inventory 消费、对齐 contracts.md 并带 4 例测试），远端 todo.md 亦远比本地版完整。**本地两笔提交已丢弃**，其中唯一的差异点（字段级校验明细）已转入上方「错误信封可选增强」。无其他可保留内容。
-- 本机验证：`mvn -B -ntp -pl modules/awn-shared -am test` 通过（含 10 例）；`mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am` 中 ModularityTests 2/2 通过；AwnApiApplicationTests 因本机 Testcontainers 无法发现 Docker 环境失败（环境级，远端 CI 绿）。
+
+### 本机集成测试卡点已解除（本轮关键成果）
+
+- **根因**：Testcontainers 1.21.3 内置 shaded docker-java 3.4.2 在配置未显式给出 `api.version` 时，由 `DockerClientProviderStrategy` 回退固定值 `VERSION_1_32`；Docker Engine 28 最低接受 API 1.44，握手被拒（`client version 1.32 is too old`）。`DOCKER_API_VERSION` 环境变量不在 docker-java 的 env 映射内，无效。
+- **修复**：`~/.docker-java.properties` 写入 `api.version=1.44`（docker-java 从 `${user.home}/.docker-java.properties` 加载配置，显式版本下不再回退 1.32）。机器本地改动，不入仓；文档已补至 `docs/testing/checklist.md`「本机运行集成测试」节。
+- **全量验证（首次本机全绿）**：`mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am` exit 0，17 模块全 SUCCESS。测试 39/39：OrderCoreTests 9、OrderTimeoutServiceTests 4、ApiExceptionHandlerTests 4、InventoryConcurrencyTests 3（24 线程 10 票恰 10 成功）、CatalogModuleTests 3、MaskingTests 5、TraceIdFilterTests 3、TracesTests 3、AwnApiApplicationTests 1（真实 PG）、ModularityTests 2、WorkerTasksTests 5。远端台账中 Phase 01/03 的验收声明在本机同样成立。
 
 ## 盘点口径说明
 
