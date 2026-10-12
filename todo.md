@@ -96,18 +96,58 @@
   验收：支付成功不自动等于交付成功；履约失败进入异常流程而非静默吞掉。期次：Phase 05
   证据：FulfillmentModuleTests——PAYMENT_SUCCEEDED → 履约单 PENDING_SELLER（非 COMPLETED）、交付凭证白名单校验、核验拒绝 / 卖家上报失败 → FAILED + FULFILLMENT_FAILED 事件 → 订单 REFUND_PENDING（事件闭环，重放幂等）；beb11c7
 
+## Phase 07 · 四端界面重做（来源：用户 2026-10-12）
+
+> 纪律：**原型先行**——原型经用户过目后才动实现代码；实现须逐屏给「已对上/有差异/未实现」三档 + 截图证据。
+> 素材红线：不生成明星肖像、照片、品牌 logo 代餐（用文字占位 + 纯色/几何装饰）；票务敏感信息以占位数据标注「示例」。
+
+- [ ] 四端 UI 原型重做与多主题体系（web / admin / client / miniprogram）
+  验收：每端一套静态 HTML 原型（`docs/design/prototypes/`，可直接打开、截图可验）；主题令牌化、换主题不改布局，至少含 ① 默认（品牌色）② 暗色 ③ 中国节日（春节/元宵/端午/中秋/国庆）④ 季节（春夏秋冬）；`docs/design/ui-system.md` 记录令牌表、主题清单与适用场景、组件复用关系。期次：Phase 07
+  进度：`theme.css`（11 套主题令牌）、`components.css`（公共组件）已产出，进行中。
+- [ ] 活动页模板 + 三套实例（F1 赛事 / 周杰伦演唱会 / 周传雄演唱会）
+  验收：同一套模板不同内容与配色（模板字段清单写进设计文档，含赛程/分站/车队车手 与 场次时间地点/票档与座位区/购票须知/退换规则）；活动页可被后台配置出来（字段与受控资源约束对齐 Phase 02 白名单）。期次：Phase 07
+- [ ] 购买页全流程（选场次 → 票档/座位 → 数量与实名 → 下单 → 支付 → 出票）
+  验收：含空态/售罄/排队或抢购中/支付失败/超时关单状态；四态（空/加载/错误/成功）在关键流程给出。期次：Phase 07
+- [ ] 每场次地理位置（城市/地址/坐标 + 地图）
+  验收：场次卡片与详情页展示 city/address/lat/lng；地图组件离线可用（静态图/占位图），联网地图作为可选项写进设计；列表可按地理位置筛选/排序（距离近优先，无定位降级城市名排序）；后台配置字段进设计文档。期次：Phase 07
+- [ ] 2D/3D 可切换座位图（P1 2D / P2 3D）
+  验收：P1 2D SVG/Canvas（分区/排/座号、缩放拖动、点选、售罄置灰、区域高亮对应票档颜色）；P2 3D WebGL（同一批座位数据换渲染器、视角旋转/俯仰、跳到某区、程序化几何）；两套共享同一数据模型与选座状态（切视图不丢选中，切换按钮在座位图区右上）；3D 渲染/拾取/移动端降级（低端机自动回 2D）风险点与帧率目标写进设计文档。原型先出 2D，3D 仅线框/示意。期次：Phase 07
+- [ ] 座位图数据来源调研 → 立项决策（来源：用户 2026-10-12，**待用户拍板后才动实现**）
+  验收：`docs/research/venue-seatmaps.md` 逐条列开源项目（项目/许可/数据格式/是否含中国常见场馆/可复用 web 与移动端/维护活跃度 + 出处链接，查不到写「未找到」）；给出**单个推荐**（能直接用则写接入方式与许可合规，否则立独立项目 `venue-seats`：场馆/看台/区/排/座 + 地理坐标数据模型 + 2D/3D 渲染器 + 选座交互，doggo/awn 以依赖引用，README 与数据格式说明，中国常见场馆 3–5 个示例，拿不到准确数据标注「示意」）。期次：Phase 07
+  进度：调研已委派执行中，本轮只交调研与推荐，不实现。
+
+## Phase 08 · 交付工程化（来源：用户 2026-10-12）
+
+- [ ] 默认构建：一条命令出可运行产物
+  验收：Maven 主服务 + pnpm 前端各自收口到 `make build` 或 `scripts/build.sh`；产物路径写清；构建可重复、失败非零退出。期次：Phase 08
+- [ ] Docker 镜像：多阶段构建
+  验收：构建阶段 JDK/Maven 与 Node，运行阶段精简基础镜像；非 root 运行；含 `HEALTHCHECK`；`.dockerignore` 排除 target/node_modules/.git；镜像体积写入验收（给出实测大小）。期次：Phase 08
+- [ ] docker-compose 一键起 + 一键验证
+  验收：`docker-compose.yml` 含主服务 + 依赖（数据库按仓内实际选型 PostgreSQL）、卷与端口映射、示例数据或迁移自动执行；`docker compose up -d` 后健康检查通过并跑一条冒烟（关键接口返回预期）；README 写清这一条命令。期次：Phase 08
+
 ## Phase 06 · 票务情报与运营完善
 
-- [ ] 情报来源适配器 + 原始观察 + 标准化（intelligence schema 落地）
+- [x] 情报来源适配器 + 原始观察 + 标准化（intelligence schema 落地）
   验收：情报角色对交易表零权限（`deploy/config/postgres/init-intel.sql` 审计通过）；情报写入失败不影响交易。期次：Phase 06
-- [ ] 价格历史、数据质量检查与来源可信度展示
+  完成：awn-intelligence 模块（适配器/原始观察/标准化/质量检查）+ `IntelligenceModuleTests` 5 例（采集落库/质量拒绝/适配器失败不外抛/外部引用去重/可信度校验）+ `IntelligenceIsolationTests`（以 `awn_intel` 真实连接验证 intelligence schema 可读写、public 交易表读写建表全被拒），commit 4dce325。
+- [x] 价格历史、数据质量检查与来源可信度展示
   验收：每条价格可溯源（来源、更新时间、可信度）。期次：Phase 06
+  完成：price_history 每条含 sourceNo/sourceName/kind/trustTier/observedAt（测试断言）；质量检查拦截负价格/非法币种/未来时间（REJECTED 不进历史），commit 4dce325。
 - [ ] 运营后台（apps/admin）核心页面接真实 API
   验收：订单/库存/异常三视图使用真实数据；权限校验生效。期次：Phase 06
-- [ ] 审计、监控、告警
+  进度：后端已落地——`AdminAuthFilter`（X-Admin-Token，缺失/错误 401）+ `AdminController`（orders/inventory/adjustments/reconciliation/anomalies/audit-logs）+ `AdminApiTests` 6 例，commit 4dce325；前端三视图待 Phase 07 原型过目后按原型实现。
+- [x] 审计、监控、告警
   验收：库存异常、支付异常、对账差异三类告警可触发；敏感操作有审计记录。期次：Phase 06
+  完成：三类告警（INVENTORY/PAYMENT/RECONCILIATION）分别在库存对账差异、outbox 转 FAILED、支付对账差异三处触发（`AlertRecorder` REQUIRES_NEW 独立事务，业务回滚不丢告警）；`AdminApiTests` 逐类断言 + 确认后从异常视图消失；审计记录覆盖库存调整/供货审核/卖家暂停，commit 4dce325。
 - [ ] 备份恢复演练 + 压测报告 + 生产部署手册
   验收：一次完整恢复演练记录；压测报告含吞吐与瓶颈结论。期次：Phase 06
+
+## Phase 09 · 业务闭环审查（来源：用户 2026-10-12 转发外部评审）
+
+- [ ] 商品 / 票档 / 票品 / 库存池 / 卖家 / 供货 / 挂牌关系澄清（评审 P0 建议）
+  验收：明确首期交易对象与四类业务事实（平台自营票量 / 第三方挂牌 / 独立票品 / 外部情报报价）的数据模型落点；全链时序图（活动创建→商品上架→卖家供货→库存建立→下单→支付→出票→交付→退款）标事务边界；关键不变量转化为集成测试清单。期次：Phase 09
+- [ ] 情报隔离表述与账号权限核对（评审指出「物理隔离」表述过强）
+  验收：文档改为「同实例 intelligence schema + 独立角色 awn_intel 权限边界」；核对 API/Worker 运行账号不含绕过权限的说明写入部署文档（`IntelligenceIsolationTests` 已验证 awn_intel 零交易表权限，commit 4dce325）。期次：Phase 09
 
 ---
 
