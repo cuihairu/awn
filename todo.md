@@ -29,8 +29,9 @@
 
 ## Phase 02 · 活动、商品与专场
 
-- [ ] 活动、场次、票档、商品数据模型与迁移（V2 起，含 awn-event / awn-catalog 模块代码）
+- [x] 活动、场次、票档、商品数据模型与迁移（V4 起，含 awn-event / awn-catalog 模块代码）
   验收：Flyway 迁移可从空库执行；JPA 映射 `ddl-auto: validate` 通过；实体级测试。期次：Phase 02
+  完成：V4__catalog_tables.sql + Venue/Event/Session/TicketCategory/Product 实体 + Facade + 集成测试，commit e957603。
 - [ ] 统一商品 API：商品列表、详情、票档可售状态（缓存展示值，下单重校验）
   验收：接口与 `docs/api/contracts.md` 一致；集成测试覆盖列表/详情/售罄态。期次：Phase 02
 - [ ] 专场草稿、配置 Schema、校验、发布版本（不可变 revision）
