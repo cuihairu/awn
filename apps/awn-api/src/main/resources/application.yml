@@ -41,3 +41,6 @@ awn:
   worker:
     # API 进程不执行后台任务
     enabled: false
+  admin:
+    # 运营接口令牌（生产环境必须通过环境变量覆盖）
+    token: ${AWN_ADMIN_TOKEN:awn-admin-dev-token}

@@ -19,6 +19,9 @@ public interface OrderFacade {
 
     OrderView orderOf(String orderNo);
 
+    /** 运营后台订单视图：最近订单（新→旧，限 50 条） */
+    java.util.List<OrderView> recentOrders();
+
     /** 取消待支付订单并释放全部预留。重复取消幂等返回 false；非待支付状态抛冲突。 */
     boolean cancel(String orderNo);
 

@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import site.awn.shared.alert.AlertCategory;
+import site.awn.shared.alert.AlertRecorder;
+import site.awn.shared.alert.AlertSeverity;
 import site.awn.shared.inbox.InboxMessage;
 import site.awn.shared.inbox.InboxMessageRepository;
 
@@ -32,15 +35,18 @@ public class OutboxDispatchService {
     private final InboxMessageRepository inbox;
     private final List<OutboxEventHandler> handlers;
     private final TransactionTemplate transactions;
+    private final AlertRecorder alerts;
 
     public OutboxDispatchService(OutboxMessageRepository outbox,
                                  InboxMessageRepository inbox,
                                  List<OutboxEventHandler> handlers,
-                                 TransactionTemplate transactions) {
+                                 TransactionTemplate transactions,
+                                 AlertRecorder alerts) {
         this.outbox = outbox;
         this.inbox = inbox;
         this.handlers = List.copyOf(handlers);
         this.transactions = transactions;
+        this.alerts = alerts;
     }
 
     /**
@@ -97,7 +103,7 @@ public class OutboxDispatchService {
         }
     }
 
-    /** 失败登记：独立事务，按退避重试；超上限转 FAILED */
+    /** 失败登记：独立事务，按退避重试；超上限转 FAILED 并触发支付/消费异常告警 */
     private void registerFailure(Long id, Instant now, Exception cause) {
         log.warn("outbox message {} dispatch failed: {}", id, cause.getMessage());
         transactions.executeWithoutResult(tx -> {
@@ -109,6 +115,14 @@ public class OutboxDispatchService {
             if (attempts >= MAX_ATTEMPTS) {
                 message.fail(attempts);
                 log.error("outbox message {} moved to FAILED after {} attempts", id, attempts);
+                // 事件不可消费属于异常流程入口：支付/退款事件 → 支付异常告警；其余 → 对账告警
+                AlertCategory category = message.getEventType().startsWith("PAYMENT")
+                        || message.getEventType().startsWith("REFUND")
+                        ? AlertCategory.PAYMENT : AlertCategory.RECONCILIATION;
+                alerts.raise(category, AlertSeverity.CRITICAL,
+                        "outbox message moved to FAILED: " + message.getEventType()
+                                + " after " + attempts + " attempts: " + cause.getMessage(),
+                        String.valueOf(id));
             } else {
                 message.reschedule(attempts, now.plus(BACKOFF_BASE.multipliedBy(attempts)));
             }

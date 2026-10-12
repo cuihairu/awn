@@ -27,6 +27,9 @@ import site.awn.payment.domain.RefundNotFoundException;
 import site.awn.payment.domain.RefundStatus;
 import site.awn.payment.infrastructure.PaymentRepository;
 import site.awn.payment.infrastructure.RefundRepository;
+import site.awn.shared.alert.AlertCategory;
+import site.awn.shared.alert.AlertRecorder;
+import site.awn.shared.alert.AlertSeverity;
 import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 
@@ -50,17 +53,20 @@ public class PaymentFacadeImpl implements PaymentFacade {
     private final PaymentGatewayRouter router;
     private final OutboxMessageRepository outbox;
     private final site.awn.order.api.OrderFacade orders;
+    private final AlertRecorder alerts;
 
     public PaymentFacadeImpl(PaymentRepository payments,
                              RefundRepository refunds,
                              PaymentGatewayRouter router,
                              OutboxMessageRepository outbox,
-                             site.awn.order.api.OrderFacade orders) {
+                             site.awn.order.api.OrderFacade orders,
+                             AlertRecorder alerts) {
         this.payments = payments;
         this.refunds = refunds;
         this.router = router;
         this.outbox = outbox;
         this.orders = orders;
+        this.alerts = alerts;
     }
 
     @Override
@@ -250,7 +256,7 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PaymentReconciliationReport reconcile() {
         List<PaymentReconciliationReport.ReconciliationDifference> differences = new ArrayList<>();
         int paymentsChecked = 0;
@@ -275,6 +281,14 @@ public class PaymentFacadeImpl implements PaymentFacade {
                 differences.add(new PaymentReconciliationReport.ReconciliationDifference(
                         "REFUND", refund.getRefundNo(), refund.getStatus().name(), channelStatus.name()));
             }
+        }
+
+        // 对账差异必须可告警：每条差异落一条 RECONCILIATION 告警
+        for (PaymentReconciliationReport.ReconciliationDifference difference : differences) {
+            alerts.raise(AlertCategory.RECONCILIATION, AlertSeverity.WARN,
+                    "reconciliation difference: local=" + difference.localStatus()
+                            + " channel=" + difference.channelStatus(),
+                    difference.kind() + ":" + difference.reference());
         }
 
         return new PaymentReconciliationReport(paymentsChecked, refundsChecked, differences);

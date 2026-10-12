@@ -29,6 +29,13 @@ public class OrderReadService {
         return toView(order, items.findByOrderId(order.getId()));
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<OrderView> recentOrders() {
+        return orders.findTop50ByOrderByIdDesc().stream()
+                .map(o -> toView(o, items.findByOrderId(o.getId())))
+                .toList();
+    }
+
     static OrderView toView(Order order, List<OrderItem> lines) {
         List<OrderItemView> itemViews = lines.stream()
                 .map(i -> new OrderItemView(

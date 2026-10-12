@@ -7,6 +7,7 @@ import site.awn.inventory.api.PoolView;
 import site.awn.inventory.api.ReservationView;
 import site.awn.inventory.api.ReserveInventoryCommand;
 import site.awn.inventory.domain.InventoryBalance;
+import site.awn.inventory.domain.InventoryConflictException;
 import site.awn.inventory.domain.InventoryPool;
 import site.awn.inventory.domain.InventoryReservation;
 import site.awn.inventory.domain.InventoryTransaction;
@@ -42,6 +43,37 @@ public class InventoryWriteService {
         this.balanceRepository = balanceRepository;
         this.reservationRepository = reservationRepository;
         this.transactionRepository = transactionRepository;
+    }
+
+    /**
+     * 运营库存调整：正数扩容、负数缩容，写 ADJUST 流水（方向由符号携带）。
+     * 调整后总量必须仍满足 reserved + sold <= total；原因必填（审计由组合根记录）。
+     */
+    @Transactional
+    public void adjustPool(String poolCode, int delta, String reason, String actor) {
+        if (delta == 0) {
+            throw new IllegalArgumentException("adjustment delta must not be zero");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("adjustment reason is required");
+        }
+        var pool = poolRepository.findByPoolCode(poolCode)
+                .orElseThrow(() -> new PoolNotFoundException(poolCode));
+        var balance = balanceRepository.findById(pool.getId())
+                .orElseThrow(() -> new IllegalStateException("balance missing for pool: " + poolCode));
+        int newTotal = balance.getTotalQuantity() + delta;
+        if (newTotal < balance.getReservedQuantity() + balance.getSoldQuantity()) {
+            throw new InventoryConflictException(
+                    "adjustment would break reserved + sold <= total for pool: " + poolCode);
+        }
+        balance.setTotalQuantity(newTotal);
+        balanceRepository.save(balance);
+
+        var ledger = new InventoryTransaction();
+        ledger.setInventoryPoolId(pool.getId());
+        ledger.setType(LedgerType.ADJUST);
+        ledger.setQuantity(delta);
+        transactionRepository.save(ledger);
     }
 
     @Transactional

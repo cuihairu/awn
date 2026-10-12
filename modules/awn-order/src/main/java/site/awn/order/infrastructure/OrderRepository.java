@@ -14,6 +14,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderNo(String orderNo);
 
+    /** 运营后台订单视图：最近订单（新→旧，限 50 条） */
+    List<Order> findTop50ByOrderByIdDesc();
+
     Optional<Order> findByIdempotencyKey(String idempotencyKey);
 
     /**

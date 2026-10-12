@@ -32,6 +32,11 @@ public class OrderFacadeImpl implements OrderFacade {
     }
 
     @Override
+    public java.util.List<OrderView> recentOrders() {
+        return reads.recentOrders();
+    }
+
+    @Override
     public boolean cancel(String orderNo) {
         return writes.cancel(orderNo);
     }

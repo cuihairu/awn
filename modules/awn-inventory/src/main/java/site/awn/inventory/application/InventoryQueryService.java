@@ -48,4 +48,28 @@ public class InventoryQueryService {
         }
         return Optional.of(balanceOf(pools.get(0).getPoolCode()));
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<BalanceView> balances() {
+        return poolRepository.findAll().stream()
+                .map(pool -> {
+                    var balance = balanceRepository.findById(pool.getId()).orElse(null);
+                    return balance == null ? null : new BalanceView(pool.getPoolCode(),
+                            balance.getTotalQuantity(), balance.getReservedQuantity(),
+                            balance.getSoldQuantity(), balance.available(), balance.getVersion());
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PoolView poolByProductId(String productId) {
+        var pools = poolRepository.findByProductId(productId);
+        if (pools.size() > 1) {
+            throw new IllegalStateException("multiple pools for product: " + productId);
+        }
+        return pools.stream().findFirst()
+                .map(p -> new PoolView(p.getPoolCode()))
+                .orElseThrow(() -> new PoolNotFoundException(productId));
+    }
 }

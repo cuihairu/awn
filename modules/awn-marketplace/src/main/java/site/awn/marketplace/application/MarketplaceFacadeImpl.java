@@ -20,6 +20,8 @@ import site.awn.marketplace.infrastructure.ListingRepository;
 import site.awn.marketplace.infrastructure.SellerRepository;
 import site.awn.marketplace.infrastructure.SupplyReviewRepository;
 import site.awn.marketplace.infrastructure.TicketUnitRepository;
+import site.awn.audit.api.AuditFacade;
+import site.awn.audit.api.RecordAuditCommand;
 import site.awn.shared.url.StorageUrlValidator;
 
 import java.util.UUID;
@@ -35,13 +37,16 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
     private final SupplyReviewRepository reviews;
     private final ListingRepository listings;
     private final TicketUnitRepository units;
+    private final AuditFacade audit;
 
     public MarketplaceFacadeImpl(SellerRepository sellers, SupplyReviewRepository reviews,
-                                 ListingRepository listings, TicketUnitRepository units) {
+                                 ListingRepository listings, TicketUnitRepository units,
+                                 AuditFacade audit) {
         this.sellers = sellers;
         this.reviews = reviews;
         this.listings = listings;
         this.units = units;
+        this.audit = audit;
     }
 
     @Override
@@ -68,6 +73,9 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
         Seller seller = sellers.findBySellerNo(sellerNo)
                 .orElseThrow(() -> new MarketplaceNotFoundException("seller not found: " + sellerNo));
         seller.suspend();
+        // 停用卖家影响其在售挂牌的信任语义：敏感操作留痕
+        audit.record(new RecordAuditCommand("platform", "SELLER_SUSPENDED", "seller",
+                sellerNo, "{\"displayName\":\"" + seller.getDisplayName() + "\"}"));
         return toView(seller);
     }
 
@@ -97,6 +105,9 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
     public SupplyReviewView approveSupplyReview(String reviewNo, String reviewer) {
         SupplyReview review = reviewOf(reviewNo);
         review.approve(reviewer);
+        // 审核决策是敏感操作：授予「平台保证」资质，必须留痕
+        audit.record(new RecordAuditCommand(reviewer, "SUPPLY_REVIEW_APPROVED", "supply_review",
+                reviewNo, "{\"productCode\":\"" + review.getProductCode() + "\"}"));
         return toView(review, sellers.findById(review.getSellerId()).orElseThrow());
     }
 
@@ -105,6 +116,8 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
     public SupplyReviewView rejectSupplyReview(String reviewNo, String reviewer, String reason) {
         SupplyReview review = reviewOf(reviewNo);
         review.reject(reviewer, reason);
+        audit.record(new RecordAuditCommand(reviewer, "SUPPLY_REVIEW_REJECTED", "supply_review",
+                reviewNo, "{\"reason\":\"" + (reason == null ? "" : reason.replace("\"", "'")) + "\"}"));
         return toView(review, sellers.findById(review.getSellerId()).orElseThrow());
     }
 

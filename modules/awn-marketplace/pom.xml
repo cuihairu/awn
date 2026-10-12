@@ -20,5 +20,10 @@
       <groupId>site.awn</groupId>
       <artifactId>awn-shared</artifactId>
     </dependency>
+    <dependency>
+      <groupId>site.awn</groupId>
+      <artifactId>awn-audit</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

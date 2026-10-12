@@ -30,6 +30,19 @@ public interface InventoryFacade {
     Optional<BalanceView> balanceOfProduct(String productId);
 
     /**
+     * 运营库存调整（契约 POST /api/v1/admin/inventory/adjustments）：
+     * 正数扩容、负数缩容，写 ADJUST 流水。要求操作原因（审计记录由组合根负责）。
+     * 调整后总量必须仍满足 reserved + sold <= total。
+     */
+    void adjustPool(String poolCode, int delta, String reason, String actor);
+
+    /** 全部池的余额视图（运营库存中心） */
+    java.util.List<BalanceView> balances();
+
+    /** 按商品 ID 查找库存池（同一商品在同一场次只允许一个池） */
+    PoolView poolByProductId(String productId);
+
+    /**
      * Worker 库存对账：以预留记录（ACTIVE→reserved、CONFIRMED→sold）推导期望值，
      * 与余额计数器逐池核对。发现差异即报告，不自动修复——修复是人工或升级流程的决策。
      */
