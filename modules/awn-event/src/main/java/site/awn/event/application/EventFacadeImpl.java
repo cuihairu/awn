@@ -10,6 +10,7 @@ import site.awn.event.api.EventView;
 import site.awn.event.api.SessionView;
 import site.awn.event.api.VenueView;
 import site.awn.event.domain.Event;
+import site.awn.event.domain.EventNotFoundException;
 import site.awn.event.domain.EventStatus;
 import site.awn.event.domain.Session;
 import site.awn.event.domain.SessionStatus;
@@ -66,7 +67,7 @@ public class EventFacadeImpl implements EventFacade {
     public EventView event(String eventCode) {
         return events.findByEventCode(eventCode)
                 .map(this::toView)
-                .orElseThrow(() -> new IllegalStateException("event not found: " + eventCode));
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
     }
 
     @Override

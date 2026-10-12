@@ -3,6 +3,7 @@ package site.awn.inventory.application;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.awn.inventory.api.BalanceView;
+import site.awn.inventory.api.PoolView;
 import site.awn.inventory.domain.PoolNotFoundException;
 import site.awn.inventory.infrastructure.InventoryBalanceRepository;
 import site.awn.inventory.infrastructure.InventoryPoolRepository;
