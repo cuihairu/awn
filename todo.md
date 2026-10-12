@@ -103,18 +103,25 @@
 
 - [ ] 四端 UI 原型重做与多主题体系（web / admin / client / miniprogram）
   验收：每端一套静态 HTML 原型（`docs/design/prototypes/`，可直接打开、截图可验）；主题令牌化、换主题不改布局，至少含 ① 默认（品牌色）② 暗色 ③ 中国节日（春节/元宵/端午/中秋/国庆）④ 季节（春夏秋冬）；`docs/design/ui-system.md` 记录令牌表、主题清单与适用场景、组件复用关系。期次：Phase 07
-  进度：`theme.css`（11 套主题令牌）、`components.css`（公共组件）已产出，进行中。
+  进度：原型已产出待用户过目——`docs/design/prototypes/`：`index.html`（总览）+ `theme.css`（11 套主题令牌：default/dark/春节/元宵/端午/中秋/国庆/春夏秋冬）+ `components.css`（公共组件）+ `theme.js`（右上角切换器）+ `web/`（home、purchase、seatmap-2d、活动页三实例）+ `admin/`（orders、inventory、anomalies、session-config）+ `mobile/`（purchase-flow、seatmap-mobile、miniprogram）；设计文档 `docs/design/ui-system.md` 已写（令牌表/主题清单/组件复用）。
 - [ ] 活动页模板 + 三套实例（F1 赛事 / 周杰伦演唱会 / 周传雄演唱会）
   验收：同一套模板不同内容与配色（模板字段清单写进设计文档，含赛程/分站/车队车手 与 场次时间地点/票档与座位区/购票须知/退换规则）；活动页可被后台配置出来（字段与受控资源约束对齐 Phase 02 白名单）。期次：Phase 07
+  进度：`web/activity-f1.html`（dark）、`web/activity-jay.html`（cn-mid-autumn）、`web/activity-zcx.html`（season-autumn）同一套 7 区块模板；后台可配置字段清单见 `ui-system.md` §5。
 - [ ] 购买页全流程（选场次 → 票档/座位 → 数量与实名 → 下单 → 支付 → 出票）
   验收：含空态/售罄/排队或抢购中/支付失败/超时关单状态；四态（空/加载/错误/成功）在关键流程给出。期次：Phase 07
+  进度：`web/purchase.html` 已出（六步流程 + 售罄/排队/支付失败/超时关单/空态/下单成功 + 超时≠支付失败≠结果未知口径）。
 - [ ] 每场次地理位置（城市/地址/坐标 + 地图）
   验收：场次卡片与详情页展示 city/address/lat/lng；地图组件离线可用（静态图/占位图），联网地图作为可选项写进设计；列表可按地理位置筛选/排序（距离近优先，无定位降级城市名排序）；后台配置字段进设计文档。期次：Phase 07
+  进度：`web/home.html`（距离排序 + 城市筛选 + 降级提示）、各活动页场次卡与场馆信息、`admin/session-config.html`（city/address/lat/lng 字段显式标注 + 离线静态地图占位）；字段清单与地图选型见 `ui-system.md` §6.1。
 - [ ] 2D/3D 可切换座位图（P1 2D / P2 3D）
   验收：P1 2D SVG/Canvas（分区/排/座号、缩放拖动、点选、售罄置灰、区域高亮对应票档颜色）；P2 3D WebGL（同一批座位数据换渲染器、视角旋转/俯仰、跳到某区、程序化几何）；两套共享同一数据模型与选座状态（切视图不丢选中，切换按钮在座位图区右上）；3D 渲染/拾取/移动端降级（低端机自动回 2D）风险点与帧率目标写进设计文档。原型先出 2D，3D 仅线框/示意。期次：Phase 07
+  进度：`web/seatmap-2d.html` 已出——按拍板方向做「底图 + 可交互分区」：SVG 分区多边形（填充=票档色）、可点击选中、排号范围面板、缩放/拖拽、售罄置灰、L1 分区不虚构排号（南/北看台只展示不开放选排）、数据一份（同一 JS 数据结构驱动渲染）、2D/3D 切换在座位图区右上（3D 标「待 2D 过目后制作」）；3D 风险与帧率目标见 `ui-system.md` §6.3。
 - [ ] 座位图数据来源调研 → 立项决策（来源：用户 2026-10-12，**待用户拍板后才动实现**）
   验收：`docs/research/venue-seatmaps.md` 逐条列开源项目（项目/许可/数据格式/是否含中国常见场馆/可复用 web 与移动端/维护活跃度 + 出处链接，查不到写「未找到」）；给出**单个推荐**（能直接用则写接入方式与许可合规，否则立独立项目 `venue-seats`：场馆/看台/区/排/座 + 地理坐标数据模型 + 2D/3D 渲染器 + 选座交互，doggo/awn 以依赖引用，README 与数据格式说明，中国常见场馆 3–5 个示例，拿不到准确数据标注「示意」）。期次：Phase 07
-  进度：调研已委派执行中，本轮只交调研与推荐，不实现。
+  进度：`docs/research/venue-seatmaps.md` 已交（19 条目：17 开源项目 + 2 商业数据源 + OSM/indoorequal，4 个方向如实记「未找到」；许可与活跃度均经 GitHub API / npm / pub.dev / taginfo 核验，无法核实的标「未核实」）。**单个推荐 = 自建 `venue-seats`（MIT/Apache-2.0）**：无单一项目同时覆盖数据+2D+3D+Flutter，中国场馆座位级开源数据为零（OSM 仅建筑轮廓）；GPL-3.0（SeatMap-JS）与 AGPL-3.0（pretix）因传染性排除；MIT 参考 seatmap-canvas（2D 交互/JSON seat model）与 Fi-Stadium（three.js InstancedMesh+Raycaster 程序化 3D 路线）。**按用户 2026-10-12 拍板，先不立项，先做下方三问验证。待用户拍板后动实现。**
+- [ ] 座位图第一阶段范围与三问验证（来源：用户 2026-10-12 拍板方向）
+  验收：第一阶段定位 = 可复用场馆空间数据平台（导入/维护布局、展示看台与分区、表达演出舞台配置、选区/选排结果关联 AWN 商品与库存），**不是**逐座售票系统；优先覆盖中国大型体育馆/演唱会场馆，试点 20–50 个高频场馆；数据源不限格式（公开图片/PDF/SVG/人工录入），每份原始资料留档来源 URL/采集时间/授权状态/适用版本/审核结果，图片不单独作为数据；数据模型 Venue → VenueLayoutVersion（坐标系/原始资料/审核状态）→ Section（多边形边界/名称/编号/楼层）→ RowRange（起止排/编号方向，**仅有可靠数据时维护、不虚构排号**）→ EventSeatingConfiguration（舞台/开放区域/临时座席/分区↔票档映射）；精度 L1/L2/L3 分级（L3 逐座精确+库存映射为后续）；前端起步 = 底图 + 可交互分区，选择结果提交后端验证商品/库存/购买规则；先做三问验证（5 场馆可用且来源明确的基础座位图 / 统一分区数据并在 AWN 前端正确展示 / 同一场馆两场演出复用基础布局只改舞台与开放区域），三问成立再决定 venue-seats 独立立项。期次：Phase 07
+  进度：范围、数据模型、L1/L2/L3、RowRange 规则、来源分级与流水线已写入 `ui-system.md` §6 与 `docs/research/venue-seatmaps.md` §4–§6；原型 `web/seatmap-2d.html` 已按此实现；三问验证未开始，待用户指定 5 个目标场馆与人力后执行。
 
 ## Phase 08 · 交付工程化（来源：用户 2026-10-12）
 
