@@ -177,6 +177,28 @@ public class OrderWriteService {
         throw new OrderConflictException("payment confirm not allowed from status " + current);
     }
 
+    /**
+     * 履约失败联动：PAID / FULFILLING / FULFILLED → REFUND_PENDING（退款异常流程入口）。
+     * 事件重放幂等：已是 REFUND_PENDING 返回 false。
+     */
+    @Transactional
+    public boolean markRefundPending(String orderNo) {
+        orders.findByOrderNo(orderNo).orElseThrow(() -> new OrderNotFoundException(orderNo));
+        for (OrderStatus from : new OrderStatus[]{OrderStatus.PAID, OrderStatus.FULFILLING, OrderStatus.FULFILLED}) {
+            if (orders.transition(orderNo, from, OrderStatus.REFUND_PENDING) == 1) {
+                Order order = orders.findByOrderNo(orderNo).orElseThrow();
+                outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_REFUND_PENDING",
+                        payload(orderNo, OrderStatus.REFUND_PENDING.name(), order.getPayAmount(), order.getCurrency())));
+                return true;
+            }
+        }
+        OrderStatus current = orders.findByOrderNo(orderNo).orElseThrow().getStatus();
+        if (current == OrderStatus.REFUND_PENDING) {
+            return false; // 幂等重放
+        }
+        throw new OrderConflictException("refund pending not allowed from status " + current);
+    }
+
     /** 请求指纹：同键同请求 → 原结果；同键不同请求 → 冲突。 */
     private static String requestHash(CreateOrderCommand command) {
         StringBuilder canonical = new StringBuilder();

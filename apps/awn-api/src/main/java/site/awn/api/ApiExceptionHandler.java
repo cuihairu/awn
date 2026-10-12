@@ -12,6 +12,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import site.awn.campaign.domain.CampaignNotFoundException;
 import site.awn.catalog.domain.ProductNotFoundException;
 import site.awn.event.domain.EventNotFoundException;
+import site.awn.fulfillment.domain.FulfillmentConflictException;
+import site.awn.fulfillment.domain.FulfillmentNotFoundException;
+import site.awn.marketplace.domain.MarketplaceConflictException;
+import site.awn.marketplace.domain.MarketplaceNotFoundException;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.inventory.domain.InventoryConflictException;
 import site.awn.inventory.domain.PoolNotFoundException;
@@ -94,6 +98,26 @@ public class ApiExceptionHandler {
     @ExceptionHandler(RefundConflictException.class)
     public ResponseEntity<ErrorResponse> refundConflict(RefundConflictException e) {
         return envelope(ErrorCode.REFUND_CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(MarketplaceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> marketplaceNotFound(MarketplaceNotFoundException e) {
+        return envelope(ErrorCode.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(MarketplaceConflictException.class)
+    public ResponseEntity<ErrorResponse> marketplaceConflict(MarketplaceConflictException e) {
+        return envelope(ErrorCode.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(FulfillmentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> fulfillmentNotFound(FulfillmentNotFoundException e) {
+        return envelope(ErrorCode.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(FulfillmentConflictException.class)
+    public ResponseEntity<ErrorResponse> fulfillmentConflict(FulfillmentConflictException e) {
+        return envelope(ErrorCode.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(InsufficientInventoryException.class)

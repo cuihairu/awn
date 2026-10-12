@@ -42,6 +42,11 @@ public class OrderFacadeImpl implements OrderFacade {
     }
 
     @Override
+    public boolean markRefundPending(String orderNo) {
+        return writes.markRefundPending(orderNo);
+    }
+
+    @Override
     public OrderTimeoutResult releaseExpiredOrders(Instant now) {
         return timeouts.releaseExpiredOrders(now);
     }

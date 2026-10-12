@@ -26,6 +26,12 @@ public interface OrderFacade {
     boolean markPaid(String orderNo);
 
     /**
+     * 履约失败联动（FULFILLMENT_FAILED 事件消费）：PAID / FULFILLING / FULFILLED
+     * → REFUND_PENDING，进入退款异常流程。已是 REFUND_PENDING 幂等返回 false。
+     */
+    boolean markRefundPending(String orderNo);
+
+    /**
      * Worker 订单超时任务：将支付截止期已过的待支付订单迁入 EXPIRED 并逐行释放预留。
      * 单订单独立事务：单个订单失败不影响其余订单；与支付确认竞态时由守卫迁移裁决，
      * 输掉的路径记录为 skipped 而不是盲目释放（docs/architecture/inventory-consistency.md）。
