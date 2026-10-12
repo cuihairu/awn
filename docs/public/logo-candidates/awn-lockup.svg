@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="AWN lockup">
+  <!-- 方向三：图形 + 字标组合。左侧金色圆角徽标（应用图标规格）内嵌白色票根 + 三枚深金麦芒；
+       右侧 AWN 字形（与方向一同源几何）+「麦芒网」字标。
+       注意：「麦芒网」当前为系统字体 text，选中此方向后生产版需转曲（outline）。
+       深浅背景通用。源文件与说明见 design-system/logo-candidates/ -->
+  <defs>
+    <linearGradient id="awn-lockup-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d59819"/>
+      <stop offset="1" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 徽标（应用图标规格：圆角方形 140×140） -->
+  <rect x="16" y="30" width="140" height="140" rx="34" fill="url(#awn-lockup-g)"/>
+  <!-- 白色票根（左右半圆缺口 = 撕票线） -->
+  <path fill="#fafaf9" d="M62 78 L110 78 Q118 78 118 86 L118 93 A7 7 0 0 0 118 107 L118 114 Q118 122 110 122 L62 122 Q54 122 54 114 L54 107 A7 7 0 0 0 54 93 L54 86 Q54 78 62 78 Z"/>
+  <!-- 票面上的三枚麦芒 -->
+  <g fill="#a16207">
+    <path d="M71 106 L77 106 L74 92 Z"/>
+    <path d="M83 106 L89 106 L86 86 Z"/>
+    <path d="M95 106 L101 106 L98 92 Z"/>
+  </g>
+
+  <!-- AWN 字形（与方向一同源，缩放 0.92） -->
+  <g transform="translate(196 42) scale(0.92)">
+    <g fill="#d59819">
+      <path d="M30 0 L54 0 L26 100 L2 100 Z"/>
+      <path d="M50 0 L74 0 L102 100 L78 100 Z"/>
+      <path d="M30 70 L74 70 L74 86 L30 86 Z"/>
+      <path d="M342 0 L366 0 L366 100 L342 100 Z"/>
+      <path d="M362 0 L386 0 L442 100 L418 100 Z"/>
+      <path d="M418 0 L442 0 L442 100 L418 100 Z"/>
+    </g>
+    <g fill="#a16207">
+      <path d="M142 0 L170 0 L194 70 L218 0 L246 0 L208 100 L180 100 Z"/>
+      <path d="M180 100 L208 100 L194 124 Z"/>
+      <path d="M198 0 L226 0 L250 70 L274 0 L302 0 L264 100 L236 100 Z"/>
+      <path d="M236 100 L264 100 L250 124 Z"/>
+    </g>
+  </g>
+
+  <!-- 中文标（系统字体渲染；生产版需转曲） -->
+  <text x="200" y="186" fill="#d59819"
+        font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',sans-serif"
+        font-size="40" font-weight="600" letter-spacing="10">麦芒网</text>
+</svg>

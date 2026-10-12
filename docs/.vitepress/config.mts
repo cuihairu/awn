@@ -42,7 +42,10 @@ export default withMermaid(
         },
         {
           text: '设计',
-          items: [{ text: '界面原型图', link: '/design/prototypes' }],
+          items: [
+            { text: '界面原型图', link: '/design/prototypes' },
+            { text: 'Logo 候选方案', link: '/design/logo-candidates' },
+          ],
         },
         {
           text: '实施',

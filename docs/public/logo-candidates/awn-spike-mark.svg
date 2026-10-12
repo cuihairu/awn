@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="AWN spike mark">
+  <!-- 方向二：图形符号「麦芒三棘」。三枚麦芒叶片自基部扇形展开，金色渐变（#D59819 → #A16207，同族推导）。
+       方形构图，32px 仍可辨；深浅背景通用。适合做应用图标（favicon / App icon）。
+       源文件与说明见 design-system/logo-candidates/ -->
+  <defs>
+    <linearGradient id="awn-spike-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d59819"/>
+      <stop offset="1" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#awn-spike-g)">
+    <!-- 中央主芒 -->
+    <path d="M64 118 C 56 88 58 46 64 10 C 70 46 72 88 64 118 Z"/>
+    <!-- 左芒 -->
+    <path transform="rotate(-26 64 118)" d="M64 118 C 57 96 58 66 64 42 C 70 66 71 96 64 118 Z"/>
+    <!-- 右芒 -->
+    <path transform="rotate(26 64 118)" d="M64 118 C 57 96 58 66 64 42 C 70 66 71 96 64 118 Z"/>
+  </g>
+</svg>

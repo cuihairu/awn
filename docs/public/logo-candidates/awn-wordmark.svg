@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 466 144" role="img" aria-label="AWN wordmark">
+  <!-- 方向一：字标。A/W/N 手绘几何字形，W 底部顶点延伸出麦芒尖刺（深金 #A16207），A/N 主体金 #D59819。
+       深浅背景通用（仅用品牌金系，不用墨色）。源文件与说明见 design-system/logo-candidates/ -->
+  <g transform="translate(12 10)">
+    <!-- A -->
+    <g fill="#d59819">
+      <path d="M30 0 L54 0 L26 100 L2 100 Z"/>
+      <path d="M50 0 L74 0 L102 100 L78 100 Z"/>
+      <path d="M30 70 L74 70 L74 86 L30 86 Z"/>
+    </g>
+    <!-- W（双 V 交叠，中峰达满高；底部麦芒尖刺伸出基线） -->
+    <g fill="#a16207">
+      <path d="M142 0 L170 0 L194 70 L218 0 L246 0 L208 100 L180 100 Z"/>
+      <path d="M180 100 L208 100 L194 124 Z"/>
+      <path d="M198 0 L226 0 L250 70 L274 0 L302 0 L264 100 L236 100 Z"/>
+      <path d="M236 100 L264 100 L250 124 Z"/>
+    </g>
+    <!-- N -->
+    <g fill="#d59819">
+      <path d="M342 0 L366 0 L366 100 L342 100 Z"/>
+      <path d="M362 0 L386 0 L442 100 L418 100 Z"/>
+      <path d="M418 0 L442 0 L442 100 L418 100 Z"/>
+    </g>
+  </g>
+</svg>
