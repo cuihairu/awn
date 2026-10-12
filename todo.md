@@ -68,16 +68,21 @@
 
 ## Phase 04 · 支付、退款与可靠异步处理
 
-- [ ] 支付渠道接口 + 测试适配器（沙箱渠道）
+- [x] 支付渠道接口 + 测试适配器（沙箱渠道）
   验收：接口抽象与渠道解耦；测试适配器可模拟成功/超时/失败。期次：Phase 04
-- [ ] 支付回调验签、去重、状态更新（幂等）
+  证据：PaymentGateway 抽象 + SandboxPaymentGateway（成功/失败/未知可控面）；855438f
+- [x] 支付回调验签、去重、状态更新（幂等）
   验收：重复回调只生效一次；验签失败拒绝；回调与超时释放竞态进入「待核实」而非盲目确认。期次：Phase 04
-- [ ] 退款状态机
+  证据：PaymentModuleTests（重复回调仅一次生效、伪造签名拒绝、金额不符拒绝、竞态进 UNKNOWN + PAYMENT_UNKNOWN 事件）；855438f
+- [x] 退款状态机
   验收：退款非法迁移被拒绝；重复退款请求幂等。期次：Phase 04
-- [ ] Outbox 分发 Worker + Inbox 消费（至少一条事件闭环）
+  证据：Refund 状态机 CREATED→PENDING→SUCCEEDED/FAILED/UNKNOWN；未支付退款拒绝、同键重放返回原单、超额拒绝、全额联动 REFUNDED；855438f
+- [x] Outbox 分发 Worker + Inbox 消费（至少一条事件闭环）
   验收：进程重启不丢事件；同一事件不重复投递（inbox 去重）。期次：Phase 04
-- [ ] 支付 / 退款 / 库存对账任务
+  证据：OutboxDispatchService（租约认领 + 退避重试 + FAILED 留痕）+ Inbox 去重；PAYMENT_SUCCEEDED → 订单 PAID 闭环，重复分发不重复消费；855438f
+- [x] 支付 / 退款 / 库存对账任务
   验收：模拟渠道与本地状态差异可被发现并告警；任务重复执行幂等。期次：Phase 04
+  证据：PaymentReconciliationTask + reconcile()（漏回调差异、退款差异被发现）；库存对账见 Phase 03 压测；855438f
 
 ## Phase 05 · 履约与卖家挂牌
 
