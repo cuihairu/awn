@@ -62,8 +62,9 @@
 - [x] 订单超时释放与库存对账 Worker 任务
   验收：超时未支付订单释放预留；任务重复执行幂等；与支付确认竞态时进入异常处理而非盲目释放。期次：Phase 03
   完成：`OrderTimeoutService`（`TransactionTemplate` 单订单独立事务，守卫迁移裁决竞态，失败订单进 failed 清单不阻塞整批）+ `InventoryReconciliationService`（预留记录↔余额计数器逐池核对，只报告不修复）+ `apps/awn-worker` `OrderTimeoutTask` / `InventoryReconciliationTask`（`awn.worker.tasks.*` 开关、每轮独立 trace）；`OrderTimeoutServiceTests` 4 例 + `WorkerTasksTests` 5 例（释放+幂等+竞态+对账），迁移脚本移至 `modules/awn-shared` 供双入口共享，commit 72de1a4。
-- [ ] Phase 03 验收：并发压测 + 一致性断言
+- [x] Phase 03 验收：并发压测 + 一致性断言
   验收：压测后 `available = total - reserved - sold` 恒等式成立；超卖次数为 0。期次：Phase 03
+  完成：`InventoryStressTests.mixedWorkloadKeepsInvariantAndNeverOversells`（32 线程 × 12 轮混合负载 reserve/confirm/release + 全程监视线程；请求守恒、压测全程无负余额、压测后恒等式成立、sold=确认数、`reconcile()` 对账无差异），commit bea21c5。
 
 ## Phase 04 · 支付、退款与可靠异步处理
 
