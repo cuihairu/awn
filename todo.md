@@ -42,12 +42,15 @@
 - [x] 库存池表 + 原子条件 UPDATE 预留 / 确认 / 释放 + 流水
   验收：真实 PostgreSQL 并发集成测试——多线程争抢不超卖；`reserved + sold <= total` 恒等式由约束与测试双重保证；重复释放不重复回补；释放与确认竞态由状态机守卫。期次：Phase 03
   完成：`InventoryConcurrencyTests`（24 线程抢 10 票恰 10 成功；生命周期幂等与冲突守卫）+ V2 迁移，见 awn-inventory 模块引入提交。
-- [ ] 订单 + 明细快照 + 状态机
+- [x] 订单 + 明细快照 + 状态机
   验收：非法状态迁移被拒绝（含测试）；明细快照字段创建后不可变。期次：Phase 03
-- [ ] 订单幂等键与数据库唯一约束
+  完成：`OrderStatus` 迁移表 + `OrderRepository.transition` 守卫迁移 + 服务层合法边；`order_items` 由 DB 触发器拒绝 UPDATE（`awn_forbid_update`），`OrderCoreTests.orderItemsAreImmutableAtDatabaseLevel` 验证。
+- [x] 订单幂等键与数据库唯一约束
   验收：同键同请求返回原结果；同键不同请求返回冲突；并发同键仅一单成功（集成测试）。期次：Phase 03
-- [ ] 订单创建同事务写预留记录与 Outbox
+  完成：`pg_advisory_xact_lock(hashtext(key))` 串行化 + 唯一约束兜底 + 请求指纹比对；`OrderCoreTests.idempotentReplayReturnsSameOrder` / `idempotencyKeyConflictOnDifferentRequest` / `concurrentSameKeyCreatesExactlyOneOrder`（8 线程同键全返同一订单号、恰一单）。
+- [x] 订单创建同事务写预留记录与 Outbox
   验收：事务内任一步失败整体回滚（outbox 无残留）；与 `docs/architecture/inventory-consistency.md` 时序一致。期次：Phase 03
+  完成：`OrderWriteService.createOrder` 幂等判重 → 逐行原子预留 → 订单与明细 → 同事务 Outbox（`outbox_messages` V3）；`insufficientInventoryRollsBackEverything` 验证全回滚无残留。
 - [ ] 订单超时释放与库存对账 Worker 任务
   验收：超时未支付订单释放预留；任务重复执行幂等；与支付确认竞态时进入异常处理而非盲目释放。期次：Phase 03
 - [ ] Phase 03 验收：并发压测 + 一致性断言

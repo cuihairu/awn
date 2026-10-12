@@ -39,7 +39,9 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     @Test
     void concurrentReserveDoesNotOversell() throws Exception {
         String poolCode = unique("oversell");
-        inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode, "prod-os", "sess-os", 10));
+        inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
+                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                "sess-" + UUID.randomUUID().toString().substring(0, 8), 10));
 
         int threads = 24;
         var latch = new CountDownLatch(1);
@@ -79,7 +81,9 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     @Test
     void confirmReleaseLifecycleIsGuardedAndIdempotent() {
         String poolCode = unique("lifecycle");
-        inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode, "prod-lc", "sess-lc", 5));
+        inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
+                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                "sess-" + UUID.randomUUID().toString().substring(0, 8), 5));
 
         var r1 = inventory.reserve(new ReserveInventoryCommand(poolCode, "order-1", 1, Duration.ofMinutes(5)));
         var r2 = inventory.reserve(new ReserveInventoryCommand(poolCode, "order-2", 2, null));
