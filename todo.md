@@ -120,7 +120,7 @@
 
 ## 三、完全没有（无设计无实现）
 
-- [ ] 平台座位型票品模型 — trading-model.md 明确「未实现，需独立建模，禁止复用 `ticket_units`」（其外键挂 `listings`，语义是「卖家的票」）；目前无模型设计、无代码。验收：独立座位票品模型 + 逐座状态机（IN_STOCK→RESERVED/SOLD/DELIVERED/INVALID）+ 集成测试
+- [x] 平台座位型票品模型 — 独立模型 `platform_seats`（V17；挂场次/商品编码字符串松耦合，与库存池同口径，不复用挂牌 `ticket_units`）；逐座状态机 IN_STOCK→RESERVED→SOLD→DELIVERED（SOLD 必经 RESERVED，占座订单号有落点）、INVALID 终态；迁移走守卫条件 UPDATE（并发抢座只放行一单）+ 实体状态机精确报错；铺座经 catalog 校验商品存在、同场次同物理位置唯一（DB 约束兜底）— c7ea49c；PlatformSeatModuleTests 9 例（含 16 线程并发抢座）
 - [ ] 3D 座位图（P2）— 明确「待 2D 过目后制作」；无设计无实现。验收：2D 过目后给出 3D 方案
 
 ---
