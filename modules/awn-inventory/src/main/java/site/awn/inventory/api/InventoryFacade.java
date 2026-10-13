@@ -39,6 +39,12 @@ public interface InventoryFacade {
     /** 全部池的余额视图（运营库存中心） */
     java.util.List<BalanceView> balances();
 
+    /**
+     * 预留到期扫描（Worker 调用）：释放所有已过期的 ACTIVE 预留并回补库存。
+     * 幂等由预留状态机守卫保证，重复执行不重复回补。
+     */
+    ReservationExpiryResult releaseExpiredReservations(java.time.Instant now);
+
     /** 按商品 ID 查找库存池（同一商品在同一场次只允许一个池） */
     PoolView poolByProductId(String productId);
 

@@ -6,6 +6,7 @@ import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.PoolView;
 import site.awn.inventory.api.ReconciliationReport;
+import site.awn.inventory.api.ReservationExpiryResult;
 import site.awn.inventory.api.ReservationView;
 import site.awn.inventory.api.ReserveInventoryCommand;
 import site.awn.shared.alert.AlertCategory;
@@ -22,17 +23,20 @@ public class InventoryFacadeImpl implements InventoryFacade {
     private final ReservationLifecycleService lifecycleService;
     private final InventoryQueryService queryService;
     private final InventoryReconciliationService reconciliationService;
+    private final ReservationExpiryService expiryService;
     private final AlertRecorder alerts;
 
     public InventoryFacadeImpl(InventoryWriteService writeService,
                                ReservationLifecycleService lifecycleService,
                                InventoryQueryService queryService,
                                InventoryReconciliationService reconciliationService,
+                               ReservationExpiryService expiryService,
                                AlertRecorder alerts) {
         this.writeService = writeService;
         this.lifecycleService = lifecycleService;
         this.queryService = queryService;
         this.reconciliationService = reconciliationService;
+        this.expiryService = expiryService;
         this.alerts = alerts;
     }
 
@@ -79,6 +83,11 @@ public class InventoryFacadeImpl implements InventoryFacade {
     @Override
     public java.util.List<BalanceView> balances() {
         return queryService.balances();
+    }
+
+    @Override
+    public ReservationExpiryResult releaseExpiredReservations(java.time.Instant now) {
+        return expiryService.releaseExpiredReservations(now);
     }
 
     @Override

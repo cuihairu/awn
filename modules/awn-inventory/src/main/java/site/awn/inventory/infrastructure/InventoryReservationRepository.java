@@ -1,5 +1,6 @@
 package site.awn.inventory.infrastructure;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -7,11 +8,25 @@ import org.springframework.data.repository.query.Param;
 import site.awn.inventory.domain.InventoryReservation;
 import site.awn.inventory.domain.ReservationStatus;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface InventoryReservationRepository extends JpaRepository<InventoryReservation, Long> {
 
     Optional<InventoryReservation> findByReservationNo(String reservationNo);
+
+    /** 到期扫描：已过期（expiresAt < now）且仍为 ACTIVE 的预留，分批取 */
+    @Query("""
+            SELECT r.reservationNo
+              FROM InventoryReservation r
+             WHERE r.status = :status
+               AND r.expiresAt IS NOT NULL
+               AND r.expiresAt < :now
+            """)
+    List<String> findExpiredActive(@Param("status") ReservationStatus status,
+                                   @Param("now") Instant now,
+                                   Pageable pageable);
 
     /**
      * 带状态守卫的迁移：仅当当前状态为 from 时改为 to。

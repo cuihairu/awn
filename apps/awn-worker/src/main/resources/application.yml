@@ -45,4 +45,5 @@ awn:
       outbox-dispatch: true
     intervals:
       order-timeout-ms: 60000
+      inventory-expiry-ms: 60000
       inventory-reconciliation-ms: 600000
