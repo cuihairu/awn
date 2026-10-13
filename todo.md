@@ -87,7 +87,7 @@
 - [ ] G6 `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程；订单侧无 UNKNOWN 拦截（UNKNOWN 支付订单到期即释放）— 建议：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 + 集成测试。期次：Phase 04
 
 ### 异步与运维缺口
-- [ ] 库存预留到期扫描（预留可带过期时间，尚无扫描任务）— async-outbox.md 未实现；验收：到期预留自动释放 + 幂等
+- [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
 - [ ] 交易角色最小权限化（应用当前以引导超级用户连接，仅情报 `awn_intel` 角色落地）— intelligence-isolation.md；验收：交易角色只读/写边界 + 迁移
 - [ ] 资金类操作 SQL 原生化（支付/退款状态迁移仍 JPQL 守卫更新，Outbox 插入走 JPA save）— ADR-0007 偏差；验收：关键资金 SQL 改原生 + 集成测试
 - [ ] 订单 `FULFILLING`/`FULFILLED` 联动（枚举允许，无代码主动驱动；支付成功只置 PAID）— payment-state-machine.md；验收：履约驱动订单状态迁移 + 测试
