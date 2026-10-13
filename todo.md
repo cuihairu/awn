@@ -88,7 +88,7 @@
 
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
-- [ ] 交易角色最小权限化（应用当前以引导超级用户连接，仅情报 `awn_intel` 角色落地）— intelligence-isolation.md；验收：交易角色只读/写边界 + 迁移
+- [x] 交易角色最小权限化（V12 建 `awn_trading`：仅 public 交易表组读写、无 CREATE、对 intelligence schema 零权限，默认授权亦撤销；验证见 TradingRoleIsolationTests；应用改连该角色仍属部署收紧步骤，见 production.md）— 9fbd92e；全量 119 例绿
 - [x] 资金类操作 SQL 原生化（支付/退款状态守卫更新、退款渠道受理、支付退款状态联动、全部 Outbox 插入均改原生 SQL，ADR-0007 偏差已消除；退款回调新增守卫更新）— 0b122bc；PaymentModuleTests 14 例、OrderTimeoutServiceTests 4 例绿（全量 108 例仅并行会话在途的情报 2 例失败）
 - [ ] 订单 `FULFILLING`/`FULFILLED` 联动（枚举允许，无代码主动驱动；支付成功只置 PAID）— payment-state-machine.md；验收：履约驱动订单状态迁移 + 测试
 
@@ -100,7 +100,7 @@
 - [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 待 Phase 03；需先 `flutter create .`；验收：只读活动/商品列表
 
 ### 其他设计未落地
-- [ ] 情报采集调度器 — intelligence-isolation.md 设计「采集调度器→来源适配器→原始观察」，当前仅手动触发采集接口；验收：按配置周期采集 + 手动触发仍可
+- [x] 情报采集调度器（`collectAll` 全量采集入口 + worker 任务按 `intelligence-collection-ms`（默认 1800s）周期执行，开关 `awn.worker.tasks.intelligence-collection`；停用来源跳过、手动单源采集不受限、单源失败记录在报告中不中断整轮）— 44c6094；IntelligenceModuleTests 新增 2 例共 7 例 + IntelligenceCollectionTaskTest 2 例；全量 119 例绿
 - [ ] Redis 应用代码（缓存、限流、短期辅助状态）— system-overview.md「已接入部署栈，应用代码尚未使用」；验收：至少一个真实用例
 - [ ] 运营后台前端三视图 — 待 Phase 07 原型（同 apps/admin 条目）
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 暂缓，待多端接入后裁决
