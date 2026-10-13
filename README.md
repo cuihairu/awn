@@ -70,6 +70,19 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | One-command build | `scripts/build.sh` | Backend fat jars + `apps/web/.next/` + `apps/admin/dist/` + docs site; non-zero exit on failure |
 | One-shot verify | `docker compose -f deploy/docker-compose.yml up -d --build` → `curl -s http://127.0.0.1:18080/actuator/health` returns `UP` | Smoke + details: `deploy/README.md` |
 
+
+## 本地测试口径
+
+CI 与本地开发按改动面三路分流——改一行文档不该全量编译。
+
+1. **文档改动**（`*.md`、`docs/**`、图片）：不编译。主 CI workflow 的
+   `paths-ignore` 已跳过这些路径。
+2. **代码改动**：只跑改动子集，不全量。
+   - `mvn -pl <改动模块> -am test`
+   - `pnpm --filter @awn/<包> test`
+3. **全量**（`mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`）：仅以下情形触发——pom.xml / pnpm-lock.yaml / package.json、
+   `.github/**`、Docker/Compose 配置、发布前。
+
 ## Implementation phases
 
 Phase 0 (architecture baseline) → 01 engineering skeleton & module governance → 02 catalog & campaign → 03 inventory & order core → 04 payment, refunds & reliable async → 05 fulfillment & seller marketplace → 06 intelligence & operations (complete). Task briefs and acceptance criteria: `docs/implementation-plan.md`.
