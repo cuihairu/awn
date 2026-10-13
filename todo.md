@@ -83,7 +83,7 @@
 - [ ] G1 `createPool` 不校验 `productCode` 存在性（字符串松耦合，编码写错静默成功）— 建议：createPool 经 catalog api 校验 + 集成测试。期次：Phase 03 收尾
 - [ ] G2 挂牌/票品未接入订单链路（第三方挂牌事实上不可交易）— 建议：订单行增加凭证型（`listingId`/`unitNo`），预留改票品级状态迁移；补下单→挂牌联动测试。期次：Phase 05 收尾前裁决
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 挂牌消耗审核 quantity，额度耗尽拒绝；卖家自担挂牌不消耗）— dd4b9d7；MarketplaceModuleTests 新增 1 例共 8 例；全量绿
-- [ ] G5 支付/退款受理事务内调用渠道（长事务持锁，违反「外部调用不出长事务」）— 建议：渠道调用移出事务（先落 CREATED，受理后 markPending）+ 测试。期次：Phase 04
+- [x] G5 支付/退款受理渠道调用移出事务（先落 CREATED，受理成功后 markPending；渠道故障保留 CREATED 交对账闭环）— 1568962；PaymentModuleTests 新增 2 例共 10 例；全量 100 例绿
 - [ ] G6 `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程；订单侧无 UNKNOWN 拦截（UNKNOWN 支付订单到期即释放）— 建议：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 + 集成测试。期次：Phase 04
 
 ### 异步与运维缺口
