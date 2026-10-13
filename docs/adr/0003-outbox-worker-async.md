@@ -10,7 +10,7 @@
 ## 决策
 
 - 关键事务在提交业务数据时**同步写入** `outbox_messages`（同一数据库事务）。
-- 独立 Worker 进程（`apps/awn-worker`）扫描并处理到期任务与事件，支持重试、告警与死信处理。
+- 独立 Worker 进程（`apps/awn-worker`）扫描并处理到期任务与事件，支持重试与告警；超过重试上限的转 FAILED 并告警，无独立死信存储。
 - 多 Worker 并发通过行锁、条件更新或任务租约保证幂等，不产生重复副作用。
 - Spring Modulith 的事件注册表与自建 Outbox **不重复承担**同一职责：交易关键事件走明确的数据库 Outbox；Modulith 负责模块边界与架构验证。
 

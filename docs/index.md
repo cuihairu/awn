@@ -20,30 +20,24 @@ hero:
       link: /api/contracts
 
 features:
-  - icon: 🎯
-    title: 统一交易核心
+  - title: 统一交易核心
     details: 专场只负责展示与营销，所有专场共用统一商品 API 与统一订单链路，不允许旁路下单。
-  - icon: 🛡️
-    title: PostgreSQL 防超卖
+  - title: PostgreSQL 防超卖
     details: PostgreSQL 是交易库存的最终权威，预留必须使用事务与原子条件更新，配合约束做最后一道防线。
-  - icon: 🔁
-    title: 支付幂等
+  - title: 支付幂等
     details: 支付回调、订单创建、库存释放、退款处理全部幂等；支付与库存释放的竞态由状态机和事务解决。
-  - icon: 🧩
-    title: 专场可配置
-    details: 专场基于不可变发布版本与受控模块白名单渲染，运营可自由组合页面，但无法触碰交易语义。
-  - icon: 📊
-    title: 情报隔离
+  - title: 专场可配置
+    details: 专场基于发布版本与受控模块白名单渲染，运营可自由组合页面，但无法触碰交易语义。
+  - title: 情报隔离
     details: 票务情报只采集、标准化、分析公开数据，严格禁止写入交易库存、订单、支付与退款数据。
-  - icon: 📱
-    title: 多端一体
+  - title: 多端一体
     details: monorepo 统一管理网页端（Next.js）、小程序（Taro）、客户端（Flutter）与运营后台（React）。
 
 ---
 
 ## 界面原型
 
-基于 [AWN 设计规范](/design/prototypes)（`ui-ux-pro-max` 生成）产出的三端高保真原型，点击查看完整说明。
+基于 [AWN 设计规范](/design/prototypes)（`ui-ux-pro-max` 生成）产出的消费端 Web / 运营管理后台 / 移动客户端三端高保真原型（小程序端原型见原型目录），点击查看完整说明。
 
 <div class="prototype-gallery">
   <figure class="prototype-card">

@@ -9,14 +9,12 @@
 ```sql
 UPDATE inventory_balance
 SET reserved_quantity = reserved_quantity + :quantity,
-    version = version + 1,
-    updated_at = NOW()
+    version = version + 1
 WHERE inventory_pool_id = :poolId
-  AND total_quantity - reserved_quantity - sold_quantity >= :quantity
-RETURNING inventory_pool_id;
+  AND total_quantity - reserved_quantity - sold_quantity >= :quantity;
 ```
 
-没有返回记录，预留就失败。
+影响行数为 0，预留就失败（`updated_at` 由触发器维护，不在此语句中更新）。
 
 这条 SQL 必须放在真实的数据库事务中，并与订单、预留记录和 Outbox 事件一起提交。
 
@@ -41,7 +39,7 @@ sequenceDiagram
 
     U->>O: 创建订单 + 幂等键
     O->>DB: 开启事务
-    O->>DB: 校验商品、规则、价格
+    O->>DB: 金额算术与行级校验（商品存在性校验未实现，见 trading-model G1）
     O->>I: 原子预留库存
     I->>DB: 条件 UPDATE
     DB-->>I: 成功 / 库存不足
@@ -83,17 +81,31 @@ ACTIVE
 
 支付确认必须在同一个事务中完成 `ACTIVE → CONFIRMED`，并同时将预留数量转为已售数量。
 
+## 对账
+
+Worker 定期逐池核对计数器与账本，三类期望值：
+
+```text
+reserved = Σ ACTIVE 预留量
+sold     = Σ CONFIRMED 预留量
+total    = Σ ADJUST 流水
+```
+
+总量口径依赖 ADJUST 流水：建池时在同事务内写一条 bootstrap ADJUST，运营调整写带符号的 ADJUST；RESERVE / CONFIRM / RELEASE 不动总量。三类差异分别产出 `RESERVED_MISMATCH`、`SOLD_MISMATCH`、`TOTAL_MISMATCH` 告警。
+
+对账只报告不修复。自动改写计数器会掩盖真正的缺陷（丢流水、重复迁移、越权更新），差异必须先被看见。
+
 ## 支付成功与超时释放发生竞态怎么办？
 
 必须由**数据库事务和状态机**共同解决，不能让定时任务与支付回调各自随意更新状态。
 
 特别是支付渠道返回超时、但实际上可能已经扣款的情况：
 
-- 订单进入**支付结果待核实**状态。
-- Worker 查询支付渠道并进行对账。
-- 未明确确认支付失败前，不得简单释放库存。
-- 如果库存已经合法释放，但后来确认支付成功，**不能无条件把订单标记为正常履约成功**。
-- 应进入异常订单处理流程，根据供货情况、支付事实和平台规则执行补救或退款。
+- 支付单进入 UNKNOWN（待核实）状态，订单保持待支付。
+- Worker 查询支付渠道并进行对账，查实后迁移支付单状态（已实现）。
+- **未实现**：订单侧的 UNKNOWN 拦截——超时释放任务目前只按 `待支付 + 到期` 扫描，不查支付状态；UNKNOWN 支付的订单到期即被释放（缺口见 trading-model G6）。
+- 如果库存已经合法释放，但后来确认支付成功，**不能无条件把订单标记为正常履约成功**（回调入口只把支付单置 UNKNOWN，不做确认迁移，已实现）。
+- 订单侧的异常单处理流程（按供货情况、支付事实执行补救或退款）**未实现**。
 
 ::: warning 总结
 超卖防护需要**数据库约束、原子 SQL、事务、幂等状态转换、支付对账和故障恢复**共同完成，任何单一手段都不足够。

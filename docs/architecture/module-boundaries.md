@@ -44,7 +44,7 @@ awn/
 
 | 模块 | 主要职责 | 不允许做的事 |
 |--------|--------|--------|
-| `identity` | 用户、登录、角色、授权 | 直接修改订单和库存 |
+| `identity` | 用户、登录、角色、授权（规划职责；当前仅有 `package-info.java` 空壳） | 直接修改订单和库存 |
 | `event` | 活动、场次、场馆 | 处理购买和支付 |
 | `catalog` | 商品、票档、商品规则、价格信息 | 自己维护另一套库存 |
 | `campaign` | 专场、页面配置、版本发布 | 实现独立的下单逻辑 |
@@ -53,9 +53,9 @@ awn/
 | `payment` | 支付、回调、退款、渠道对账 | 仅凭前端参数确认支付成功 |
 | `fulfillment` | 出票、交付、交付验证 | 把待交付订单直接标记为完成 |
 | `marketplace` | 卖家、挂牌、供货审核 | 未经确认就创建平台可信库存 |
-| `promotion` | 优惠券、活动优惠、使用限制 | 直接修改订单最终金额 |
+| `promotion` | 优惠券、活动优惠、使用限制（规划职责；当前仅有 `package-info.java` 空壳） | 直接修改订单最终金额 |
 | `intelligence` | 采集、标准化、价格历史和分析 | 写入交易库存、订单和支付表 |
-| `notification` | 站内信、邮件、短信适配 | 让通知失败回滚已经成功的订单 |
+| `notification` | 站内信、邮件、短信适配（规划职责；当前仅有 `package-info.java` 空壳） | 让通知失败回滚已经成功的订单 |
 | `audit` | 操作审计、敏感业务操作记录 | 保存明文密钥和支付敏感信息 |
 
 ## 模块内部结构
@@ -67,22 +67,26 @@ awn/
 ```text
 awn-inventory/
 └── src/main/java/site/awn/inventory/
-    ├── InventoryModule.java
+    ├── package-info.java
     ├── api/
     │   ├── InventoryFacade.java
     │   ├── ReserveInventoryCommand.java
-    │   └── InventoryReservationResult.java
+    │   └── ReservationView.java
     ├── application/
-    │   ├── ReserveInventoryService.java
-    │   ├── ConfirmReservationService.java
-    │   └── ReleaseReservationService.java
+    │   ├── InventoryWriteService.java
+    │   ├── ReservationLifecycleService.java
+    │   ├── InventoryReconciliationService.java
+    │   └── InventoryQueryService.java
     ├── domain/
     │   ├── InventoryPool.java
+    │   ├── InventoryBalance.java
     │   ├── InventoryReservation.java
-    │   └── InventoryPolicy.java
+    │   └── InventoryTransaction.java
     └── infrastructure/
-        ├── InventoryRepository.java
-        └── JdbcInventoryRepository.java
+        ├── InventoryPoolRepository.java
+        ├── InventoryBalanceRepository.java
+        ├── InventoryReservationRepository.java
+        └── InventoryTransactionRepository.java
 ```
 
 各模块只公开 `api` 中有意提供给其他模块使用的接口。其他模块**不应**直接引用其 `infrastructure` 或内部领域实现。

@@ -1,4 +1,4 @@
-# 交易闭环模型
+# 交易全链模型
 
 Phase 09 外部评审 P0 项的落地文档：澄清**商品 / 票档 / 票品 / 库存池 / 卖家 / 供货 / 挂牌**的关系，
 把四类业务事实钉到数据模型上，给出全链时序与事务边界，并把关键不变量对应到集成测试。
@@ -11,7 +11,7 @@ Phase 09 外部评审 P0 项的落地文档：澄清**商品 / 票档 / 票品 /
 | 业务事实 | 数据模型落点 | 消费路径 | 现状 |
 |---|---|---|---|
 | 平台自营票量 | `product` + `inventory_pool`（`(product_id, session_id)` 唯一）+ `inventory_balance` | 下单时原子条件 UPDATE 预留，支付确认转已售 | **已实现**，唯一接入订单链路的事实 |
-| 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 首期**未接入**订单链路（缺口 G2） | marketplace 内闭环已实现，交易接线未做 |
+| 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 首期**未接入**订单链路（缺口 G2） | marketplace 内链路已实现，交易接线未做 |
 | 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品（未实现，需独立建模，禁止复用 ①） | ① 挂牌生命周期；② 未来平台逐座交易 | 仅 ① 已实现 |
 | 外部情报报价 | `intelligence` schema（`data_sources` / `raw_observations` / `normalized_observations` / `price_history`） | 只读展示，永不回写交易表（ADR-0004） | 已实现，权限边界有集成测试 |
 
@@ -56,7 +56,7 @@ flowchart TD
 1. **票档是商品的分类，不是库存单位**：`product.category_id` FK→`ticket_category`，下单时快照进 `order_items.ticket_category_snapshot`。票档不建池、不参与扣减。
 2. **库存池只属于平台交易链路**：`(product_id, session_id)` 唯一约束保证同商品同场次只有一个池；池只能由运营在 inventory 模块创建（`createPool` / `adjustPool`），**商品上架不会自动建池**（现状）。marketplace 永远不创建池（模块边界禁令：「未经确认就创建平台可信库存」不允许）。
 3. **"票品"有两个概念，禁止混用**：
-   - **挂牌票品（已实现）**：`ticket_units.listing_id` FK→`listings`，1:1，是转售场景下唯一编号票的凭证实体，状态机 `IN_STOCK → RESERVED/SOLD/INVALID → …` 与挂牌状态解耦。
+   - **挂牌票品（已实现）**：`ticket_units.listing_id` FK→`listings`，1:1，是转售场景下唯一编号票的凭证实体，状态机 `IN_STOCK → RESERVED/SOLD/DELIVERED/INVALID` 与挂牌状态解耦。
    - **平台座位型票品（未实现）**：若未来平台自营座位票需要逐座状态，必须建独立的平台票品模型，**不得复用**挂牌的 `ticket_units`（其外键挂在 `listings` 上，语义是"卖家的票"）。
    旧版领域模型把 `ticket_units` 表述为"座位型商品的数量余额替代"，与实现冲突，已修正。
 4. **供货审核是资质，不是库存**：`supply_reviews` APPROVED 只给 `listings.platform_guaranteed = true` 的资格（`Listing.create` 领域工厂强制），**不向任何库存池注入数量**；挂牌也不校验审核 `quantity` 是否已被耗尽（缺口 G4）。
@@ -131,13 +131,13 @@ sequenceDiagram
 
     == 超时兜底 ==
     WK->>ORD: OrderTimeoutTask（每单独立事务）
-    Note over ORD: T18 PENDING_PAYMENT→EXPIRED，赢者释放库存；支付 UNKNOWN 不参与误释放（G6）
+    Note over ORD: T18 PENDING_PAYMENT→EXPIRED，赢者释放库存；不查支付状态，UNKNOWN 同样被释放（未防护，G6）
 ```
 
 事务边界口径：
 
-- **T7（下单）是全链唯一的多模块同事务写**（order + inventory + outbox），也是超卖防护的主战场。
-- T10–T17 全部是**单模块本地事务**，跨模块只靠 Outbox/Inbox 事件衔接；消费者各自幂等（Inbox 去重 + 状态机守卫 + 数据库唯一约束）。
+- **跨模块同事务写有三处：T7（下单）、T10（确认支付后逐行确认）、取消订单**，均在单事务内写 order + inventory + outbox，都受状态机守卫裁决，也是超卖防护的主战场。
+- 其余链路是**单模块本地事务**，跨模块只靠 Outbox/Inbox 事件衔接；消费者各自幂等（Inbox 去重 + 状态机守卫 + 数据库唯一约束）。
 - 渠道（真实支付网关）永远不在任何本地事务内等待；T8 的渠道调用是沙箱期已知取舍（G5）。
 
 ## 不变量 → 集成测试清单
@@ -162,16 +162,17 @@ sequenceDiagram
 | 14 | 商品上架 → 池已建 → 可售口径一致 | 无（运营手工保证） | — | **G1 / G3 / G5 对应无测试** |
 | 15 | 同商品跨专场共用同一池 | 专场只引用商品（结构保证） | `CampaignModuleTests`（引用关系） | — |
 | 16 | 「库存已释放但事后支付成功」进入异常单处理，不误释放、不假装履约 | 应有专用流程 | — | **G6：流程未实现，无测试** |
+| 17 | `total = Σ ADJUST 流水`，计数器与流水累计不漂移 | 建池写 bootstrap ADJUST + 对账 TOTAL_MISMATCH | `InventoryReconciliationTests`（bootstrap 落账 / 漂移被报）、`InventoryStressTests`（压测池对账无差异） | — |
 
 ## 缺口清单（本轮澄清的结论）
 
 | # | 缺口 | 影响 | 建议方向 |
 |---|---|---|---|
 | G1 | `inventory_pool.product_id` 是字符串且建池不校验商品存在性 | 编码写错的池静默成功，直到下单预留才失败 | `createPool` 校验 `productCode` 存在（经 catalog api），补集成测试 |
-| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未闭环 | 订单行增加凭证型（`listingId`/`unitNo`），预留改为票品级状态迁移；补下单→挂牌联动测试 |
+| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未接通 | 订单行增加凭证型（`listingId`/`unitNo`），预留改为票品级状态迁移；补下单→挂牌联动测试 |
 | G3 | 商品无发布 API（`createProduct` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 公共接口按 PUBLISHED 过滤永远查不到数据，商品无法真正上架 | catalog 增加发布接口 + 状态守卫测试 |
 | G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | 挂牌时累计校验审核额度，补测试 |
-| G5 | 支付受理事务内调用渠道（`createPayment`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | 渠道调用移出事务（先落 CREATED，受理后再 markPending） |
+| G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | 渠道调用移出事务（先落 CREATED，受理后再 markPending） |
 | G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | 增加 PAYMENT_UNKNOWN 消费者 + 异常单处理流程，补集成测试 |
 
 这些缺口不阻塞已交付链路的正确性（第 1–13、15 条不变量均有真实数据库测试兜底），

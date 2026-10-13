@@ -29,7 +29,7 @@
 ├─ docs/                  设计文档站（VitePress + mermaid，首页含原型图）
 ├─ modules/               Spring Modulith 业务模块（Maven 多模块）
 │  ├─ awn-shared            共享内核：通用基础设施、统一异常模型
-│  ├─ awn-identity          账号与认证
+│  ├─ awn-identity          账号与认证（空壳模块，待实现）
 │  ├─ awn-event             活动、场次、场馆
 │  ├─ awn-catalog           演出 / 票档目录
 │  ├─ awn-campaign          专场：配置驱动渲染 + 不可变发布版本
@@ -38,17 +38,17 @@
 │  ├─ awn-payment           收单、退款、对账
 │  ├─ awn-fulfillment       出票与交付
 │  ├─ awn-marketplace       卖家、挂牌、供货审核
-│  ├─ awn-promotion         营销与优惠券
+│  ├─ awn-promotion         营销与优惠券（空壳模块，待实现）
 │  ├─ awn-intelligence      情报：独立 schema，禁止写交易表
-│  ├─ awn-notification      站内信 / 短信 / 订阅消息
+│  ├─ awn-notification      站内信 / 短信 / 订阅消息（空壳模块，待实现）
 │  └─ awn-audit             操作审计、敏感业务操作记录
 ├─ apps/
 │  ├─ awn-api             模块化单体 API（:8080）
-│  ├─ awn-worker          Worker：库存超时、订单超时、对账、Outbox 分发（actuator :8081）
+│  ├─ awn-worker          Worker：订单超时、库存/支付对账、Outbox 分发（actuator :8081）
 │  ├─ web                 网页端（Next.js 15）
 │  ├─ admin               管理后台（Vite 7 + React）
 │  ├─ miniprogram         小程序（Taro 4 + React，微信 weapp）
-│  └─ client              移动客户端（Flutter，iOS / Android）
+│  └─ client              移动客户端（Flutter 骨架，需先 `flutter create .` 生成平台工程）
 ├─ packages/              前端共享包（@awn/ui、@awn/campaign-renderer、
 │                           @awn/ticket-components、@awn/api-client）
 ├─ design-system/awn/     设计系统 Master + 页面级覆盖（ui-ux-pro-max 产出）
@@ -65,15 +65,15 @@
 | 网页端 | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | 管理后台 | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | 小程序 | `pnpm --filter @awn/miniprogram dev:weapp` | 微信开发者工具导入 `apps/miniprogram` |
-| 客户端 | `cd apps/client && flutter run` | 需 Flutter SDK ≥ 3.8 |
+| 客户端 | `cd apps/client && flutter run` | 骨架工程：Dart SDK ≥ 3.8（对应 Flutter 3.32+），先 `flutter create .` 生成平台工程 |
 | 一键部署 | `cd deploy && cp .env.example .env && docker compose up -d --build` | 见 `deploy/README.md` |
 | 一条命令构建 | `scripts/build.sh` | 后端 fat jar + `apps/web/.next/` + `apps/admin/dist/` + 文档站；失败非零退出 |
 | 一键验证 | `docker compose -f deploy/docker-compose.yml up -d --build` 后 `curl -s http://127.0.0.1:18080/actuator/health` 返回 UP | 冒烟与细节见 `deploy/README.md` |
 
 ## 实施节奏
 
-Phase 00（地基：仓库、CI、模块骨架、Flyway、Testcontainers）→ 01 库存与订单 → 02 支付与履约 → 03 专场与营销 → 04 情报 → 05 性能与容量 → 06 走向平台化。任务书与验收标准见 `docs/implementation-plan.md`。
+Phase 0（架构基线）→ 01 工程骨架与模块治理 → 02 活动、商品与专场 → 03 库存与订单核心 → 04 支付、退款与可靠异步 → 05 履约与卖家挂牌 → 06 票务情报与运营完善（已完成）。任务书与验收标准见 `docs/implementation-plan.md`。
 
 ## 约束速记
 
-1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 支付 / 退款全程幂等（`Idempotency-Key`）；4. 专场只渲染已发布版本，模块白名单校验；5. 情报与交易同实例分库边界（独立 `intelligence` schema + 独立角色 `awn_intel`），情报永不回写交易表；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。
+1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 支付 / 退款在模块层全程幂等（幂等键由 facade 强制，HTTP 入口尚未暴露）；4. 专场只渲染已发布版本，模块白名单校验；5. 情报与交易同实例分库边界（独立 `intelligence` schema + 独立角色 `awn_intel` 最小权限），情报永不回写交易表；应用当前以引导超管账号连接，边界在以 `awn_intel` 连接时生效；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。

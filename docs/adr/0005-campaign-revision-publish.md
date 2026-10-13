@@ -9,9 +9,9 @@
 
 ## 决策
 
-- `campaigns` 保存基本信息与当前发布版本指针；`campaign_revisions` 保存**不可变**的配置快照。
+- `campaigns` 保存基本信息与当前发布版本指针；`campaign_revisions` 保存配置快照。
 - 专场状态机：`DRAFT → VALIDATED → PUBLISHED → UNPUBLISHED → ARCHIVED`。
-- 草稿修改后必须重新校验（validate）才能发布；发布生成新的不可变版本。
+- 草稿修改后必须重新校验（validate）才能发布；发布生成新版本。快照的不可变靠应用层保证（实体无更新路径、渲染只读已发布版本），数据库层未加不可变约束；订单明细则有 `trg_order_items_immutable` 触发器强制不可变。
 - 已发布版本**不会**因草稿编辑被覆盖；页面渲染只读取已发布版本。
 - 页面模块使用受控白名单（`heroBanner`、`eventList`、`ticketGrid`、`priceTrend` 等 13 种），禁止注入任意 JavaScript/HTML。
 - 专场只能**引用**商品，不能复制商品或虚构库存；购买永远走统一订单链路。

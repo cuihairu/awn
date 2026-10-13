@@ -1,18 +1,29 @@
 # 部署结构
 
-第一阶段建议使用 Docker Compose，保持小巧、易部署、易恢复：
+部署采用 Docker Compose，保持小巧、易部署、易恢复：
 
 ```text
 Docker Compose
-├── reverse-proxy（Caddy）
-├── awn-api
-├── awn-worker
-├── postgresql
-├── redis
+├── reverse-proxy（Caddy，80/443）
+├── web（Next.js，3000）
+├── admin（Vite 静态，5174）
+├── awn-api（8080，仅 127.0.0.1:18080 暴露）
+├── awn-worker（无端口映射，actuator 8081 仅容器内）
+├── postgresql（无端口映射）
+├── redis（无端口映射）
 └── object-storage（RustFS，S3 兼容；也可替换为外部对象存储服务）
 ```
 
 对应编排文件位于仓库 `deploy/docker-compose.yml`（含 Caddy 配置与各服务 Dockerfile）。
+
+关键环境变量（`deploy/.env`，不入库）：
+
+| 变量 | 用途 |
+|------|------|
+| `AWN_DB_PASSWORD` | PostgreSQL 密码（api/worker 共用） |
+| `AWN_ADMIN_TOKEN` | 运营接口令牌（生产必须覆盖开发默认值） |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | 对象存储凭证 |
+| `AWN_INTEL_PASSWORD` | 情报库角色密码（与 `init-intel.sql` 占位同步） |
 
 前端可以独立构建与部署；API 和 Worker 共享后端代码，但使用不同启动配置和任务开关。
 

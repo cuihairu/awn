@@ -20,17 +20,33 @@ outbox_messages
   processed_at
 ```
 
+## Inbox 消费去重
+
+同一事件可能对同一消费者重复投递，消费侧以 `inbox_messages` 表做幂等：
+
+```text
+inbox_messages
+  id
+  consumer          消费者标识
+  message_id        指向 outbox_messages(id)
+  event_type
+  processed_at
+  created_at
+  UNIQUE (consumer, message_id)
+```
+
+处理器在执行副作用前插入本表，唯一键冲突即视为已消费并跳过。
+
 ## Worker 职责
 
 Worker 进程与 API 共享同一代码包，只启用后台任务：
 
-- 扫描到期库存预留。
 - 处理订单超时。
-- 发送通知。
-- 启动履约任务。
-- 执行支付和退款对账。
-- 重试失败事件。
-- 告警并处理超过重试上限的事件。
+- 执行库存、支付和退款对账。
+- 分发并重试 Outbox 事件，按处理器路由到履约等下游。
+- 告警并处理超过重试上限的事件（转入 FAILED 并告警，无独立死信存储）。
+
+未实现：库存预留到期扫描（预留可带过期时间，尚无扫描任务）、通知发送（`notification` 模块为空壳）。
 
 多个 Worker 实例竞争处理任务时，需要通过**行锁、条件更新或明确的任务租约**保证不会产生重复业务副作用。
 

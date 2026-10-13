@@ -3,7 +3,7 @@
 AWN 的领域模型围绕一条主链展开：**活动 → 场次 → 商品 → 库存池 → 统一结算 → 统一订单 → 统一支付**。专场只是商品的组织与展示层，不参与交易语义。
 
 四类业务事实（平台自营票量 / 第三方挂牌 / 独立票品 / 外部情报报价）的数据模型落点、
-marketplace 供货挂牌链路与全链事务边界，见 [交易闭环模型](./trading-model)。
+marketplace 供货挂牌链路与全链事务边界，见 [交易全链模型](./trading-model)。
 
 ## 业务关系
 
@@ -55,7 +55,7 @@ flowchart TD
 数量型库存至少包含：
 
 ```text
-inventory_balances
+inventory_balance
   inventory_pool_id
   total_quantity
   reserved_quantity
@@ -81,7 +81,7 @@ reserved + sold <= total
 
 对于有独立座位、独立二维码或独立票品编号的商品，需要逐票的唯一状态记录，不能仅依靠数量余额。
 注意当前实现中 `ticket_units` 是**marketplace 挂牌的 1:1 票品实体**（外键挂在 `listings` 上）；
-平台自营座位型票品若落地，须独立建模，不得复用该表——详见 [交易闭环模型](./trading-model)。
+平台自营座位型票品若落地，须独立建模，不得复用该表——详见 [交易全链模型](./trading-model)。
 
 ## 订单快照
 

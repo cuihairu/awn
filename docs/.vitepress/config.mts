@@ -29,7 +29,7 @@ export default withMermaid(
             { text: '系统总览', link: '/architecture/system-overview' },
             { text: '模块边界', link: '/architecture/module-boundaries' },
             { text: '领域模型', link: '/architecture/domain-model' },
-            { text: '交易闭环模型', link: '/architecture/trading-model' },
+            { text: '交易全链模型', link: '/architecture/trading-model' },
             { text: '专场渲染', link: '/architecture/campaign-rendering' },
             { text: '库存一致性', link: '/architecture/inventory-consistency' },
             { text: '订单与支付状态机', link: '/architecture/payment-state-machine' },
@@ -45,6 +45,7 @@ export default withMermaid(
           text: '设计',
           items: [
             { text: '界面原型图', link: '/design/prototypes' },
+            { text: 'UI 设计系统', link: '/design/ui-system' },
             { text: 'Logo 候选方案', link: '/design/logo-candidates' },
           ],
         },
@@ -57,6 +58,7 @@ export default withMermaid(
             { text: '部署结构', link: '/deployment/structure' },
             { text: '备份与恢复', link: '/deployment/backup-restore' },
             { text: '生产部署手册', link: '/deployment/production' },
+            { text: '文档一致性审计', link: '/审计-文档一致性' },
           ],
         },
         {

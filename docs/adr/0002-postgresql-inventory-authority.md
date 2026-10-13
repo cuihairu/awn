@@ -13,14 +13,14 @@
 - 库存预留禁止"先查再扣"，必须使用条件更新：
 
 ```sql
-UPDATE inventory_balances
+UPDATE inventory_balance
 SET reserved_quantity = reserved_quantity + :quantity,
-    version = version + 1,
-    updated_at = NOW()
+    version = version + 1
 WHERE inventory_pool_id = :poolId
-  AND total_quantity - reserved_quantity - sold_quantity >= :quantity
-RETURNING inventory_pool_id;
+  AND total_quantity - reserved_quantity - sold_quantity >= :quantity;
 ```
+
+影响行数为 0 即预留失败（`updated_at` 由触发器维护，不在语句中更新）。
 
 - 该 SQL 与订单、预留记录、Outbox 事件在**同一数据库事务**中提交。
 - 数据库非负约束与库存上限约束作为最后一道防线。
