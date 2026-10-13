@@ -94,10 +94,10 @@
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
 - [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 各仅 1 个 stub 文件，零消费方零测试；验收：至少一端接入 + 组件测试
-- [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 后端列表端点已落地：`GET /api/v1/sessions/{sessionId}/products`（仅已发布商品、按创建顺序、available 为库存展示口径、未知场次 `SESSION_NOT_FOUND` 404）；验收：专场页渲染真实商品 + 可售状态（前端待 Phase 07 原型过目后实现）
+- [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 后端列表端点已落地（7a6bd76）：`GET /api/v1/sessions/{sessionId}/products`（仅已发布商品、按创建顺序、available 为库存展示口径、未知场次 `SESSION_NOT_FOUND` 404）；验收：专场页渲染真实商品 + 可售状态（前端待 Phase 07 原型过目后实现）
 - [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 6 例，7377898）；前端三视图待 Phase 07 原型过目后实现
-- [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 待 Phase 03；验收：渲染契约子集 + 下单链路
-- [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 待 Phase 03；需先 `flutter create .`；验收：只读活动/商品列表
+- [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 后端 Phase 02–04 已全部落地（专区渲染/商品/下单/支付链路）；前端待 Phase 07 原型过目后实现；验收：渲染契约子集 + 下单链路
+- [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 后端 Phase 02–04 已全部落地；工程上需先 `flutter create .` 生成平台工程（当前仅 `lib/main.dart`）；前端待 Phase 07 原型过目后实现；验收：只读活动/商品列表
 
 ### 其他设计未落地
 - [x] 情报采集调度器（`collectAll` 全量采集入口 + worker 任务按 `intelligence-collection-ms`（默认 1800s）周期执行，开关 `awn.worker.tasks.intelligence-collection`；停用来源跳过、手动单源采集不受限、单源失败记录在报告中不中断整轮）— 44c6094；IntelligenceModuleTests 新增 2 例共 7 例 + IntelligenceCollectionTaskTest 2 例；全量 119 例绿
