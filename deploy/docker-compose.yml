@@ -94,6 +94,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: awn
+      # 注意：POSTGRES_USER 即 api/worker 运行账号（实例引导超级用户，可绕过 schema 权限边界）；
+      # 生产收紧路径（独立引导管理员 + 受限 awn_app）见 deploy/README.md「关键约束」
       POSTGRES_USER: awn_app
       POSTGRES_PASSWORD: ${AWN_DB_PASSWORD:?set in .env}
     volumes:

@@ -76,4 +76,4 @@ Phase 00（地基：仓库、CI、模块骨架、Flyway、Testcontainers）→ 0
 
 ## 约束速记
 
-1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 支付 / 退款全程幂等（`Idempotency-Key`）；4. 专场只渲染已发布版本，模块白名单校验；5. 情报与交易物理隔离，情报永不回写交易表；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。
+1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 支付 / 退款全程幂等（`Idempotency-Key`）；4. 专场只渲染已发布版本，模块白名单校验；5. 情报与交易同实例分库边界（独立 `intelligence` schema + 独立角色 `awn_intel`），情报永不回写交易表；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。

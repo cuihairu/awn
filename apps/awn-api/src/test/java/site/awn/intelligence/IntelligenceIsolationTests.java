@@ -22,7 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Phase 06：情报库物理隔离验收（docs/architecture/intelligence-isolation.md）。
+ * Phase 06：情报库权限边界验收（同实例 intelligence schema + 独立角色 awn_intel，
+ * 非"物理隔离"；见 docs/architecture/intelligence-isolation.md）。
  * 用 deploy/config/postgres/init-intel.sql 初始化最小权限角色 awn_intel，
  * 再以该角色直连数据库验证：intelligence schema 可读写，任何交易表不可触碰。
  */

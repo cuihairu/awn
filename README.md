@@ -76,4 +76,4 @@ Phase 00 (foundation: repo, CI, module skeleton, Flyway, Testcontainers) → 01 
 
 ## Ground rules
 
-1. Inventory trusts PostgreSQL only; atomic conditional UPDATE for deduction. 2. Order + reservation + outbox in one transaction. 3. Payment / refund fully idempotent (`Idempotency-Key`). 4. Campaigns render published revisions only, module whitelist enforced. 5. Intelligence is physically isolated and never writes back to trading tables. 6. Modules talk via `api` packages or events only — no cross-module table access.
+1. Inventory trusts PostgreSQL only; atomic conditional UPDATE for deduction. 2. Order + reservation + outbox in one transaction. 3. Payment / refund fully idempotent (`Idempotency-Key`). 4. Campaigns render published revisions only, module whitelist enforced. 5. Intelligence is bounded at the database level (separate `intelligence` schema with its own `awn_intel` role) and never writes back to trading tables. 6. Modules talk via `api` packages or events only — no cross-module table access.

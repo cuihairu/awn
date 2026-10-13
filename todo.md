@@ -156,8 +156,9 @@
 
 - [ ] 商品 / 票档 / 票品 / 库存池 / 卖家 / 供货 / 挂牌关系澄清（评审 P0 建议）
   验收：明确首期交易对象与四类业务事实（平台自营票量 / 第三方挂牌 / 独立票品 / 外部情报报价）的数据模型落点；全链时序图（活动创建→商品上架→卖家供货→库存建立→下单→支付→出票→交付→退款）标事务边界；关键不变量转化为集成测试清单。期次：Phase 09
-- [ ] 情报隔离表述与账号权限核对（评审指出「物理隔离」表述过强）
+- [x] 情报隔离表述与账号权限核对（评审指出「物理隔离」表述过强）
   验收：文档改为「同实例 intelligence schema + 独立角色 awn_intel 权限边界」；核对 API/Worker 运行账号不含绕过权限的说明写入部署文档（`IntelligenceIsolationTests` 已验证 awn_intel 零交易表权限，commit 4dce325）。期次：Phase 09
+  完成（2026-10-13）：README.md / README.zh-CN.md「约束速记」第 5 条由「物理隔离」改为「同实例分库边界（独立 intelligence schema + 独立角色 awn_intel）」；`IntelligenceIsolationTests` javadoc 同步改为「权限边界验收（非物理隔离）」；deploy/README.md「关键约束」补两条——①情报隔离是权限边界不是物理隔离（awn_intel 仅 intelligence schema 授权、public schema 显式 REVOKE）；②账号权限现状如实记录：compose `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户，可读写 intelligence schema（awn_intel→交易表零权限方向不受影响），并写明生产收紧路径（独立引导管理员 + 无超级用户属性的受限 awn_app）；docker-compose.yml POSTGRES_USER 处加同款警示注释。ADR-0004 与 docs/architecture/intelligence-isolation.md 原表述本就准确（「初期共享实例，独立 schema 与角色」），未改。全量测试 16 模块 BUILD SUCCESS（awn-api surefire 88 tests / 0 failures / 0 errors）。
 
 ---
 
