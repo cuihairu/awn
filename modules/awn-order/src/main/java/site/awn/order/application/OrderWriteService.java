@@ -132,7 +132,8 @@ public class OrderWriteService {
 
         // 5) 同事务写 Outbox：事务提交则事件必然存在，Worker 才不会漏单
         outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_CREATED",
-                payload(orderNo, order.getStatus().name(), order.getPayAmount(), order.getCurrency()));
+                payload(orderNo, order.getStatus().name(), order.getPayAmount(), order.getCurrency(),
+                        order.getUserId()));
 
         return OrderReadService.toView(order, items.findByOrderId(order.getId()));
     }
@@ -166,7 +167,8 @@ public class OrderWriteService {
                 inventory.confirm(item.getReservationNo());
             }
             outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_PAID",
-                    payload(orderNo, OrderStatus.PAID.name(), order.getPayAmount(), order.getCurrency()));
+                    payload(orderNo, OrderStatus.PAID.name(), order.getPayAmount(), order.getCurrency(),
+                            order.getUserId()));
             return true;
         }
         OrderStatus current = orders.findByOrderNo(orderNo).orElseThrow().getStatus();
@@ -268,5 +270,12 @@ public class OrderWriteService {
     private static String payload(String orderNo, String status, long payAmount, String currency) {
         return "{\"orderNo\":\"" + orderNo + "\",\"status\":\"" + status
                 + "\",\"payAmount\":" + payAmount + ",\"currency\":\"" + currency + "\"}";
+    }
+
+    /** 带 userId 的载荷：通知等下游消费者据此定位收件人 */
+    private static String payload(String orderNo, String status, long payAmount, String currency, long userId) {
+        return "{\"orderNo\":\"" + orderNo + "\",\"status\":\"" + status
+                + "\",\"payAmount\":" + payAmount + ",\"currency\":\"" + currency
+                + "\",\"userId\":" + userId + "}";
     }
 }

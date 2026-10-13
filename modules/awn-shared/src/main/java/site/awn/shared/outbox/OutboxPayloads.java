@@ -22,4 +22,15 @@ public final class OutboxPayloads {
             throw new IllegalArgumentException("invalid outbox payload: " + e.getMessage(), e);
         }
     }
+
+    /** 读取数值字段；缺失返回 null */
+    public static Long longValue(String payload, String field) {
+        try {
+            JsonNode node = MAPPER.readTree(payload);
+            return node.path(field).isMissingNode() || node.get(field).isNull()
+                    ? null : node.get(field).asLong();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("invalid outbox payload: " + e.getMessage(), e);
+        }
+    }
 }
