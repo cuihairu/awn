@@ -68,6 +68,10 @@ GET /api/v1/sessions/{sessionId}/products
 GET /api/v1/campaigns/{campaignCode}
 GET /api/v1/campaigns/{campaignCode}/published
 GET /api/v1/campaigns/{campaignCode}/render
+
+POST /api/v1/orders
+GET  /api/v1/orders/{orderId}
+POST /api/v1/orders/{orderId}/cancel
 ```
 
 以下接口目前只有模块层 facade（`EventFacade` 等），**未暴露 HTTP**，由后续阶段补齐控制器：
@@ -83,13 +87,10 @@ GET /api/v1/intelligence/events/{eventId}/prices
 
 ## 交易接口
 
-以下接口目前只有模块层实现（`OrderWriteService` / `PaymentFacade` / `FulfillmentFacade`），**未暴露 HTTP**，端点落地后本节方可验收：
+以下接口目前只有模块层实现（`PaymentFacade` / `FulfillmentFacade`），**未暴露 HTTP**，端点落地后本节方可验收：
 
 ```text
 POST /api/v1/checkout/quote
-POST /api/v1/orders
-GET  /api/v1/orders/{orderId}
-POST /api/v1/orders/{orderId}/cancel
 
 POST /api/v1/orders/{orderId}/payments
 GET  /api/v1/orders/{orderId}/payments
@@ -103,9 +104,10 @@ GET  /api/v1/orders/{orderId}/fulfillment
 订单创建在模块层强制幂等键（`CreateOrderCommand.idempotencyKey`，缺失即拒绝）：
 
 - 相同幂等键重复提交相同请求，返回原业务结果；
-- 相同幂等键对应不同请求内容，返回明确的冲突错误。
+- 相同幂等键对应不同请求内容，返回明确的冲突错误（`IDEMPOTENCY_CONFLICT`）。
 
-HTTP 端点落地后，幂等键以 `Idempotency-Key` 请求头传入，契约同步补充。
+HTTP 端点 `POST /api/v1/orders` 以 `Idempotency-Key` 请求头传入幂等键，
+缺失返回 400 `VALIDATION_FAILED`；创建成功返回 201 与 `Location: /api/v1/orders/{orderNo}`。
 
 ## 运营接口
 

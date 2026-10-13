@@ -86,6 +86,12 @@
 - [x] G5 支付/退款受理渠道调用移出事务（先落 CREATED，受理成功后 markPending；渠道故障保留 CREATED 交对账闭环）— 1568962；PaymentModuleTests 新增 2 例共 10 例；全量 100 例绿
 - [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务逐单查渠道，迁移 UNKNOWN → SUCCEEDED/FAILED，渠道未定保持待核实；查实成功但订单已终态 → 告警 + 原路全额退款，不假装履约）— 708b1b8；PaymentModuleTests 新增 3 例共 13 例；全量 104 例绿
 
+### 公开 HTTP 端点缺口（contracts.md 已列、控制器未落地）
+- [ ] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 只有模块层 facade；验收：端点 200 返回视图、未知资源 404 + 统一错误信封；期次：Phase 02 / Phase 06
+- [ ] 订单 HTTP 端点（POST /orders、GET /orders/{orderId}、POST /orders/{orderId}/cancel）— 只有模块层实现；验收：POST 走 Idempotency-Key 幂等头 + 模块层原子预留，GET 404 ORDER_NOT_FOUND，取消幂等且释放库存；期次：Phase 03
+- [ ] 支付与退款 HTTP 端点（POST/GET /orders/{orderId}/payments、POST /orders/{orderId}/refunds）— 只有模块层实现；验收：建单支付、回调验签、退款受理；期次：Phase 04
+- [ ] 履约与报价 HTTP 端点（GET /orders/{orderId}/fulfillment、POST /checkout/quote）— 只有模块层实现；验收：履约单查询、报价不含扣减；期次：Phase 04 / Phase 05
+
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
 - [x] 交易角色最小权限化（V12 建 `awn_trading`：仅 public 交易表组读写、无 CREATE、对 intelligence schema 零权限，默认授权亦撤销；验证见 TradingRoleIsolationTests；应用改连该角色仍属部署收紧步骤，见 production.md）— 9fbd92e；全量 119 例绿
