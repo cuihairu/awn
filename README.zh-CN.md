@@ -29,7 +29,7 @@
 ├─ docs/                  设计文档站（VitePress + mermaid，首页含原型图）
 ├─ modules/               Spring Modulith 业务模块（Maven 多模块）
 │  ├─ awn-shared            共享内核：通用基础设施、统一异常模型
-│  ├─ awn-identity          账号与认证（空壳模块，待实现）
+│  ├─ awn-identity          账号：注册、BCrypt 凭据校验、角色
 │  ├─ awn-event             活动、场次、场馆
 │  ├─ awn-catalog           演出 / 票档目录
 │  ├─ awn-campaign          专场：配置驱动渲染 + 不可变发布版本

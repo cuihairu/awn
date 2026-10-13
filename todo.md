@@ -74,8 +74,8 @@
 
 > 期次指 implementation-plan 阶段。验收口径引自对应架构文档。
 
-### 模块空壳（Phase 01 规划职责，当前仅 `package-info.java`）
-- [ ] identity 模块：用户、登录、角色、授权 — 设计见 module-boundaries.md；验收：注册/登录/角色校验 + 集成测试
+### 模块空壳（Phase 01 规划职责）——已清空：三模块均已落地
+- [x] identity 模块（注册：邮箱唯一 + BCrypt 口令哈希 + 默认 BUYER 角色；登录：凭据校验，未知邮箱/错误口令同一异常不泄露账号；角色：授予幂等、hasRole 未知用户返回 false）— dbbbc86；IdentityModuleTests 4 例；全量 127 例绿
 - [x] promotion 模块（券模板创建校验、发放三重限额——有效期窗口 + 配额守卫递增 + 每人限领一张唯一约束、核销 UNUSED→USED 守卫迁移、收券列表；与订单金额联动属后续裁决，不动订单）— dc04b4d；PromotionModuleTests 6 例；全量 123 例绿
 - [x] notification 模块（站内信通道落地：`NotificationFacade` 统一投递留痕，INBOX 通道真实落库、EMAIL/SMS 显式未接入占位；任何渠道失败记 FAILED 不抛——通知失败不回滚订单；`ORDER_CREATED`/`ORDER_PAID` 事件经 Outbox 消费者投递买家站内信）— 7d8acdf；NotificationModuleTests 4 例；全量 117 例绿
 
@@ -94,7 +94,7 @@
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
 - [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 各仅 1 个 stub 文件，零消费方零测试；验收：至少一端接入 + 组件测试
-- [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 待后端列表端点 + 前端；验收：专场页渲染真实商品 + 可售状态
+- [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 后端列表端点已落地：`GET /api/v1/sessions/{sessionId}/products`（仅已发布商品、按创建顺序、available 为库存展示口径、未知场次 `SESSION_NOT_FOUND` 404）；验收：专场页渲染真实商品 + 可售状态（前端待 Phase 07 原型过目后实现）
 - [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 6 例，7377898）；前端三视图待 Phase 07 原型过目后实现
 - [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 待 Phase 03；验收：渲染契约子集 + 下单链路
 - [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 待 Phase 03；需先 `flutter create .`；验收：只读活动/商品列表

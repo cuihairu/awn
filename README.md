@@ -29,7 +29,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 ├─ docs/                  Design docs site (VitePress + mermaid, prototypes on the home page)
 ├─ modules/               Spring Modulith business modules (Maven multi-module)
 │  ├─ awn-shared            Shared kernel: common infrastructure, unified exception model
-│  ├─ awn-identity          Accounts & authentication (skeleton, pending)
+│  ├─ awn-identity          Accounts: registration, bcrypt credential checks, roles
 │  ├─ awn-event             Events, sessions, venues
 │  ├─ awn-catalog           Show / ticket tier catalog
 │  ├─ awn-campaign          Campaign pages: config-driven rendering + immutable published revisions
