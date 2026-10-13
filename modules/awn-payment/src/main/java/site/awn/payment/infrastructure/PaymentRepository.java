@@ -17,6 +17,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByStatusIn(List<site.awn.payment.domain.PaymentStatus> statuses);
 
+    /** 订单维度支付历史（创建顺序） */
+    List<Payment> findByOrderNoOrderByCreatedAtAsc(String orderNo);
+
     /** 标量读取：绕过持久化上下文，条件更新后读取最新状态 */
     @Query("SELECT p.status FROM Payment p WHERE p.paymentNo = :paymentNo")
     Optional<site.awn.payment.domain.PaymentStatus> statusOf(@Param("paymentNo") String paymentNo);

@@ -114,6 +114,14 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PaymentView> paymentsOfOrder(String orderNo) {
+        return payments.findByOrderNoOrderByCreatedAtAsc(orderNo).stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public PaymentView handleCallback(PaymentCallbackCommand command) {
         // 1) 验签：失败即拒绝，不进入任何状态变更

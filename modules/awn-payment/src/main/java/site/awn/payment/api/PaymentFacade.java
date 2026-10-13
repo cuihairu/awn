@@ -15,6 +15,9 @@ public interface PaymentFacade {
 
     PaymentView payment(String paymentNo);
 
+    /** 订单维度的支付历史（创建顺序）；未发起过支付返回空列表 */
+    List<PaymentView> paymentsOfOrder(String orderNo);
+
     /**
      * 处理支付回调：验签 → 渠道交易号定位支付单 → 金额/币种/渠道校验 →
      * 条件更新状态（幂等）→ 同事务写 Outbox 支付事件。

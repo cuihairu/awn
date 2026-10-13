@@ -73,6 +73,10 @@ POST /api/v1/orders
 GET  /api/v1/orders/{orderId}
 POST /api/v1/orders/{orderId}/cancel
 
+POST /api/v1/orders/{orderId}/payments
+GET  /api/v1/orders/{orderId}/payments
+POST /api/v1/orders/{orderId}/refunds
+
 GET /api/v1/events
 GET /api/v1/events/{eventId}
 GET /api/v1/sessions/{sessionId}
@@ -91,27 +95,37 @@ GET /api/v1/intelligence/events/{eventId}/prices
 
 ## 交易接口
 
-以下接口目前只有模块层实现（`PaymentFacade` / `FulfillmentFacade`），**未暴露 HTTP**，端点落地后本节方可验收：
+支付与退款接口已暴露 HTTP：
+
+- `POST /api/v1/orders/{orderId}/payments`：为订单发起支付，**金额与币种由服务端取订单应付快照**，
+  请求体只携带渠道（`{"channel":"..."}`），客户端传多少金额都不参与计算；
+  订单不存在 → 404 `ORDER_NOT_FOUND`，渠道不支持 → 409 `PAYMENT_CONFLICT`；成功返回 201。
+- `GET /api/v1/orders/{orderId}/payments`：订单的支付历史（创建顺序），未支付返回空数组。
+- `POST /api/v1/orders/{orderId}/refunds`：发起退款，请求体 `{"paymentNo","amount","reason"}`，
+  以 `Idempotency-Key` 头判重（同键同请求返回原退款单）；缺失幂等键 → 400，
+  支付单不属于该订单 → 404 `PAYMENT_NOT_FOUND`，支付未成功 → 409 `PAYMENT_CONFLICT`，
+  超额退款 → 409 `REFUND_CONFLICT`；成功返回 201。
+
+支付回调（验签、去重、UNKNOWN 待核实）属渠道到后端的通道，**不在这组客户端端点内**，
+模块层语义见 `docs/architecture/payment-state-machine.md`。
+
+以下接口目前只有模块层实现（`FulfillmentFacade`），**未暴露 HTTP**，端点落地后本节方可验收：
 
 ```text
 POST /api/v1/checkout/quote
-
-POST /api/v1/orders/{orderId}/payments
-GET  /api/v1/orders/{orderId}/payments
-
-POST /api/v1/orders/{orderId}/refunds
 GET  /api/v1/orders/{orderId}/fulfillment
 ```
 
 ### 幂等键规则
 
-订单创建在模块层强制幂等键（`CreateOrderCommand.idempotencyKey`，缺失即拒绝）：
+订单创建与退款在模块层强制幂等键（缺失即拒绝）：
 
 - 相同幂等键重复提交相同请求，返回原业务结果；
-- 相同幂等键对应不同请求内容，返回明确的冲突错误（`IDEMPOTENCY_CONFLICT`）。
+- 相同幂等键对应不同请求内容，返回明确的冲突错误。
 
-HTTP 端点 `POST /api/v1/orders` 以 `Idempotency-Key` 请求头传入幂等键，
-缺失返回 400 `VALIDATION_FAILED`；创建成功返回 201 与 `Location: /api/v1/orders/{orderNo}`。
+HTTP 端点 `POST /api/v1/orders`（订单）与 `POST /api/v1/orders/{orderId}/refunds`（退款）
+以 `Idempotency-Key` 请求头传入幂等键，缺失返回 400 `VALIDATION_FAILED`；
+订单创建成功返回 201 与 `Location: /api/v1/orders/{orderNo}`。
 
 ## 运营接口
 
