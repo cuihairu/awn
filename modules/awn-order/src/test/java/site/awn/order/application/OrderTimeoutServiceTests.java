@@ -6,6 +6,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import site.awn.inventory.api.InventoryFacade;
+import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.OrderTimeoutResult;
 import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderItem;
@@ -36,6 +37,7 @@ class OrderTimeoutServiceTests {
     private OrderRepository orders;
     private OrderItemRepository items;
     private InventoryFacade inventory;
+    private MarketplaceFacade marketplace;
     private OutboxMessageRepository outbox;
     private TransactionTemplate transactions;
     private OrderTimeoutService service;
@@ -45,12 +47,13 @@ class OrderTimeoutServiceTests {
         orders = mock(OrderRepository.class);
         items = mock(OrderItemRepository.class);
         inventory = mock(InventoryFacade.class);
+        marketplace = mock(MarketplaceFacade.class);
         outbox = mock(OutboxMessageRepository.class);
         transactions = mock(TransactionTemplate.class);
         // TransactionTemplate 透传回调，保持单订单事务语义由真实模板保证
         when(transactions.execute(any())).thenAnswer(invocation ->
                 ((TransactionCallback<Boolean>) invocation.getArgument(0)).doInTransaction(null));
-        service = new OrderTimeoutService(orders, items, inventory, outbox, transactions);
+        service = new OrderTimeoutService(orders, items, inventory, marketplace, outbox, transactions);
     }
 
     private Order order(long id, String orderNo, OrderStatus status) {
@@ -101,6 +104,26 @@ class OrderTimeoutServiceTests {
         assertThat(result.failed()).isEmpty();
         verify(inventory, never()).release(any());
         verify(outbox, never()).insertPending(any(), any(), any(), any());
+    }
+
+    @Test
+    void expiredVoucherOrderReleasesListingUnitInsteadOfInventory() {
+        when(orders.findExpiredPendingOrderNos(any(Instant.class), eq(OrderStatus.PENDING_PAYMENT), any()))
+                .thenReturn(List.of("TO-V"));
+        Order pending = order(44L, "TO-V", OrderStatus.PENDING_PAYMENT);
+        when(orders.findByOrderNo("TO-V")).thenReturn(Optional.of(pending));
+        when(orders.transition("TO-V", OrderStatus.PENDING_PAYMENT, OrderStatus.EXPIRED)).thenReturn(1);
+        // 凭证型行：无库存预留号，只有票品号
+        OrderItem item = mock(OrderItem.class);
+        when(item.getReservationNo()).thenReturn(null);
+        when(item.getUnitNo()).thenReturn("TKT-1");
+        when(items.findByOrderId(44L)).thenReturn(List.of(item));
+
+        OrderTimeoutResult result = service.releaseExpiredOrders(Instant.now());
+
+        assertThat(result.expired()).isEqualTo(1);
+        verify(marketplace).releaseUnitForOrder("TKT-1");
+        verify(inventory, never()).release(any());
     }
 
     @Test

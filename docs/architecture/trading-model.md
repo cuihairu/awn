@@ -10,8 +10,8 @@ Phase 09 外部评审 P0 项的落地文档：澄清**商品 / 票档 / 票品 /
 
 | 业务事实 | 数据模型落点 | 消费路径 | 现状 |
 |---|---|---|---|
-| 平台自营票量 | `product` + `inventory_pool`（`(product_id, session_id)` 唯一）+ `inventory_balance` | 下单时原子条件 UPDATE 预留，支付确认转已售 | **已实现**，唯一接入订单链路的事实 |
-| 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 首期**未接入**订单链路（缺口 G2） | marketplace 内链路已实现，交易接线未做 |
+| 平台自营票量 | `product` + `inventory_pool`（`(product_id, session_id)` 唯一）+ `inventory_balance` | 下单时原子条件 UPDATE 预留，支付确认转已售 | **已实现**（数量型订单行） |
+| 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 凭证型订单行下单，票品 IN_STOCK → RESERVED → SOLD（G2 已接通） | **已实现**，有并发抢单与回滚集成测试 |
 | 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品（未实现，需独立建模，禁止复用 ①） | ① 挂牌生命周期；② 未来平台逐座交易 | 仅 ① 已实现 |
 | 外部情报报价 | `intelligence` schema（`data_sources` / `raw_observations` / `normalized_observations` / `price_history`） | 只读展示，永不回写交易表（ADR-0004） | 已实现，权限边界有集成测试 |
 
@@ -46,7 +46,7 @@ flowchart TD
     PRODUCT -.->|"product_code 字符串·无FK"| LISTING
     PRODUCT ==>|"数量型订单行 poolCode+productId"| POOL
     ORDER["orders 订单"]
-    LISTING -.->|"凭证型订单行·未建模（G2）"| ORDER
+    LISTING ==>|"凭证型订单行 listingNo+unitNo"| ORDER
 ```
 
 实线 = 数据库外键硬约束；虚线 = 字符串松耦合（无外键，靠约定一致）。
@@ -60,8 +60,9 @@ flowchart TD
    - **平台座位型票品（未实现）**：若未来平台自营座位票需要逐座状态，必须建独立的平台票品模型，**不得复用**挂牌的 `ticket_units`（其外键挂在 `listings` 上，语义是"卖家的票"）。
    旧版领域模型把 `ticket_units` 表述为"座位型商品的数量余额替代"，与实现冲突，已修正。
 4. **供货审核是资质，不是库存**：`supply_reviews` APPROVED 只给 `listings.platform_guaranteed = true` 的资格（`Listing.create` 领域工厂强制），**不向任何库存池注入数量**；挂牌也不校验审核 `quantity` 是否已被耗尽（缺口 G4）。
-5. **挂牌与订单链路当前断开**：`OrderLineCommand` 只有数量型行（`poolCode` + `productId` + `quantity`），凭证型行（`listingId` / `unitNo`）未建模；`Listing.markReserved` / `markSold` 与 `TicketUnit` 的 RESERVED/SOLD 迁移目前没有订单侧调用方（缺口 G2）。
-6. **跨模块引用是字符串松耦合**：`inventory_pool.product_id` 存的是 `product_code` 形态的字符串（非 `product.id`，无外键，建池不校验存在性，缺口 G1）；`listings.product_code` / `session_code` 同理。订单与库存之间靠 `order_items.pool_code` / `reservation_no` 字符串互指，也无外键。这是模块化单体的**有意取舍**（模块间不摸表），但因此：编码写错只能在下单链路暴露，跨模块一致性由应用层校验与对账兜底。
+5. **挂牌与订单链路已接通（G2）**：`OrderLineCommand` 支持两种互斥形态——数量型行（`poolCode` + `quantity`）与凭证型行（`listingNo`，`quantity` 必须为 1，`poolCode` 为 null）。凭证型行下单时把挂牌 `LISTED → RESERVED`、票品 `IN_STOCK → RESERVED`（两条守卫条件 UPDATE，与订单同事务）；支付确认转 SOLD，取消 / 超时释放回 LISTED / IN_STOCK。并发抢单由守卫迁移裁决，只放行一单。订单行须落库 `listing_no` / `unit_no`，数据库 `CHECK ck_order_item_source` 兜底「一行恰有一条库存路径」。
+   附带收紧：卖家**不得下架有待支付订单在途的挂牌**（`RESERVED → DELISTED` 被领域工厂拒绝），否则买家下单成功而卖家撤单。
+6. **跨模块引用是字符串松耦合**：`inventory_pool.product_id` 存的是 `product_code` 形态的字符串（非 `product.id`，无外键，建池校验见 G1）；`listings.product_code` / `session_code` 同理。订单与库存之间靠 `order_items.pool_code` / `reservation_no` 字符串互指，订单与挂牌之间靠 `order_items.listing_no` / `unit_no` 互指，均无外键。这是模块化单体的**有意取舍**（模块间不摸表），但因此：编码写错只能在下单链路暴露，跨模块一致性由应用层校验与对账兜底。
 7. **专场永远只引用商品**（`campaign_products` FK→`product`），不能复制商品、不能虚构库存；同一商品跨专场共用同一个池是结构保证，不是巧合。
 
 ## 全链时序与事务边界
@@ -166,14 +167,15 @@ sequenceDiagram
 
 ## 缺口清单（本轮澄清的结论）
 
-| # | 缺口 | 影响 | 建议方向 |
+| # | 缺口 | 影响 | 建议方向 / 落地状态 |
 |---|---|---|---|
-| G1 | `inventory_pool.product_id` 是字符串且建池不校验商品存在性 | 编码写错的池静默成功，直到下单预留才失败 | `createPool` 校验 `productCode` 存在（经 catalog api），补集成测试 |
-| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未接通 | 订单行增加凭证型（`listingId`/`unitNo`），预留改为票品级状态迁移；补下单→挂牌联动测试 |
-| G3 | 商品无发布 API（`createProduct` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 公共接口按 PUBLISHED 过滤永远查不到数据，商品无法真正上架 | catalog 增加发布接口 + 状态守卫测试 |
-| G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | 挂牌时累计校验审核额度，补测试 |
-| G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | 渠道调用移出事务（先落 CREATED，受理后再 markPending） |
-| G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | 增加 PAYMENT_UNKNOWN 消费者 + 异常单处理流程，补集成测试 |
+| G1 | `inventory_pool.product_id` 是字符串且建池不校验商品存在性 | 编码写错的池静默成功，直到下单预留才失败 | ✅ 已消除：`createPool` 经 catalog api 校验存在性 + 集成测试 |
+| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未接通 | ✅ 已消除：凭证型订单行 + 票品级守卫迁移（下单预留 / 支付确认 / 取消超时释放），`VoucherOrderModuleTests` 9 例（含并发抢单） |
+| G3 | 商品无发布 API（`createProduct` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 公共接口按 PUBLISHED 过滤永远查不到数据，商品无法真正上架 | ✅ 已消除：catalog 发布接口 + 状态守卫测试 |
+| G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | ✅ 已消除：挂牌时守卫校验审核额度 |
+| G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | ✅ 已消除：渠道调用移出事务（先落 CREATED，受理后再 markPending） |
+| G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | ✅ 已消除：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 |
 
-这些缺口不阻塞已交付链路的正确性（第 1–13、15 条不变量均有真实数据库测试兜底），
-但 G2 / G3 直接决定「第三方挂牌可交易」这一业务目标能否成立，建议在 Phase 05 收尾前裁决。
+G1–G6 均已消除（见 todo.md 逐项 commit 证据）。
+第 1–13、15 条不变量有真实数据库测试兜底；第 14 条（商品上架 → 池已建 → 可售口径一致）仍无测试——
+那是运营流程一致性，非代码不变量，需人工或后续巡检任务覆盖。

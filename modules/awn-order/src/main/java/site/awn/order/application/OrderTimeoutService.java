@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import site.awn.inventory.api.InventoryFacade;
+import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.OrderTimeoutResult;
 import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderStatus;
@@ -37,15 +38,18 @@ public class OrderTimeoutService {
     private final OrderRepository orders;
     private final OrderItemRepository items;
     private final InventoryFacade inventory;
+    private final MarketplaceFacade marketplace;
     private final OutboxMessageRepository outbox;
     private final TransactionTemplate transactions;
 
     OrderTimeoutService(OrderRepository orders, OrderItemRepository items,
-                        InventoryFacade inventory, OutboxMessageRepository outbox,
+                        InventoryFacade inventory, MarketplaceFacade marketplace,
+                        OutboxMessageRepository outbox,
                         TransactionTemplate transactions) {
         this.orders = orders;
         this.items = items;
         this.inventory = inventory;
+        this.marketplace = marketplace;
         this.outbox = outbox;
         this.transactions = transactions;
     }
@@ -82,7 +86,14 @@ public class OrderTimeoutService {
             return false;
         }
         Order fresh = orders.findByOrderNo(orderNo).orElseThrow();
-        items.findByOrderId(fresh.getId()).forEach(item -> inventory.release(item.getReservationNo()));
+        items.findByOrderId(fresh.getId()).forEach(item -> {
+            // 数量型行走库存预留；凭证型行走挂牌票品
+            if (item.getReservationNo() != null) {
+                inventory.release(item.getReservationNo());
+            } else {
+                marketplace.releaseUnitForOrder(item.getUnitNo());
+            }
+        });
         outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_EXPIRED",
                 "{\"orderNo\":\"" + orderNo + "\",\"status\":\"EXPIRED\",\"payAmount\":"
                         + order.getPayAmount() + ",\"currency\":\"" + order.getCurrency() + "\"}");

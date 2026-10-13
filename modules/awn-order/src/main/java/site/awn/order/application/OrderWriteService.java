@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.ReserveInventoryCommand;
 import site.awn.inventory.api.ReservationView;
+import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.CreateOrderCommand;
 import site.awn.order.api.OrderLineCommand;
 import site.awn.order.api.OrderView;
@@ -46,13 +47,16 @@ public class OrderWriteService {
     private final OrderRepository orders;
     private final OrderItemRepository items;
     private final InventoryFacade inventory;
+    private final MarketplaceFacade marketplace;
     private final OutboxMessageRepository outbox;
 
     OrderWriteService(OrderRepository orders, OrderItemRepository items,
-                      InventoryFacade inventory, OutboxMessageRepository outbox) {
+                      InventoryFacade inventory, MarketplaceFacade marketplace,
+                      OutboxMessageRepository outbox) {
         this.orders = orders;
         this.items = items;
         this.inventory = inventory;
+        this.marketplace = marketplace;
         this.outbox = outbox;
     }
 
@@ -88,13 +92,21 @@ public class OrderWriteService {
             throw new IllegalArgumentException("pay amount must be non-negative");
         }
 
-        // 3) 逐行原子预留库存（orderRef 用订单号；预留与订单同事务提交）
+        // 3) 逐行原子预留（orderRef 用订单号；预留与订单同事务提交）
+        //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）
         String orderNo = "ORD-" + UUID.randomUUID();
         List<String> reservationNos = new ArrayList<>(command.lines().size());
+        List<String> unitNos = new ArrayList<>(command.lines().size());
         for (OrderLineCommand line : command.lines()) {
-            ReservationView reservation = inventory.reserve(
-                    new ReserveInventoryCommand(line.poolCode(), orderNo, line.quantity(), null));
-            reservationNos.add(reservation.reservationNo());
+            if (line.voucherLine()) {
+                unitNos.add(marketplace.reserveUnitForOrder(line.listingNo()));
+                reservationNos.add(null);
+            } else {
+                ReservationView reservation = inventory.reserve(
+                        new ReserveInventoryCommand(line.poolCode(), orderNo, line.quantity(), null));
+                reservationNos.add(reservation.reservationNo());
+                unitNos.add(null);
+            }
         }
 
         // 4) 写订单与明细快照
@@ -127,6 +139,8 @@ public class OrderWriteService {
             item.setFeeAmount(line.feeAmount());
             item.setLineTotal(line.lineTotal());
             item.setReservationNo(reservationNos.get(i));
+            item.setListingNo(line.listingNo());
+            item.setUnitNo(unitNos.get(i));
             items.save(item);
         }
 
@@ -144,7 +158,7 @@ public class OrderWriteService {
         int moved = orders.transition(orderNo, OrderStatus.PENDING_PAYMENT, OrderStatus.CANCELLED);
         if (moved == 1) {
             for (OrderItem item : items.findByOrderId(order.getId())) {
-                inventory.release(item.getReservationNo());
+                releaseLine(item);
             }
             outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_CANCELLED",
                     payload(orderNo, OrderStatus.CANCELLED.name(), order.getPayAmount(), order.getCurrency()));
@@ -164,7 +178,7 @@ public class OrderWriteService {
         int moved = orders.transition(orderNo, OrderStatus.PENDING_PAYMENT, OrderStatus.PAID);
         if (moved == 1) {
             for (OrderItem item : items.findByOrderId(order.getId())) {
-                inventory.confirm(item.getReservationNo());
+                confirmLine(item);
             }
             outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_PAID",
                     payload(orderNo, OrderStatus.PAID.name(), order.getPayAmount(), order.getCurrency(),
@@ -240,6 +254,24 @@ public class OrderWriteService {
         throw new OrderConflictException("refund pending not allowed from status " + current);
     }
 
+    /** 逐行释放：数量型行走库存预留，凭证型行走挂牌票品 */
+    private void releaseLine(OrderItem item) {
+        if (item.getReservationNo() != null) {
+            inventory.release(item.getReservationNo());
+        } else {
+            marketplace.releaseUnitForOrder(item.getUnitNo());
+        }
+    }
+
+    /** 逐行确认：数量型行走库存预留，凭证型行走挂牌票品 */
+    private void confirmLine(OrderItem item) {
+        if (item.getReservationNo() != null) {
+            inventory.confirm(item.getReservationNo());
+        } else {
+            marketplace.confirmUnitForOrder(item.getUnitNo());
+        }
+    }
+
     /** 请求指纹：同键同请求 → 原结果；同键不同请求 → 冲突。 */
     private static String requestHash(CreateOrderCommand command) {
         StringBuilder canonical = new StringBuilder();
@@ -247,7 +279,7 @@ public class OrderWriteService {
                 .append(command.userId()).append('|').append(command.currency());
         command.lines().stream()
                 .map(l -> String.join(":",
-                        l.poolCode(), l.productId(),
+                        nvl(l.poolCode()), nvl(l.listingNo()), l.productId(),
                         nvl(l.sessionId()), nvl(l.ticketCategorySnapshot()), nvl(l.productNameSnapshot()),
                         String.valueOf(l.quantity()), String.valueOf(l.unitPrice()),
                         String.valueOf(l.discountAmount()), String.valueOf(l.feeAmount())))

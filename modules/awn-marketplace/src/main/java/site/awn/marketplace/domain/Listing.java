@@ -95,6 +95,11 @@ public class Listing {
         if (status == ListingStatus.SOLD) {
             throw new MarketplaceConflictException("sold listing cannot be delisted: " + listingNo);
         }
+        // 有待支付订单在途的挂牌不可下架：否则买家下单成功但卖家撤单
+        if (status == ListingStatus.RESERVED) {
+            throw new MarketplaceConflictException(
+                    "reserved listing cannot be delisted while an order is pending: " + listingNo);
+        }
         this.status = ListingStatus.DELISTED;
     }
 

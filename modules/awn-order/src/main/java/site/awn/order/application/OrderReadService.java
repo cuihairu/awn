@@ -42,7 +42,7 @@ public class OrderReadService {
                         i.getPoolCode(), i.getProductId(), i.getProductNameSnapshot(),
                         i.getSessionId(), i.getTicketCategorySnapshot(),
                         i.getQuantity(), i.getUnitPrice(), i.getDiscountAmount(), i.getFeeAmount(),
-                        i.getLineTotal(), i.getReservationNo()))
+                        i.getLineTotal(), i.getReservationNo(), i.getListingNo(), i.getUnitNo()))
                 .toList();
         return new OrderView(order.getOrderNo(), order.getStatus(), order.getCurrency(),
                 order.getTotalAmount(), order.getDiscountAmount(), order.getFeeAmount(),

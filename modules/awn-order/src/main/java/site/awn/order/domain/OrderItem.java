@@ -46,8 +46,14 @@ public class OrderItem {
     /** quantity * unitPrice - discountAmount + feeAmount，服务端计算 */
     private long lineTotal;
 
-    /** 本行对应的库存预留号（取消/超时释放/支付确认按行操作库存） */
+    /** 本行对应的库存预留号（数量型行；取消/超时释放/支付确认按行操作库存） */
     private String reservationNo;
+
+    /** 挂牌号（凭证型行；null 表示数量型行） */
+    private String listingNo;
+
+    /** 挂牌的独立票品号（凭证型行；下单时 IN_STOCK → RESERVED） */
+    private String unitNo;
 
     /** 审计列：由数据库 DEFAULT 维护，实体只读 */
     @Column(insertable = false, updatable = false)
@@ -151,6 +157,22 @@ public class OrderItem {
 
     public void setReservationNo(String reservationNo) {
         this.reservationNo = reservationNo;
+    }
+
+    public String getListingNo() {
+        return listingNo;
+    }
+
+    public void setListingNo(String listingNo) {
+        this.listingNo = listingNo;
+    }
+
+    public String getUnitNo() {
+        return unitNo;
+    }
+
+    public void setUnitNo(String unitNo) {
+        this.unitNo = unitNo;
     }
 
     public Instant getCreatedAt() {

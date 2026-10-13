@@ -193,6 +193,47 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
         return toView(unit);
     }
 
+    @Override
+    @Transactional
+    public String reserveUnitForOrder(String listingNo) {
+        Listing listing = listings.findByListingNo(listingNo)
+                .orElseThrow(() -> new MarketplaceNotFoundException("listing not found: " + listingNo));
+        // 两条守卫迁移：挂牌与票品各一条条件 UPDATE，0 行即抢单失败或状态不符
+        if (listings.markReservedByListingId(listing.getId()) == 0) {
+            throw new MarketplaceConflictException(
+                    "listing cannot be reserved: " + listingNo);
+        }
+        if (units.reserveByListingId(listing.getId()) == 0) {
+            throw new MarketplaceConflictException(
+                    "ticket unit not in stock for listing: " + listingNo);
+        }
+        return units.findByListingId(listing.getId()).orElseThrow().getUnitNo();
+    }
+
+    @Override
+    @Transactional
+    public boolean releaseUnitForOrder(String unitNo) {
+        TicketUnit unit = units.findByUnitNo(unitNo)
+                .orElseThrow(() -> new MarketplaceNotFoundException("ticket unit not found: " + unitNo));
+        if (units.releaseByUnitNo(unitNo) == 0) {
+            return false; // 幂等重放：票品已不在 RESERVED（已成交或已释放）
+        }
+        listings.markListedByListingId(unit.getListingId());
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean confirmUnitForOrder(String unitNo) {
+        TicketUnit unit = units.findByUnitNo(unitNo)
+                .orElseThrow(() -> new MarketplaceNotFoundException("ticket unit not found: " + unitNo));
+        if (units.confirmByUnitNo(unitNo) == 0) {
+            return false; // 幂等重放：票品已不在 RESERVED
+        }
+        listings.markSoldByListingId(unit.getListingId());
+        return true;
+    }
+
     // ------------------------------------------------------------------
 
     private SupplyReview reviewOf(String reviewNo) {
