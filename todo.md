@@ -101,7 +101,7 @@
 
 ### 其他设计未落地
 - [x] 情报采集调度器（`collectAll` 全量采集入口 + worker 任务按 `intelligence-collection-ms`（默认 1800s）周期执行，开关 `awn.worker.tasks.intelligence-collection`；停用来源跳过、手动单源采集不受限、单源失败记录在报告中不中断整轮）— 44c6094；IntelligenceModuleTests 新增 2 例共 7 例 + IntelligenceCollectionTaskTest 2 例；全量 119 例绿
-- [ ] Redis 应用代码（缓存、限流、短期辅助状态）— system-overview.md「已接入部署栈，应用代码尚未使用」；验收：至少一个真实用例
+- [x] Redis 应用代码（限流用例；缓存与短期状态仍未用）— AdminAuthFilter 鉴权通过后按资源组限流（默认 100 次/60s，超限 429 + RATE_LIMITED），存储按 awn.ratelimit.store 选择（memory 进程内默认 / redis 多实例共享，compose 默认 redis），限流组件故障 fail-open；Redis 实现经 RedisRateLimiterIntegrationTest（真实 redis:7-alpine 容器）验证；RATE_LIMITED 补入错误码契约表 — eeee7a3；新增 11 例（内存限流 4 + Redis 容器 3 + 过滤器 4），全量 131 例绿
 - [ ] 运营后台前端三视图 — 待 Phase 07 原型（同 apps/admin 条目）
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 暂缓，待多端接入后裁决
 - [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 原型已产出（`docs/design/prototypes/` + `docs/design/ui-system.md`），待用户过目；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据

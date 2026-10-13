@@ -45,7 +45,10 @@ docker compose exec postgresql psql -U awn_app -d awn -tAc \
 
 ## 关键约束
 
-- **PostgreSQL 是库存唯一权威**：禁止引入库存相关的外部缓存写路径，Redis 只做读缓存与锁。
+- **PostgreSQL 是库存唯一权威**：禁止引入库存相关的外部缓存写路径，Redis 只做读缓存、锁与限流计数。
+- **管理面限流**：`AdminAuthFilter` 在鉴权通过后按资源组（`/api/v1/{resource}`）限流，默认 100 次/60s，超限返回 429；
+  存储由 `AWN_RATELIMIT_STORE` 选择（`redis` 多实例共享额度，compose 默认；`memory` 进程内，开发/测试默认）。
+  限流组件故障时 fail-open，不阻断管理面。
 - **情报隔离**：同实例下 `intelligence` schema 使用独立角色 `awn_intel`，对交易表零权限（`config/postgres/init-intel.sql`；验证见 `IntelligenceIsolationTests`）。是权限边界，不是物理隔离。
 - **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。受限交易角色 `awn_trading` 已由 `V12__trading_role.sql` 建立（仅业务表读写、无 CREATE、情报 schema 零权限，验证见 `TradingRoleIsolationTests`）。生产收紧路径：用独立管理员账号执行初始化，api/worker 改连 `awn_trading`，Flyway 以管理员账号执行，并替换 `awn_trading` 与 `awn_intel` 的占位密码。
 - **Outbox 分发**：由 awn-worker 的 `outbox-dispatch` 任务轮询，无 Kafka 依赖（docs/architecture/async-outbox.md）。

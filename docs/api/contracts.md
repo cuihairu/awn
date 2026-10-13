@@ -37,6 +37,7 @@
 | PAYMENT_CONFLICT | 409 | 支付状态机冲突（如重复确认已成功的支付） |
 | REFUND_CONFLICT | 409 | 退款状态机冲突或超退 |
 | CONFLICT | 409 | 其他业务冲突（通用） |
+| RATE_LIMITED | 429 | 请求过于频繁（管理面限流，见「鉴权」节） |
 | INTERNAL_ERROR | 500 | 未预期异常 |
 
 错误码与 HTTP 状态的映射由后端唯一维护（`site.awn.shared.error`），各端不得自行推断。
@@ -50,6 +51,10 @@
 - `/api/v1/campaigns/**` 的 GET 为公开读，无需令牌。
 
 令牌校验失败返回 401，响应体为 `{"code":"UNAUTHORIZED","message":"admin token required"}`（手写 JSON，不含 traceId，`UNAUTHORIZED` 不在错误码表中——属已知偏差，待统一到异常处理器）。
+
+令牌校验通过后按资源组限流（`/api/v1/{resource}`，默认 100 次/60s）：超限返回 429，响应体为
+`{"code":"RATE_LIMITED","message":"rate limit exceeded, retry later"}`（同样为手写 JSON，不含 traceId）。
+未过鉴权的请求不计入额度；限流组件故障时放行（fail-open），不阻断管理面。
 
 ## 公共接口
 

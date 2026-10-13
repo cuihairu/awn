@@ -100,7 +100,9 @@ docker compose up -d --no-deps --force-recreate api worker
    （见 deploy/README「关键约束」）。
 2. **AWN_ADMIN_TOKEN 必须覆盖默认值**（见密钥表）；泄露后更换令牌只需改 `.env` 重建 api/worker。
    管理面口径：`/api/v1/admin/**` 与专场管理写操作（`POST /api/v1/campaigns**`）都需要 `X-Admin-Token`，
-   公开读（`GET /api/v1/campaigns**`）不需要。
+   公开读（`GET /api/v1/campaigns**`）不需要。鉴权通过后按资源组限流（默认 100 次/60s），超限 429；
+   存储由 `AWN_RATELIMIT_STORE` 选择——compose 默认 `redis`（多实例共享额度），本地/测试默认 `memory`
+   （进程内）。限流组件故障时 fail-open，不阻断管理面。
 3. **PITR 未启用**：当前为逻辑备份（pg_dump），误删数据只能回到最近一次备份点；
    需要分钟级 RPO 时再评估 WAL 归档。
 4. **worker 单副本**为硬约束（见日常升级）。
