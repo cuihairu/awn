@@ -28,6 +28,7 @@
 - [x] 专场草稿、配置校验、发布版本（不可变 revision）— 6bf6b96
 - [x] 模块白名单与受控资源引用（13 类 section）— 6bf6b96；CampaignRenderingTests 8 例
 - [x] 至少两种专场模板渲染（motorsport / concert）— 6bf6b96
+- [x] 商品发布 API（DRAFT→PUBLISHED 状态守卫，`publishedProductsBySession` 可查到）— 30bbd8f；CatalogModuleTests 新增 3 例；全量 106 例绿
 
 ### Phase 03 · 库存与订单核心
 - [x] 库存池表 + 原子条件 UPDATE 预留/确认/释放 + 流水（V2）— acaf107；InventoryConcurrencyTests 4 例
@@ -81,7 +82,6 @@
 ### 交易全链缺口（trading-model.md G1–G6，均有建议方向）
 - [ ] G1 `createPool` 不校验 `productCode` 存在性（字符串松耦合，编码写错静默成功）— 建议：createPool 经 catalog api 校验 + 集成测试。期次：Phase 03 收尾
 - [ ] G2 挂牌/票品未接入订单链路（第三方挂牌事实上不可交易）— 建议：订单行增加凭证型（`listingId`/`unitNo`），预留改票品级状态迁移；补下单→挂牌联动测试。期次：Phase 05 收尾前裁决
-- [x] G3 商品发布 API（DRAFT→PUBLISHED 状态守卫 + `publishedProductsBySession` 可查到）— 见下方 commit；CatalogModuleTests 新增 3 例；全量 106 例绿。期次：Phase 02
 - [ ] G4 供货审核 `quantity` 无额度消耗校验（一次 APPROVED 可挂任意多张 platform_guaranteed 票）— 建议：挂牌时累计校验审核额度 + 测试。期次：Phase 05
 - [ ] G5 支付/退款受理事务内调用渠道（长事务持锁，违反「外部调用不出长事务」）— 建议：渠道调用移出事务（先落 CREATED，受理后 markPending）+ 测试。期次：Phase 04
 - [ ] G6 `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程；订单侧无 UNKNOWN 拦截（UNKNOWN 支付订单到期即释放）— 建议：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 + 集成测试。期次：Phase 04
