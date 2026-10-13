@@ -24,6 +24,9 @@ public interface IntelligenceFacade {
     /** 停用来源：调度采集跳过停用来源；手动单源采集不受限 */
     SourceView disableSource(String sourceNo);
 
+    /** 恢复来源：重新参与调度采集（与停用对称） */
+    SourceView enableSource(String sourceNo);
+
     /** 价格历史（可溯源：来源、更新时间、可信度） */
     List<PricePointView> priceHistoryOf(String productCode);
 }

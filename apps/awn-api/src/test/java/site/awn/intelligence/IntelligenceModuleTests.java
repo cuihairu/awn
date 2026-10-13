@@ -1,14 +1,16 @@
 package site.awn.intelligence;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import site.awn.intelligence.api.CollectAllReport;
 import site.awn.intelligence.api.CreateSourceCommand;
 import site.awn.intelligence.api.IntelligenceFacade;
 import site.awn.intelligence.api.PricePointView;
 import site.awn.intelligence.api.SourceView;
-import site.awn.intelligence.api.CollectAllReport;
 import site.awn.intelligence.domain.CollectReport;
+import site.awn.intelligence.domain.SourceNotFoundException;
 import site.awn.intelligence.sandbox.SandboxIntelligenceAdapter;
 import site.awn.support.AbstractPostgresIntegrationTest;
 
@@ -171,9 +173,32 @@ class IntelligenceModuleTests extends AbstractPostgresIntegrationTest {
         assertThat(manual.failed()).isFalse();
         assertThat(manual.okCount()).isEqualTo(1);
         assertThat(intelligence.priceHistoryOf(productRef.substring("ref-".length()))).hasSize(1);
+
+        // 恢复来源：与停用对称，重新参与调度采集
+        SourceView restored = intelligence.enableSource(SandboxIntelligenceAdapter.SOURCE_NO);
+        assertThat(restored.enabled()).isTrue();
+        assertThat(intelligence.collectAll().reports())
+                .as("恢复后重新出现在调度采集中")
+                .anyMatch(r -> r.sourceNo().equals(SandboxIntelligenceAdapter.SOURCE_NO));
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * 测试库从不截断，沙箱来源与适配器队列在多个用例间共享：
+     * 停用来源会残留在库中、未消费的队列草稿会被下一用例的采集一并计入。逐用例复位，
+     * 避免用例顺序决定成败。
+     */
+    @AfterEach
+    void restoreSharedFixture() {
+        sandbox.repair();
+        sandbox.fetch(); // 清空队列遗留草稿
+        try {
+            intelligence.enableSource(SandboxIntelligenceAdapter.SOURCE_NO);
+        } catch (SourceNotFoundException e) {
+            // 首次运行尚未注册：无需恢复
+        }
+    }
 
     private void registerSandboxSource() {
         try {

@@ -83,4 +83,8 @@ public class DataSource {
     public void disable() {
         this.enabled = false;
     }
+
+    public void enable() {
+        this.enabled = true;
+    }
 }

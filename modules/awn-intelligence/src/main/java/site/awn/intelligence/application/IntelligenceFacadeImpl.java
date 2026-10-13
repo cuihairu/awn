@@ -160,6 +160,15 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
+    @Transactional
+    public SourceView enableSource(String sourceNo) {
+        DataSource source = sources.findBySourceNo(sourceNo)
+                .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
+        source.enable();
+        return toView(sources.save(source));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<PricePointView> priceHistoryOf(String productCode) {
         Map<Long, DataSource> sourceCache = new HashMap<>();
