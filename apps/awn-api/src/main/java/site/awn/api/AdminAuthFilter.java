@@ -11,8 +11,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * 运营接口鉴权：/api/v1/admin/** 要求 X-Admin-Token 与配置一致，否则 401。
- * 契约（docs/api/contracts.md）：库存调整等运营接口要求权限校验。
+ * 运营接口鉴权：/api/v1/admin/** 与专场管理写操作（POST /api/v1/campaigns**）
+ * 要求 X-Admin-Token 与配置一致，否则 401。
+ * 契约（docs/api/contracts.md）：管理操作在 admin 之下，专场公开的只有查询与渲染 GET。
  */
 @Component
 public class AdminAuthFilter extends OncePerRequestFilter {
@@ -27,7 +28,12 @@ public class AdminAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/v1/admin");
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/api/v1/admin")) {
+            return false;
+        }
+        // 专场管理写操作与运营接口同权；公开读（GET /api/v1/campaigns**）放行
+        return !(uri.startsWith("/api/v1/campaigns") && !"GET".equals(request.getMethod()));
     }
 
     @Override
