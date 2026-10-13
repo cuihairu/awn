@@ -80,7 +80,7 @@
 - [ ] notification 模块：站内信、邮件、短信适配 — 设计见 module-boundaries.md；async-outbox.md 明确「通知发送未实现」；验收：至少一种通道适配 + 失败不回滚订单
 
 ### 交易全链缺口（trading-model.md G1–G6，均有建议方向）
-- [ ] G1 `createPool` 不校验 `productCode` 存在性（字符串松耦合，编码写错静默成功）— 建议：createPool 经 catalog api 校验 + 集成测试。期次：Phase 03 收尾
+- [x] G1 createPool 经 catalog api 校验商品编码存在（未知编码抛 ProductNotFoundException 且不留残余池）— 08c0ae2；InventoryConcurrencyTests 新增 1 例共 5 例；全量 113 例绿
 - [ ] G2 挂牌/票品未接入订单链路（第三方挂牌事实上不可交易）— 建议：订单行增加凭证型（`listingId`/`unitNo`），预留改票品级状态迁移；补下单→挂牌联动测试。期次：Phase 05 收尾前裁决
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 挂牌消耗审核 quantity，额度耗尽拒绝；卖家自担挂牌不消耗）— dd4b9d7；MarketplaceModuleTests 新增 1 例共 8 例；全量绿
 - [x] G5 支付/退款受理渠道调用移出事务（先落 CREATED，受理成功后 markPending；渠道故障保留 CREATED 交对账闭环）— 1568962；PaymentModuleTests 新增 2 例共 10 例；全量 100 例绿
