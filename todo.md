@@ -81,7 +81,7 @@
 
 ### 交易全链缺口（trading-model.md G1–G6，均有建议方向）
 - [x] G1 createPool 经 catalog api 校验商品编码存在（未知编码抛 ProductNotFoundException 且不留残余池）— 08c0ae2；InventoryConcurrencyTests 新增 1 例共 5 例；全量 113 例绿
-- [ ] G2 挂牌/票品未接入订单链路（第三方挂牌事实上不可交易）— 建议：订单行增加凭证型（`listingId`/`unitNo`），预留改票品级状态迁移；补下单→挂牌联动测试。期次：Phase 05 收尾前裁决
+- [x] G2 挂牌/票品接入订单链路（凭证型订单行：`listingNo` + 1:1 票品，`quantity` 必须为 1；下单时挂牌 LISTED→RESERVED、票品 IN_STOCK→RESERVED 双守卫迁移与订单同事务；支付确认转 SOLD，取消/超时释放回原态；并发抢单守卫只放行一单；卖家不得下架有在途订单的挂牌；`ck_order_item_source` 兜底一行恰一条库存路径）— a418f39；VoucherOrderModuleTests 9 例；全量 139 例绿
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 挂牌消耗审核 quantity，额度耗尽拒绝；卖家自担挂牌不消耗）— dd4b9d7；MarketplaceModuleTests 新增 1 例共 8 例；全量绿
 - [x] G5 支付/退款受理渠道调用移出事务（先落 CREATED，受理成功后 markPending；渠道故障保留 CREATED 交对账闭环）— 1568962；PaymentModuleTests 新增 2 例共 10 例；全量 100 例绿
 - [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务逐单查渠道，迁移 UNKNOWN → SUCCEEDED/FAILED，渠道未定保持待核实；查实成功但订单已终态 → 告警 + 原路全额退款，不假装履约）— 708b1b8；PaymentModuleTests 新增 3 例共 13 例；全量 104 例绿

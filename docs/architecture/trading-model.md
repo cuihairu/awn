@@ -170,12 +170,12 @@ sequenceDiagram
 | # | 缺口 | 影响 | 建议方向 / 落地状态 |
 |---|---|---|---|
 | G1 | `inventory_pool.product_id` 是字符串且建池不校验商品存在性 | 编码写错的池静默成功，直到下单预留才失败 | ✅ 已消除：`createPool` 经 catalog api 校验存在性 + 集成测试 |
-| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未接通 | ✅ 已消除：凭证型订单行 + 票品级守卫迁移（下单预留 / 支付确认 / 取消超时释放），`VoucherOrderModuleTests` 9 例（含并发抢单） |
+| G2 | 挂牌/票品未接入订单链路 | 第三方挂牌事实上不可交易，Phase 05 目标未接通 | ✅ 已消除（a418f39）：凭证型订单行 + 票品级守卫迁移（下单预留 / 支付确认 / 取消超时释放），`VoucherOrderModuleTests` 9 例（含并发抢单） |
 | G3 | 商品无发布 API（`createProduct` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 公共接口按 PUBLISHED 过滤永远查不到数据，商品无法真正上架 | ✅ 已消除：catalog 发布接口 + 状态守卫测试 |
 | G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | ✅ 已消除：挂牌时守卫校验审核额度 |
 | G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | ✅ 已消除：渠道调用移出事务（先落 CREATED，受理后再 markPending） |
 | G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | ✅ 已消除：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 |
 
-G1–G6 均已消除（见 todo.md 逐项 commit 证据）。
+G1–G6 均已消除（G2 于 a418f39 落地；其余逐项 commit 证据见 todo.md）。
 第 1–13、15 条不变量有真实数据库测试兜底；第 14 条（商品上架 → 池已建 → 可售口径一致）仍无测试——
 那是运营流程一致性，非代码不变量，需人工或后续巡检任务覆盖。
