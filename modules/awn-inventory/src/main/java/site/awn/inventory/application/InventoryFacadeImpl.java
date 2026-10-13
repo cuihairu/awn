@@ -3,12 +3,14 @@ package site.awn.inventory.application;
 import org.springframework.stereotype.Service;
 import site.awn.inventory.api.BalanceView;
 import site.awn.inventory.api.CreatePoolCommand;
+import site.awn.inventory.api.CreateSeatsCommand;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.PoolView;
 import site.awn.inventory.api.ReconciliationReport;
 import site.awn.inventory.api.ReservationExpiryResult;
 import site.awn.inventory.api.ReservationView;
 import site.awn.inventory.api.ReserveInventoryCommand;
+import site.awn.inventory.api.SeatView;
 import site.awn.shared.alert.AlertCategory;
 import site.awn.shared.alert.AlertRecorder;
 import site.awn.shared.alert.AlertSeverity;
@@ -24,6 +26,7 @@ public class InventoryFacadeImpl implements InventoryFacade {
     private final InventoryQueryService queryService;
     private final InventoryReconciliationService reconciliationService;
     private final ReservationExpiryService expiryService;
+    private final PlatformSeatService seatService;
     private final AlertRecorder alerts;
 
     public InventoryFacadeImpl(InventoryWriteService writeService,
@@ -31,12 +34,14 @@ public class InventoryFacadeImpl implements InventoryFacade {
                                InventoryQueryService queryService,
                                InventoryReconciliationService reconciliationService,
                                ReservationExpiryService expiryService,
+                               PlatformSeatService seatService,
                                AlertRecorder alerts) {
         this.writeService = writeService;
         this.lifecycleService = lifecycleService;
         this.queryService = queryService;
         this.reconciliationService = reconciliationService;
         this.expiryService = expiryService;
+        this.seatService = seatService;
         this.alerts = alerts;
     }
 
@@ -88,6 +93,46 @@ public class InventoryFacadeImpl implements InventoryFacade {
     @Override
     public ReservationExpiryResult releaseExpiredReservations(java.time.Instant now) {
         return expiryService.releaseExpiredReservations(now);
+    }
+
+    @Override
+    public java.util.List<SeatView> createSeats(CreateSeatsCommand command) {
+        return seatService.createSeats(command);
+    }
+
+    @Override
+    public SeatView seat(String seatNo) {
+        return seatService.seat(seatNo);
+    }
+
+    @Override
+    public java.util.List<SeatView> seatsOfProduct(String productCode) {
+        return seatService.seatsOfProduct(productCode);
+    }
+
+    @Override
+    public SeatView reserveSeat(String seatNo, String orderNo) {
+        return seatService.reserveSeat(seatNo, orderNo);
+    }
+
+    @Override
+    public SeatView confirmSeat(String seatNo) {
+        return seatService.confirmSeat(seatNo);
+    }
+
+    @Override
+    public SeatView releaseSeat(String seatNo) {
+        return seatService.releaseSeat(seatNo);
+    }
+
+    @Override
+    public SeatView deliverSeat(String seatNo) {
+        return seatService.deliverSeat(seatNo);
+    }
+
+    @Override
+    public SeatView invalidateSeat(String seatNo) {
+        return seatService.invalidateSeat(seatNo);
     }
 
     @Override

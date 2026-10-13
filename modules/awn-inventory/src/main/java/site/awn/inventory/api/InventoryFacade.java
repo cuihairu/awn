@@ -53,4 +53,30 @@ public interface InventoryFacade {
      * 与余额计数器逐池核对。发现差异即报告，不自动修复——修复是人工或升级流程的决策。
      */
     ReconciliationReport reconcile();
+
+    // ==== 平台座位型票品（独立模型，不复用挂牌票品 ticket_units）====
+
+    /** 铺座（管理操作）：商品经 catalog 校验存在；同场次同物理位置重复即拒绝 */
+    java.util.List<SeatView> createSeats(CreateSeatsCommand command);
+
+    /** 座位视图；未知座位抛 SeatNotFoundException */
+    SeatView seat(String seatNo);
+
+    /** 商品的全部座位（按创建顺序） */
+    java.util.List<SeatView> seatsOfProduct(String productCode);
+
+    /** 预留座位（IN_STOCK → RESERVED 并登记订单号）：并发抢座守卫裁决，败者抛 InventoryConflictException */
+    SeatView reserveSeat(String seatNo, String orderNo);
+
+    /** 确认出票（RESERVED → SOLD，订单号保留供对账） */
+    SeatView confirmSeat(String seatNo);
+
+    /** 释放座位（RESERVED → IN_STOCK 并清空订单号）：取消 / 超时链路调用 */
+    SeatView releaseSeat(String seatNo);
+
+    /** 交付（SOLD → DELIVERED，终态） */
+    SeatView deliverSeat(String seatNo);
+
+    /** 作废（IN_STOCK / RESERVED → INVALID，终态）：坏座下架 */
+    SeatView invalidateSeat(String seatNo);
 }
