@@ -84,7 +84,7 @@
 - [ ] G2 挂牌/票品未接入订单链路（第三方挂牌事实上不可交易）— 建议：订单行增加凭证型（`listingId`/`unitNo`），预留改票品级状态迁移；补下单→挂牌联动测试。期次：Phase 05 收尾前裁决
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 挂牌消耗审核 quantity，额度耗尽拒绝；卖家自担挂牌不消耗）— dd4b9d7；MarketplaceModuleTests 新增 1 例共 8 例；全量绿
 - [x] G5 支付/退款受理渠道调用移出事务（先落 CREATED，受理成功后 markPending；渠道故障保留 CREATED 交对账闭环）— 1568962；PaymentModuleTests 新增 2 例共 10 例；全量 100 例绿
-- [ ] G6 `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程；订单侧无 UNKNOWN 拦截（UNKNOWN 支付订单到期即释放）— 建议：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 + 集成测试。期次：Phase 04
+- [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务逐单查渠道，迁移 UNKNOWN → SUCCEEDED/FAILED，渠道未定保持待核实；查实成功但订单已终态 → 告警 + 原路全额退款，不假装履约）— 708b1b8；PaymentModuleTests 新增 3 例共 13 例；全量 104 例绿
 
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
