@@ -85,7 +85,7 @@ flowchart TB
     end
 
     subgraph Intel["情报采集边界"]
-        COLLECT["采集调度器（规划中，当前为手动触发的采集接口）"]
+        COLLECT["采集调度器（Worker 周期任务：collectAll 全量采集，默认 1800s）"]
         ADAPTER["来源适配器"]
         RAW[("原始观察数据")]
         HISTORY[("标准化历史数据")]

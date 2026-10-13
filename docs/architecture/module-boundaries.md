@@ -70,23 +70,44 @@ awn-inventory/
     ├── package-info.java
     ├── api/
     │   ├── InventoryFacade.java
+    │   ├── CreatePoolCommand.java
     │   ├── ReserveInventoryCommand.java
-    │   └── ReservationView.java
+    │   ├── ReservationView.java
+    │   ├── BalanceView.java
+    │   ├── PoolView.java
+    │   ├── ReconciliationReport.java
+    │   ├── ReconciliationViolation.java
+    │   ├── ReservationExpiryResult.java
+    │   ├── SeatView.java
+    │   └── CreateSeatsCommand.java
     ├── application/
+    │   ├── InventoryFacadeImpl.java
     │   ├── InventoryWriteService.java
     │   ├── ReservationLifecycleService.java
+    │   ├── ReservationExpiryService.java
     │   ├── InventoryReconciliationService.java
-    │   └── InventoryQueryService.java
+    │   ├── InventoryQueryService.java
+    │   └── PlatformSeatService.java
     ├── domain/
     │   ├── InventoryPool.java
     │   ├── InventoryBalance.java
     │   ├── InventoryReservation.java
-    │   └── InventoryTransaction.java
+    │   ├── InventoryTransaction.java
+    │   ├── LedgerType.java
+    │   ├── ReservationStatus.java
+    │   ├── PlatformSeat.java
+    │   ├── SeatStatus.java
+    │   ├── PoolNotFoundException.java
+    │   ├── InsufficientInventoryException.java
+    │   ├── InventoryConflictException.java
+    │   ├── SeatNotFoundException.java
+    │   └── package-info.java
     └── infrastructure/
         ├── InventoryPoolRepository.java
         ├── InventoryBalanceRepository.java
         ├── InventoryReservationRepository.java
-        └── InventoryTransactionRepository.java
+        ├── InventoryTransactionRepository.java
+        └── PlatformSeatRepository.java
 ```
 
 各模块只公开 `api` 中有意提供给其他模块使用的接口。其他模块**不应**直接引用其 `infrastructure` 或内部领域实现。
