@@ -44,3 +44,9 @@ awn:
   admin:
     # 运营接口令牌（生产环境必须通过环境变量覆盖）
     token: ${AWN_ADMIN_TOKEN:awn-admin-dev-token}
+  ratelimit:
+    # 管理面限流存储：memory（默认，进程内）| redis（生产多实例共享额度）
+    store: ${AWN_RATELIMIT_STORE:memory}
+    # 管理面限流：每资源组每窗口请求数
+    admin-limit: 100
+    admin-window: 60s

@@ -22,6 +22,7 @@ public enum ErrorCode {
     PAYMENT_CALLBACK_REJECTED(400),
     REFUND_CONFLICT(409),
     CONFLICT(409),
+    RATE_LIMITED(429),
     INTERNAL_ERROR(500);
 
     private final int httpStatus;

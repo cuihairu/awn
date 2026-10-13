@@ -59,6 +59,8 @@ services:
       AWN_REDIS_HOST: redis
       # 运营接口令牌：生产必须在 .env 覆盖（默认值仅开发冒烟用）
       AWN_ADMIN_TOKEN: ${AWN_ADMIN_TOKEN:-awn-admin-dev-token}
+      # 管理面限流存储：compose 栈内已有 redis，默认启用多实例共享额度
+      AWN_RATELIMIT_STORE: ${AWN_RATELIMIT_STORE:-redis}
       SPRING_PROFILES_ACTIVE: prod
     # 仅本机回环暴露，供一键冒烟（生产流量走 caddy，不依赖此端口；18080 避开宿主机常用 8080）
     ports:
