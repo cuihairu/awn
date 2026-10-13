@@ -98,6 +98,13 @@ public class InventoryWriteService {
         balance.setTotalQuantity(command.totalQuantity());
         balanceRepository.save(balance);
 
+        // bootstrap ADJUST 流水：RESERVE/CONFIRM/RELEASE 不动总量，总量来源只能是这条流水 + 后续 ADJUST
+        var bootstrap = new InventoryTransaction();
+        bootstrap.setInventoryPoolId(pool.getId());
+        bootstrap.setType(LedgerType.ADJUST);
+        bootstrap.setQuantity(command.totalQuantity());
+        transactionRepository.save(bootstrap);
+
         return new PoolView(pool.getPoolCode());
     }
 

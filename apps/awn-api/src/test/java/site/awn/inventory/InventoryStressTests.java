@@ -132,11 +132,13 @@ class InventoryStressTests extends AbstractPostgresIntegrationTest {
         assertThat(balance.reservedQuantity() + balance.soldQuantity()).isLessThanOrEqualTo(total);
         assertThat(balance.soldQuantity()).isEqualTo(confirmed.get());
 
-        // 对账：预留记录 ↔ 余额计数器账实相符
+        // 对账：本池预留记录 ↔ 余额计数器 ↔ ADJUST 流水账实相符
+        // （共享测试库留存历史池的旧数据，全局 consistent() 不能作为本用例口径）
         ReconciliationReport report = inventory.reconcile();
-        assertThat(report.consistent())
-                .as("对账应无差异: %s", report.violations())
-                .isTrue();
+        assertThat(report.violations())
+                .filteredOn(v -> poolCode.equals(v.poolCode()))
+                .as("压测池对账应无差异")
+                .isEmpty();
     }
 
     private static String unique(String prefix) {
