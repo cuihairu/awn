@@ -25,6 +25,10 @@ import java.util.List;
 @Service
 public class EventFacadeImpl implements EventFacade {
 
+    /** 对公开读可见的活动状态 */
+    private static final List<EventStatus> PUBLIC_STATUSES =
+            List.of(EventStatus.PUBLISHED, EventStatus.COMPLETED);
+
     private final VenueRepository venues;
     private final EventRepository events;
     private final SessionRepository sessions;
@@ -72,6 +76,32 @@ public class EventFacadeImpl implements EventFacade {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<EventView> events() {
+        return events.findByStatusInOrderByStartTimeDesc(PUBLIC_STATUSES).stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EventView eventById(Long eventId) {
+        return events.findById(eventId)
+                .filter(Event::isPublic)
+                .map(this::toView)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+    }
+
+    @Override
+    @Transactional
+    public EventView publishEvent(String eventCode) {
+        Event event = events.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+        event.publish();
+        return toView(event);
+    }
+
+    @Override
     @Transactional
     public SessionView createSession(CreateSessionCommand command) {
         Session session = new Session(command.sessionCode(), command.eventId(),
@@ -88,12 +118,33 @@ public class EventFacadeImpl implements EventFacade {
                 .orElseThrow(() -> new SessionNotFoundException(sessionId));
     }
 
+    /**
+     * 公开场次详情：场次不存在、或父活动未对公众公开（未发布）一律 404。
+     * 与 {@link #session(Long)} 分开：场次商品列表等既有链路按场次直接取数，
+     * 不因活动未发布而整体不可用。
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public SessionView publicSession(Long sessionId) {
+        return sessions.findById(sessionId)
+                .filter(this::publiclyVisible)
+                .map(this::toView)
+                .orElseThrow(() -> new SessionNotFoundException(sessionId));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<SessionView> sessions(Long eventId) {
         return sessions.findByEventId(eventId).stream()
                 .map(this::toView)
                 .toList();
+    }
+
+    /** 场次仅在其父活动对公开读可见时可见 */
+    private boolean publiclyVisible(Session session) {
+        return events.findById(session.getEventId())
+                .map(Event::isPublic)
+                .orElse(false);
     }
 
     private VenueView toView(Venue v) {

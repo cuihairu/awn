@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import site.awn.campaign.domain.CampaignNotFoundException;
 import site.awn.catalog.domain.ProductNotFoundException;
+import site.awn.event.domain.EventConflictException;
 import site.awn.event.domain.EventNotFoundException;
 import site.awn.event.domain.SessionNotFoundException;
 import site.awn.fulfillment.domain.FulfillmentConflictException;
@@ -74,6 +75,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(SessionNotFoundException.class)
     public ResponseEntity<ErrorResponse> sessionNotFound(SessionNotFoundException e) {
         return envelope(ErrorCode.SESSION_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(EventConflictException.class)
+    public ResponseEntity<ErrorResponse> eventConflict(EventConflictException e) {
+        return envelope(ErrorCode.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(CampaignNotFoundException.class)

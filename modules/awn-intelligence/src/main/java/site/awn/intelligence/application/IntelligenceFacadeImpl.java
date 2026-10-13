@@ -24,6 +24,7 @@ import site.awn.intelligence.infrastructure.PriceHistoryRepository;
 import site.awn.intelligence.infrastructure.RawObservationRepository;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,16 +174,20 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     public List<PricePointView> priceHistoryOf(String productCode) {
         Map<Long, DataSource> sourceCache = new HashMap<>();
         return history.findByProductCodeOrderByObservedAtDesc(productCode).stream()
-                .map(entry -> {
-                    DataSource source = sourceCache.computeIfAbsent(entry.getSourceId(),
-                            id -> sources.findById(id).orElse(null));
-                    if (source == null) {
-                        return null;
-                    }
-                    return new PricePointView(entry.getPrice(), entry.getCurrency(), entry.getAvailability(),
-                            source.getSourceNo(), source.getName(), source.getKind().name(),
-                            entry.getTrustTier(), entry.getObservedAt());
-                })
+                .map(entry -> toView(entry, sourceCache))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PricePointView> priceHistoryOfSessions(Collection<String> sessionCodes) {
+        if (sessionCodes == null || sessionCodes.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, DataSource> sourceCache = new HashMap<>();
+        return history.findBySessionCodeInOrderByObservedAtDesc(sessionCodes).stream()
+                .map(entry -> toView(entry, sourceCache))
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }
@@ -191,5 +196,16 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
 
     private SourceView toView(DataSource s) {
         return new SourceView(s.getSourceNo(), s.getName(), s.getKind().name(), s.getTrustTier(), s.isEnabled());
+    }
+
+    private PricePointView toView(PriceHistoryEntry entry, Map<Long, DataSource> sourceCache) {
+        DataSource source = sourceCache.computeIfAbsent(entry.getSourceId(),
+                id -> sources.findById(id).orElse(null));
+        if (source == null) {
+            return null;
+        }
+        return new PricePointView(entry.getPrice(), entry.getCurrency(), entry.getAvailability(),
+                source.getSourceNo(), source.getName(), source.getKind().name(),
+                entry.getTrustTier(), entry.getObservedAt());
     }
 }

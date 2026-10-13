@@ -57,6 +57,24 @@ public class Event {
         return id;
     }
 
+    /**
+     * 发布守卫：只有草稿活动可发布；已发布 / 已结束 / 已取消一律拒绝。
+     * 公开读端点（GET /api/v1/events、/sessions、/intelligence/events/{eventId}/prices）
+     * 只暴露已发布或已结束的活动，发布是唯一让活动进入公开链路的途径。
+     */
+    public void publish() {
+        if (status != EventStatus.DRAFT) {
+            throw new EventConflictException(
+                    "publish not allowed from status " + status + ": " + eventCode);
+        }
+        this.status = EventStatus.PUBLISHED;
+    }
+
+    /** 是否对公开读可见（已发布或已结束） */
+    public boolean isPublic() {
+        return status == EventStatus.PUBLISHED || status == EventStatus.COMPLETED;
+    }
+
     public String getEventCode() {
         return eventCode;
     }

@@ -72,16 +72,20 @@ GET /api/v1/campaigns/{campaignCode}/render
 POST /api/v1/orders
 GET  /api/v1/orders/{orderId}
 POST /api/v1/orders/{orderId}/cancel
-```
 
-以下接口目前只有模块层 facade（`EventFacade` 等），**未暴露 HTTP**，由后续阶段补齐控制器：
-
-```text
 GET /api/v1/events
 GET /api/v1/events/{eventId}
 GET /api/v1/sessions/{sessionId}
 GET /api/v1/intelligence/events/{eventId}/prices
 ```
+
+活动与场次为公开只读，但只暴露对公众可见的内容：
+
+- `GET /api/v1/events` 仅返回 `PUBLISHED` / `COMPLETED` 活动，按开始时间倒序；
+- `GET /api/v1/events/{eventId}` 与 `GET /api/v1/sessions/{sessionId}` 对未知资源、以及父活动未发布（草稿）的场次一律 404，不泄露草稿内容；
+- `GET /api/v1/intelligence/events/{eventId}/prices` 返回该活动下**所有场次**的价格历史（按观测时间倒序，每条可溯源）；活动未知或未公开 → 404；场次无价格数据时返回空数组。
+
+活动发布（`DRAFT` → `PUBLISHED`）目前只有模块层接口 `EventFacade.publishEvent(eventCode)`，**未暴露 HTTP**：发布是运营动作，待管理面落地后按 `X-Admin-Token` 鉴权接入；重复发布返回 `CONFLICT`。
 
 公共商品接口的库存摘要为展示口径（当前直查数据库，未接缓存），**下单时必须重新验证**。
 

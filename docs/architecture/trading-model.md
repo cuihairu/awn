@@ -175,7 +175,8 @@ sequenceDiagram
 | G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | ✅ 已消除：挂牌时守卫校验审核额度 |
 | G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | ✅ 已消除：渠道调用移出事务（先落 CREATED，受理后再 markPending） |
 | G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | ✅ 已消除：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 |
+| G7 | 活动无发布 API（`createEvent` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 与 G3 同构：公开活动列表按「已发布」过滤永远查不到数据，活动无法进入公开链路 | ✅ 已消除：`Event.publish()` 状态守卫 + `EventFacade.publishEvent`（仅 DRAFT 可发布，其余状态 `EventConflictException`→`CONFLICT`）；公开读只暴露 PUBLISHED/COMPLETED，草稿活动的场次详情一并 404 |
 
-G1–G6 均已消除（G2 于 a418f39 落地；其余逐项 commit 证据见 todo.md）。
+G1–G7 均已消除（G2 于 a418f39 落地；其余逐项 commit 证据见 todo.md）。
 第 1–13、15 条不变量有真实数据库测试兜底；第 14 条（商品上架 → 池已建 → 可售口径一致）仍无测试——
 那是运营流程一致性，非代码不变量，需人工或后续巡检任务覆盖。

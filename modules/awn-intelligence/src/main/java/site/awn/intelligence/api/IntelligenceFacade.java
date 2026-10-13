@@ -2,6 +2,7 @@ package site.awn.intelligence.api;
 
 import site.awn.intelligence.domain.CollectReport;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -29,4 +30,7 @@ public interface IntelligenceFacade {
 
     /** 价格历史（可溯源：来源、更新时间、可信度） */
     List<PricePointView> priceHistoryOf(String productCode);
+
+    /** 场次集合的价格历史（活动维度价格走势），按观测时间倒序 */
+    List<PricePointView> priceHistoryOfSessions(Collection<String> sessionCodes);
 }

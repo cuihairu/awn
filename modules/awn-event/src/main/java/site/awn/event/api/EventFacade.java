@@ -15,9 +15,21 @@ public interface EventFacade {
 
     EventView event(String eventCode);
 
+    /** 公开活动列表：仅已发布 / 已结束，按开始时间倒序 */
+    List<EventView> events();
+
+    /** 公开活动详情：未知或非公开状态一律 404 */
+    EventView eventById(Long eventId);
+
+    /** 发布活动（DRAFT → PUBLISHED），非草稿状态抛 EventConflictException */
+    EventView publishEvent(String eventCode);
+
     SessionView createSession(CreateSessionCommand command);
 
     SessionView session(Long sessionId);
+
+    /** 公开场次详情：场次不存在或父活动未公开 → SessionNotFoundException */
+    SessionView publicSession(Long sessionId);
 
     List<SessionView> sessions(Long eventId);
 }
