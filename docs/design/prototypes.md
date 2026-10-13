@@ -1,6 +1,7 @@
 # 界面原型图
 
-> 2026-10-12 起，四端原型重做为令牌化 HTML 版（多主题、可切换），位于 [`docs/design/prototypes/`](prototypes/index.html)，
+> 2026-10-12 起，四端原型重做为令牌化 HTML 版（多主题、可切换），位于仓库
+> [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)（`index.html` 为总览），
 > 设计体系见 [`ui-system.md`](ui-system.md)。本页保留为早期 SVG 原型存档。
 
 基于 `design-system/awn/MASTER.md` 设计规范产出的三端高保真原型。设计工具链：`ui-ux-pro-max` 技能生成设计系统 → 矢量原型（SVG）落库于 `docs/public/prototypes/`。

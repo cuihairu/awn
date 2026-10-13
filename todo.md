@@ -125,12 +125,15 @@
 
 ## Phase 08 · 交付工程化（来源：用户 2026-10-12）
 
-- [ ] 默认构建：一条命令出可运行产物
+- [x] 默认构建：一条命令出可运行产物
   验收：Maven 主服务 + pnpm 前端各自收口到 `make build` 或 `scripts/build.sh`；产物路径写清；构建可重复、失败非零退出。期次：Phase 08
-- [ ] Docker 镜像：多阶段构建
+  完成：`scripts/build.sh`（`set -euo pipefail`；后端 awn-api+awn-worker fat jar → web Next.js → admin Vite → 文档站；末尾打印产物路径）。实测全绿 1m34s 退出码 0：`awn-api-0.1.0-SNAPSHOT.jar` 69M、`awn-worker-0.1.0-SNAPSHOT.jar` 61M、`apps/web/.next/`、`apps/admin/dist/`、`docs/.vitepress/dist/`；Maven 缺失时以非零退出（127）验证失败路径。构建过程抓到真实回归：`docs/design/prototypes.md` 指针链接在 vitepress 死链检查下失败（HTML 原型不属于文档站源文件），已改为仓库外链后 docs 构建通过（32.9s）。commit 见下。
+- [x] Docker 镜像：多阶段构建
   验收：构建阶段 JDK/Maven 与 Node，运行阶段精简基础镜像；非 root 运行；含 `HEALTHCHECK`；`.dockerignore` 排除 target/node_modules/.git；镜像体积写入验收（给出实测大小）。期次：Phase 08
-- [ ] docker-compose 一键起 + 一键验证
+  完成：api/worker Dockerfile 重写——构建阶段 `eclipse-temurin:21-jdk-alpine` + 固定版本 Maven 3.9.9（按 Maven 坐标取发行版，`CENTRAL_MIRROR` 构建参数默认官方源、受限网络可指镜像仓）；运行阶段 `eclipse-temurin:21-jre-alpine` 非 root（uid/gid 10001）+ 镜像级 `HEALTHCHECK`；根 `.dockerignore` 排除 target/node_modules/.git/.env。重写过程抓到上游 Dockerfile 两个真实缺陷：① 父 pom 声明 awn-worker 模块但构建阶段未拷其 pom（`ProjectBuildingException`，镜像从未被构建过）；② 运行镜像无 wget 而 compose 健康检查依赖 wget（改 alpine 后以 busybox 链接解决）。实测镜像体积（未压缩/压缩）：`awn-api:local` 422MB / 138MB（首次构建 6m52s，含容器内全量依赖下载）、`awn-worker:local` 409MB / 132MB（6m19s）、`awn-web:local` 297MB / 67MB（3m13s，验证 Node 多阶段构建阶段）；两者均 `uid=10001(awn)` 非 root 运行。**admin 镜像卡点**：基础镜像 caddy:2.8-alpine 拉取被出口网络拦截（Docker Hub EOF/401、daocloud 502），本机无法构建，需网络正常环境执行 `docker compose up -d --build`。commit 见下。
+- [x] docker-compose 一键起 + 一键验证
   验收：`docker-compose.yml` 含主服务 + 依赖（数据库按仓内实际选型 PostgreSQL）、卷与端口映射、示例数据或迁移自动执行；`docker compose up -d` 后健康检查通过并跑一条冒烟（关键接口返回预期）；README 写清这一条命令。期次：Phase 08
+  完成：compose 增补 CENTRAL_MIRROR 构建参数与 awn-api 回环端口（127.0.0.1:18080，生产流量仍走 caddy，避开宿主机常用 8080）；`deploy/README.md` 写明一键验证三步，README 两份各加「一条命令构建」「一键验证」两行。验证：`docker compose up -d postgresql redis awn-api awn-worker` → 4/4 healthy；`curl 127.0.0.1:18080/actuator/health` 返回 `{"status":"UP","groups":["liveness","readiness"]}`；空库启动 Flyway 自动执行 10 条迁移（max v9）；冒烟业务面返回统一信封 `{"code":"NOT_FOUND","message":"product not found: smoke-nonexistent","traceId":"..."}` HTTP 404；后台无 token 访问 `GET /api/v1/admin/orders` 返回 401（`AdminAuthFilter` 生效）。验证过程抓到三个真实缺陷：① compose 传 `AWN_DB_USERNAME` 但应用读 `AWN_DB_USER`（被忽略，回退默认用户导致 28P01 密码认证失败）；② worker 缺 Jackson starter，组件扫描拉起 campaign 模块时因无 `ObjectMapper` bean 启动崩溃（已补 `spring-boot-starter-json`，worker 测试 5/5 绿）；③ worker `web-application-type=none` 下 8081 actuator 从不绑定，原 HEALTHCHECK 与 `EXPOSE 8081`、compose/README 的「8081 actuator」表述均为误，已改为进程存活健康口径并修正文档。commit 见下。
 
 ## Phase 06 · 票务情报与运营完善
 

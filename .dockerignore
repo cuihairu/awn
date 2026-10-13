@@ -1,0 +1,32 @@
+# 构建上下文裁剪（所有 Dockerfile 的 context 均为仓库根目录）
+# 原则：本地密钥绝不进镜像；宿主机构建产物绝不复用（镜像内重新构建）。
+
+# git 与本地状态
+.git
+.gitattributes
+.gitignore
+
+# 构建产物（镜像内重新构建）
+**/target/
+**/dist/
+apps/web/.next/
+**/.next/cache/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# 依赖目录（镜像内按 lockfile 重新安装）
+node_modules/
+**/node_modules/
+**/.pnpm-store/
+
+# 本地环境与密钥（绝不进镜像）
+.env
+.env.*
+!.env.example
+deploy/.env
+*.pem
+*.key
+
+# 本地杂项
+*.log
+*.tar.gz

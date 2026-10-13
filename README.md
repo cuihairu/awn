@@ -67,6 +67,8 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | Miniprogram | `pnpm --filter @awn/miniprogram dev:weapp` | Import `apps/miniprogram` into WeChat DevTools |
 | Mobile client | `cd apps/client && flutter run` | Flutter SDK ≥ 3.8 |
 | One-shot deploy | `cd deploy && cp .env.example .env && docker compose up -d --build` | See `deploy/README.md` |
+| One-command build | `scripts/build.sh` | Backend fat jars + `apps/web/.next/` + `apps/admin/dist/` + docs site; non-zero exit on failure |
+| One-shot verify | `docker compose -f deploy/docker-compose.yml up -d --build` → `curl -s http://127.0.0.1:18080/actuator/health` returns `UP` | Smoke + details: `deploy/README.md` |
 
 ## Implementation phases
 
