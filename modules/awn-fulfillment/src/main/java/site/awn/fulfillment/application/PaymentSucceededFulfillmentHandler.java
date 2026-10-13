@@ -5,6 +5,7 @@ import site.awn.fulfillment.domain.Fulfillment;
 import site.awn.fulfillment.infrastructure.FulfillmentRepository;
 import site.awn.shared.outbox.OutboxEventHandler;
 import site.awn.shared.outbox.OutboxMessage;
+import site.awn.shared.outbox.OutboxMessageRepository;
 import site.awn.shared.outbox.OutboxPayloads;
 
 import java.util.UUID;
@@ -12,17 +13,22 @@ import java.util.UUID;
 /**
  * 支付成功事件消费者（事件触发履约）：PAYMENT_SUCCEEDED → 履约单 PENDING_SELLER。
  * 支付成功不自动等于交付成功：完成还需卖家交付 + 平台核验。
- * 幂等：一单一履约（order_no 唯一），事件重放时返回已有履约单。
+ * 一单一履约（order_no 唯一），事件重放时不重复建单、不重复发 FULFILLMENT_STARTED。
+ * FULFILLMENT_STARTED 同事务写 Outbox：订单模块据此将 PAID → FULFILLING。
  */
 @Component
 public class PaymentSucceededFulfillmentHandler implements OutboxEventHandler {
 
     public static final String CONSUMER = "fulfillment";
+    private static final String AGGREGATE_TYPE = "fulfillment";
 
     private final FulfillmentRepository fulfillments;
+    private final OutboxMessageRepository outbox;
 
-    public PaymentSucceededFulfillmentHandler(FulfillmentRepository fulfillments) {
+    public PaymentSucceededFulfillmentHandler(FulfillmentRepository fulfillments,
+                                              OutboxMessageRepository outbox) {
         this.fulfillments = fulfillments;
+        this.outbox = outbox;
     }
 
     @Override
@@ -45,6 +51,11 @@ public class PaymentSucceededFulfillmentHandler implements OutboxEventHandler {
         if (fulfillments.findByOrderNo(orderNo).isPresent()) {
             return;
         }
-        fulfillments.save(new Fulfillment("FUL-" + UUID.randomUUID(), orderNo));
+        Fulfillment created = new Fulfillment("FUL-" + UUID.randomUUID(), orderNo);
+        fulfillments.save(created);
+        outbox.insertPending(AGGREGATE_TYPE, created.getFulfillmentNo(), "FULFILLMENT_STARTED",
+                "{\"fulfillmentNo\":\"" + created.getFulfillmentNo()
+                        + "\",\"orderNo\":\"" + created.getOrderNo()
+                        + "\",\"status\":\"PENDING_SELLER\"}");
     }
 }

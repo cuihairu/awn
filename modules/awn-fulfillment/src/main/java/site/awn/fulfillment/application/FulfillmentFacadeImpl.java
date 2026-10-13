@@ -73,6 +73,7 @@ public class FulfillmentFacadeImpl implements FulfillmentFacade {
         record.conclude(command.passed() ? DeliveryResult.PASSED : DeliveryResult.REJECTED, command.note());
         if (command.passed()) {
             fulfillment.verifyPassed();
+            emitCompleted(fulfillment);
         } else {
             fulfillment.verifyRejected(command.note() == null ? "delivery verification rejected" : command.note());
             emitFailure(fulfillment);
@@ -100,13 +101,19 @@ public class FulfillmentFacadeImpl implements FulfillmentFacade {
     /** 履约失败必须可见：FULFILLMENT_FAILED 事件进入异常流程（退款 / 人工介入） */
     private void emitFailure(Fulfillment fulfillment) {
         outbox.insertPending(AGGREGATE_TYPE, fulfillment.getFulfillmentNo(),
-                "FULFILLMENT_FAILED", payload(fulfillment));
+                "FULFILLMENT_FAILED", payload(fulfillment, "FAILED"));
     }
 
-    private static String payload(Fulfillment fulfillment) {
+    /** 交付完成：FULFILLMENT_COMPLETED 事件驱动订单 FULFILLING → FULFILLED */
+    private void emitCompleted(Fulfillment fulfillment) {
+        outbox.insertPending(AGGREGATE_TYPE, fulfillment.getFulfillmentNo(),
+                "FULFILLMENT_COMPLETED", payload(fulfillment, fulfillment.getStatus().name()));
+    }
+
+    private static String payload(Fulfillment fulfillment, String status) {
         return "{\"fulfillmentNo\":\"" + fulfillment.getFulfillmentNo()
                 + "\",\"orderNo\":\"" + fulfillment.getOrderNo()
-                + "\",\"status\":\"FAILED\""
+                + "\",\"status\":\"" + status + "\""
                 + ",\"reason\":" + jsonString(fulfillment.getFailReason()) + "}";
     }
 

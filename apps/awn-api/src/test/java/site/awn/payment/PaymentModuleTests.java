@@ -146,7 +146,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
-    void callbackSuccessClosesEventLoopToPaidOrder() {
+    void callbackSuccessClosesEventLoopToFulfillingOrder() {
         OrderView order = newPaidPendingOrder(2, 1000);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
@@ -161,9 +161,9 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
         // 订单仍是待支付：确认由事件闭环完成
         assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
 
-        // Worker 分发（积压耗尽，等价 worker 连续多轮）→ 订单 PAID，库存转已售
+        // Worker 分发（积压耗尽，等价 worker 连续多轮）→ 库存转已售，履约单创建 → 订单履约中
         drainOutbox();
-        assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.PAID);
+        assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.FULFILLING);
         var pool = inventory.balanceOf(order.items().get(0).poolCode());
         assertThat(pool.soldQuantity()).isEqualTo(2);
         assertThat(pool.reservedQuantity()).isZero();
@@ -173,7 +173,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
         drainOutbox();
         var poolAgain = inventory.balanceOf(order.items().get(0).poolCode());
         assertThat(poolAgain.soldQuantity()).as("同一事件不得重复消费").isEqualTo(2);
-        assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.PAID);
+        assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.FULFILLING);
     }
 
     @Test

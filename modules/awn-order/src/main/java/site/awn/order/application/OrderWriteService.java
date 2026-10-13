@@ -177,6 +177,46 @@ public class OrderWriteService {
     }
 
     /**
+     * 履约开始联动：PAID → FULFILLING（履约单创建后由履约模块发出 FULFILLMENT_STARTED）。
+     * 幂等：已在 FULFILLING / FULFILLED 返回 false。
+     */
+    @Transactional
+    public boolean markFulfilling(String orderNo) {
+        Order order = orders.findByOrderNo(orderNo).orElseThrow(() -> new OrderNotFoundException(orderNo));
+        int moved = orders.transition(orderNo, OrderStatus.PAID, OrderStatus.FULFILLING);
+        if (moved == 1) {
+            outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_FULFILLING",
+                    payload(orderNo, OrderStatus.FULFILLING.name(), order.getPayAmount(), order.getCurrency()));
+            return true;
+        }
+        OrderStatus current = orders.findByOrderNo(orderNo).orElseThrow().getStatus();
+        if (current == OrderStatus.FULFILLING || current == OrderStatus.FULFILLED) {
+            return false; // 幂等重放
+        }
+        throw new OrderConflictException("fulfilling not allowed from status " + current);
+    }
+
+    /**
+     * 交付完成联动：FULFILLING → FULFILLED（卖家交付 + 平台核验通过后发出 FULFILLMENT_COMPLETED）。
+     * 幂等：已是 FULFILLED 返回 false。
+     */
+    @Transactional
+    public boolean markFulfilled(String orderNo) {
+        Order order = orders.findByOrderNo(orderNo).orElseThrow(() -> new OrderNotFoundException(orderNo));
+        int moved = orders.transition(orderNo, OrderStatus.FULFILLING, OrderStatus.FULFILLED);
+        if (moved == 1) {
+            outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_FULFILLED",
+                    payload(orderNo, OrderStatus.FULFILLED.name(), order.getPayAmount(), order.getCurrency()));
+            return true;
+        }
+        OrderStatus current = orders.findByOrderNo(orderNo).orElseThrow().getStatus();
+        if (current == OrderStatus.FULFILLED) {
+            return false; // 幂等重放
+        }
+        throw new OrderConflictException("fulfilled not allowed from status " + current);
+    }
+
+    /**
      * 履约失败联动：PAID / FULFILLING / FULFILLED → REFUND_PENDING（退款异常流程入口）。
      * 事件重放幂等：已是 REFUND_PENDING 返回 false。
      */

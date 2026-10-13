@@ -29,6 +29,18 @@ public interface OrderFacade {
     boolean markPaid(String orderNo);
 
     /**
+     * 履约开始联动（FULFILLMENT_STARTED 事件消费）：PAID → FULFILLING。
+     * 重复迁移幂等返回 false；非 PAID 状态抛冲突（事件留痕重试后 FAILED）。
+     */
+    boolean markFulfilling(String orderNo);
+
+    /**
+     * 交付完成联动（FULFILLMENT_COMPLETED 事件消费）：FULFILLING → FULFILLED。
+     * 重复迁移幂等返回 false；非 FULFILLING 状态抛冲突。
+     */
+    boolean markFulfilled(String orderNo);
+
+    /**
      * 履约失败联动（FULFILLMENT_FAILED 事件消费）：PAID / FULFILLING / FULFILLED
      * → REFUND_PENDING，进入退款异常流程。已是 REFUND_PENDING 幂等返回 false。
      */

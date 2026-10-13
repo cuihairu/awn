@@ -60,10 +60,29 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
         OrderView order = orderFacade.orderOf(lastOrderNo);
         FulfillmentView view = fulfillment.fulfillmentOf(lastOrderNo);
 
-        assertThat(order.status()).isEqualTo(OrderStatus.PAID);
+        // 履约单已建（PENDING_SELLER）→ 订单进入履约中，不再是已支付待履约
+        assertThat(order.status()).isEqualTo(OrderStatus.FULFILLING);
         assertThat(view.status())
                 .as("支付成功不自动等于交付成功")
                 .isEqualTo("PENDING_SELLER");
+    }
+
+    @Test
+    void orderMovesToFulfilledWhenDeliveryVerified() {
+        paidOrder();
+        drainOutbox();
+
+        // 卖家交付只是出票，交付完成需平台核验
+        fulfillment.deliverSeller(new DeliverCommand(
+                lastOrderNo, "https://assets.awn.site/delivery/" + UUID.randomUUID() + ".png", null));
+        assertThat(orderFacade.orderOf(lastOrderNo).status())
+                .as("卖家交付不等于交付完成").isEqualTo(OrderStatus.FULFILLING);
+
+        fulfillment.verifyDelivery(new VerifyDeliveryCommand(
+                lastOrderNo, true, "核验员-3", "凭证有效"));
+        drainOutbox();
+
+        assertThat(orderFacade.orderOf(lastOrderNo).status()).isEqualTo(OrderStatus.FULFILLED);
     }
 
     @Test

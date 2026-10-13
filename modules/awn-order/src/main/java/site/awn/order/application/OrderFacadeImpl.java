@@ -47,6 +47,16 @@ public class OrderFacadeImpl implements OrderFacade {
     }
 
     @Override
+    public boolean markFulfilling(String orderNo) {
+        return writes.markFulfilling(orderNo);
+    }
+
+    @Override
+    public boolean markFulfilled(String orderNo) {
+        return writes.markFulfilled(orderNo);
+    }
+
+    @Override
     public boolean markRefundPending(String orderNo) {
         return writes.markRefundPending(orderNo);
     }
