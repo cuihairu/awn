@@ -1,6 +1,7 @@
 package site.awn.api;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import site.awn.audit.api.AuditEntryView;
 import site.awn.audit.api.AuditFacade;
 import site.awn.audit.api.RecordAuditCommand;
+import site.awn.event.api.EventFacade;
+import site.awn.event.api.EventView;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderView;
@@ -31,14 +34,16 @@ public class AdminController {
     private final OrderFacade orders;
     private final InventoryFacade inventory;
     private final PaymentFacade payments;
+    private final EventFacade events;
     private final AlertRecorder alerts;
     private final AuditFacade audit;
 
     public AdminController(OrderFacade orders, InventoryFacade inventory, PaymentFacade payments,
-                           AlertRecorder alerts, AuditFacade audit) {
+                           EventFacade events, AlertRecorder alerts, AuditFacade audit) {
         this.orders = orders;
         this.inventory = inventory;
         this.payments = payments;
+        this.events = events;
         this.alerts = alerts;
         this.audit = audit;
     }
@@ -90,6 +95,12 @@ public class AdminController {
     @GetMapping("/audit-logs")
     public List<AuditEntryView> auditLogs() {
         return audit.recent();
+    }
+
+    /** 活动发布（DRAFT → PUBLISHED）：仅草稿可发布，重复发布 409 CONFLICT；发布后公开读可见 */
+    @PostMapping("/events/{eventCode}/publish")
+    public EventView publishEvent(@PathVariable String eventCode) {
+        return events.publishEvent(eventCode);
     }
 
     /** 告警确认 */

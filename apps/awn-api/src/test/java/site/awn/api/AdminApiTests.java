@@ -8,6 +8,11 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import site.awn.audit.api.AuditFacade;
+import site.awn.event.api.CreateEventCommand;
+import site.awn.event.api.CreateVenueCommand;
+import site.awn.event.api.EventFacade;
+import site.awn.event.api.EventView;
+import site.awn.event.api.VenueView;
 import site.awn.inventory.api.BalanceView;
 import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.inventory.api.InventoryFacade;
@@ -29,6 +34,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -51,6 +57,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired OrderFacade orderFacade;
     @Autowired InventoryFacade inventory;
+    @Autowired EventFacade events;
     @Autowired PaymentFacade payments;
     @Autowired AuditFacade audit;
     @Autowired AlertRecorder alerts;
@@ -110,6 +117,42 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
 
         mockMvc.perform(get("/api/v1/admin/audit-logs").header(TOKEN_HEADER, TOKEN))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void eventPublishRequiresTokenOpensPublicVisibilityAndGuardsStateMachine() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-adm-" + suffix, "运营场馆", "北京", null));
+        Instant start = Instant.now().plusSeconds(3600);
+        EventView draft = events.createEvent(new CreateEventCommand(
+                "e-adm-" + suffix, "运营发布演出", null, start, start.plusSeconds(7200), venue.id()));
+
+        // 无令牌 → 401（AdminAuthFilter 覆盖 /api/v1/admin/**）
+        mockMvc.perform(post("/api/v1/admin/events/" + draft.eventCode() + "/publish"))
+                .andExpect(status().isUnauthorized());
+
+        // 草稿发布 → 200 PUBLISHED，公开列表立即可见
+        mockMvc.perform(post("/api/v1/admin/events/" + draft.eventCode() + "/publish")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(draft.eventCode()))
+                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+        mockMvc.perform(get("/api/v1/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].eventCode", hasItem(draft.eventCode())));
+
+        // 重复发布 → 409 CONFLICT（状态机守卫）
+        mockMvc.perform(post("/api/v1/admin/events/" + draft.eventCode() + "/publish")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+
+        // 未知活动 → 404 EVENT_NOT_FOUND
+        mockMvc.perform(post("/api/v1/admin/events/e-missing-" + suffix + "/publish")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("EVENT_NOT_FOUND"));
     }
 
     @Test
