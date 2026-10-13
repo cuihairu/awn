@@ -12,7 +12,7 @@ Phase 09 外部评审 P0 项的落地文档：澄清**商品 / 票档 / 票品 /
 |---|---|---|---|
 | 平台自营票量 | `product` + `inventory_pool`（`(product_id, session_id)` 唯一）+ `inventory_balance` | 下单时原子条件 UPDATE 预留，支付确认转已售 | **已实现**（数量型订单行） |
 | 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 凭证型订单行下单，票品 IN_STOCK → RESERVED → SOLD（G2 已接通） | **已实现**，有并发抢单与回滚集成测试 |
-| 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品 `platform_seats`（挂场次与商品编码，独立建模，禁止复用 ①） | ① 挂牌生命周期；② 平台逐座交易 | ①② 均已实现 |
+| 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品 `platform_seats`（挂场次与商品编码，独立建模，禁止复用 ①） | ① 挂牌生命周期；② 平台逐座交易 | ①② 模型均已实现；① 已接入订单链路（G2），② 逐座下单 / 占座属座位图 L3 后续（用户 2026-10-12 拍板，见 ui-system.md） |
 | 外部情报报价 | `intelligence` schema（`data_sources` / `raw_observations` / `normalized_observations` / `price_history`） | 只读展示，永不回写交易表（ADR-0004） | 已实现，权限边界有集成测试 |
 
 ## 概念关系
