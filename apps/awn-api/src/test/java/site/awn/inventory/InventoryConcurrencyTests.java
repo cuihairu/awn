@@ -79,6 +79,46 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void concurrentAdjustmentsDoNotLoseUpdates() throws Exception {
+        String poolCode = unique("adjust");
+        inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
+                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                "sess-" + UUID.randomUUID().toString().substring(0, 8), 100));
+
+        // 16 线程各做 25 次 +1 调整；计数器必须原子累加，不允许读写改写丢失更新
+        int threads = 16;
+        int perThread = 25;
+        var latch = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> futures = new java.util.ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            futures.add(executor.submit(() -> {
+                try {
+                    latch.await();
+                    for (int j = 0; j < perThread; j++) {
+                        inventory.adjustPool(poolCode, 1, "concurrent adjust", "test");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+        }
+        latch.countDown();
+        for (Future<?> f : futures) {
+            f.get();
+        }
+        executor.shutdown();
+
+        BalanceView balance = inventory.balanceOf(poolCode);
+        assertThat(balance.totalQuantity())
+                .as("400 次 +1 必须全部生效（不允许并发丢失更新）")
+                .isEqualTo(100 + threads * perThread);
+        assertThat(balance.reservedQuantity()).isZero();
+        assertThat(balance.soldQuantity()).isZero();
+        assertThat(balance.available()).isEqualTo(100 + threads * perThread);
+    }
+
+    @Test
     void confirmReleaseLifecycleIsGuardedAndIdempotent() {
         String poolCode = unique("lifecycle");
         inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,

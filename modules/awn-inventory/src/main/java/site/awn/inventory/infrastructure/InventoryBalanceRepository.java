@@ -46,4 +46,15 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
                AND reserved_quantity >= :quantity
             """, nativeQuery = true)
     int release(@Param("poolId") long poolId, @Param("quantity") int quantity);
+
+    /** 调整总量：原子条件 UPDATE，守卫 newTotal >= reserved + sold（隐含非负）；0 行即冲突 */
+    @Modifying
+    @Query(value = """
+            UPDATE inventory_balance
+               SET total_quantity = total_quantity + :delta,
+                   version = version + 1
+             WHERE inventory_pool_id = :poolId
+               AND total_quantity + :delta >= reserved_quantity + sold_quantity
+            """, nativeQuery = true)
+    int adjustTotal(@Param("poolId") long poolId, @Param("delta") int delta);
 }

@@ -47,7 +47,8 @@ public class InventoryWriteService {
 
     /**
      * 运营库存调整：正数扩容、负数缩容，写 ADJUST 流水（方向由符号携带）。
-     * 调整后总量必须仍满足 reserved + sold <= total；原因必填（审计由组合根记录）。
+     * 计数器只走原子条件 UPDATE（禁止读改写，并发下会丢失更新）；
+     * 守卫保证调整后仍满足 reserved + sold <= total。原因必填（审计由组合根记录）。
      */
     @Transactional
     public void adjustPool(String poolCode, int delta, String reason, String actor) {
@@ -59,15 +60,12 @@ public class InventoryWriteService {
         }
         var pool = poolRepository.findByPoolCode(poolCode)
                 .orElseThrow(() -> new PoolNotFoundException(poolCode));
-        var balance = balanceRepository.findById(pool.getId())
-                .orElseThrow(() -> new IllegalStateException("balance missing for pool: " + poolCode));
-        int newTotal = balance.getTotalQuantity() + delta;
-        if (newTotal < balance.getReservedQuantity() + balance.getSoldQuantity()) {
+
+        int updated = balanceRepository.adjustTotal(pool.getId(), delta);
+        if (updated == 0) {
             throw new InventoryConflictException(
                     "adjustment would break reserved + sold <= total for pool: " + poolCode);
         }
-        balance.setTotalQuantity(newTotal);
-        balanceRepository.save(balance);
 
         var ledger = new InventoryTransaction();
         ledger.setInventoryPoolId(pool.getId());
