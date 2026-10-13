@@ -9,5 +9,27 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "adm-zip": "0.6.1",
+      "decode-uri-component": "0.5.0",
+      "decompress": "npm:@xhmikosr/decompress@11.1.4",
+      "@tarojs/helper>esbuild": "0.25.0",
+      "@tarojs/webpack5-runner>esbuild": "0.25.0",
+      "esbuild-loader>esbuild": "0.25.0",
+      "glob": "10.5.0",
+      "got": "11.8.5",
+      "http-cache-semantics": "4.3.0",
+      "katex": "0.18.2",
+      "lodash-es": "4.18.1",
+      "postcss": "8.5.29",
+      "postcss-selector-parser": "7.1.6",
+      "serialize-javascript": "7.0.5",
+      "swiper": "12.1.2",
+      "uuid": "14.0.3",
+      "webpack-dev-server": "5.2.6",
+      "vitepress>vite": "6.4.3"
+    }
   }
 }
