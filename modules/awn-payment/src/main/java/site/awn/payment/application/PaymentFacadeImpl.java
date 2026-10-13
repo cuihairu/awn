@@ -2,6 +2,7 @@ package site.awn.payment.application;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import site.awn.payment.api.CreatePaymentCommand;
 import site.awn.payment.api.GatewayChargeCommand;
 import site.awn.payment.api.GatewayChargeResult;
@@ -54,36 +55,51 @@ public class PaymentFacadeImpl implements PaymentFacade {
     private final OutboxMessageRepository outbox;
     private final site.awn.order.api.OrderFacade orders;
     private final AlertRecorder alerts;
+    private final TransactionTemplate transactions;
 
     public PaymentFacadeImpl(PaymentRepository payments,
                              RefundRepository refunds,
                              PaymentGatewayRouter router,
                              OutboxMessageRepository outbox,
                              site.awn.order.api.OrderFacade orders,
-                             AlertRecorder alerts) {
+                             AlertRecorder alerts,
+                             TransactionTemplate transactions) {
         this.payments = payments;
         this.refunds = refunds;
         this.router = router;
         this.outbox = outbox;
         this.orders = orders;
         this.alerts = alerts;
+        this.transactions = transactions;
     }
 
     @Override
-    @Transactional
     public PaymentView createPayment(CreatePaymentCommand command) {
         if (command.amount() < 0) {
             throw new IllegalArgumentException("payment amount must be non-negative");
         }
-        Payment payment = new Payment("PAY-" + UUID.randomUUID(), command.orderNo(),
-                command.channel(), command.currency(), command.amount());
-        payments.saveAndFlush(payment);
-
+        // 1) 渠道校验先于落库：非法渠道不留孤儿支付单
         PaymentGateway gateway = router.forChannel(command.channel());
+
+        // 2) 事务一：只落 CREATED 支付单（外部调用不出长事务）
+        Payment payment = transactions.execute(status -> {
+            Payment p = new Payment("PAY-" + UUID.randomUUID(), command.orderNo(),
+                    command.channel(), command.currency(), command.amount());
+            return payments.saveAndFlush(p);
+        });
+
+        // 3) 渠道受理在事务外：故障时支付单保留 CREATED，交对账闭环（G5）
         GatewayChargeResult accepted = gateway.createCharge(new GatewayChargeCommand(
                 payment.getPaymentNo(), command.orderNo(), command.currency(), command.amount()));
-        payment.markPending(accepted.channelTxnNo());
-        return toView(payment);
+
+        // 4) 事务二：回填渠道交易号 CREATED → PENDING
+        Payment pending = transactions.execute(status -> {
+            Payment fresh = payments.findByPaymentNo(payment.getPaymentNo())
+                    .orElseThrow(() -> new PaymentNotFoundException(payment.getPaymentNo()));
+            fresh.markPending(accepted.channelTxnNo());
+            return fresh;
+        });
+        return toView(pending);
     }
 
     @Override
@@ -165,7 +181,6 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     @Override
-    @Transactional
     public RefundView requestRefund(RequestRefundCommand command) {
         if (command.amount() <= 0) {
             throw new IllegalArgumentException("refund amount must be positive");
@@ -181,7 +196,7 @@ public class PaymentFacadeImpl implements PaymentFacade {
             return toView(existing);
         }
 
-        // 2) 支付单必须已成功（或已在部分退款中）
+        // 2) 支付单必须已成功（或已在部分退款中）；加载在事务外：渠道受理需要其渠道与渠道交易号
         Payment payment = payments.findByPaymentNo(command.paymentNo())
                 .orElseThrow(() -> new PaymentNotFoundException(command.paymentNo()));
         if (payment.getStatus() != PaymentStatus.SUCCEEDED
@@ -189,23 +204,32 @@ public class PaymentFacadeImpl implements PaymentFacade {
             throw new PaymentConflictException("refund not allowed from payment status " + payment.getStatus());
         }
 
-        // 3) 累计额度守卫：占用中（在途/未知/已成功）退款 + 本次 ≤ 支付金额
-        long occupied = refunds.sumOccupiedByPaymentNo(payment.getPaymentNo());
-        if (occupied + command.amount() > payment.getAmount()) {
-            throw new RefundConflictException("refund exceeds refundable amount: occupied=" + occupied
-                    + ", requested=" + command.amount() + ", paid=" + payment.getAmount());
-        }
+        // 3) 事务一：累计额度守卫（占用中退款 + 本次 ≤ 支付金额）+ 落 CREATED 退款单
+        Refund refund = transactions.execute(status -> {
+            long occupied = refunds.sumOccupiedByPaymentNo(payment.getPaymentNo());
+            if (occupied + command.amount() > payment.getAmount()) {
+                throw new RefundConflictException("refund exceeds refundable amount: occupied=" + occupied
+                        + ", requested=" + command.amount() + ", paid=" + payment.getAmount());
+            }
+            Refund r = new Refund("RFD-" + UUID.randomUUID(), payment.getPaymentNo(),
+                    payment.getOrderNo(), command.idempotencyKey(), payment.getCurrency(),
+                    command.amount(), command.reason());
+            return refunds.saveAndFlush(r);
+        });
 
-        // 4) 建退款单（幂等键唯一约束兜底并发）→ 渠道受理 → PENDING
-        Refund refund = new Refund("RFD-" + UUID.randomUUID(), payment.getPaymentNo(),
-                payment.getOrderNo(), command.idempotencyKey(), payment.getCurrency(),
-                command.amount(), command.reason());
-        refunds.saveAndFlush(refund);
+        // 4) 渠道受理在事务外：故障时退款单保留 CREATED，交对账闭环（G5）
         GatewayRefundResult accepted = router.forChannel(payment.getChannel()).createRefund(
                 new GatewayRefundCommand(refund.getRefundNo(), payment.getChannelTxnNo(),
                         refund.getCurrency(), refund.getAmount()));
-        refund.markPending(accepted.channelRefundNo());
-        return toView(refund);
+
+        // 5) 事务二：回填渠道退款编号 CREATED → PENDING
+        Refund pending = transactions.execute(status -> {
+            Refund fresh = refunds.findByRefundNo(refund.getRefundNo())
+                    .orElseThrow(() -> new RefundNotFoundException(refund.getRefundNo()));
+            fresh.markPending(accepted.channelRefundNo());
+            return fresh;
+        });
+        return toView(pending);
     }
 
     @Override

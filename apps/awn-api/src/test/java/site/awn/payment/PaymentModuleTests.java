@@ -3,6 +3,9 @@ package site.awn.payment;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.order.api.CreateOrderCommand;
@@ -11,8 +14,15 @@ import site.awn.order.api.OrderLineCommand;
 import site.awn.order.api.OrderView;
 import site.awn.order.domain.OrderStatus;
 import site.awn.payment.api.CreatePaymentCommand;
+import site.awn.payment.api.GatewayChannelStatus;
+import site.awn.payment.api.GatewayChargeCommand;
+import site.awn.payment.api.GatewayChargeResult;
+import site.awn.payment.api.GatewayQueryResult;
+import site.awn.payment.api.GatewayRefundCommand;
+import site.awn.payment.api.GatewayRefundResult;
 import site.awn.payment.api.PaymentCallbackCommand;
 import site.awn.payment.api.PaymentFacade;
+import site.awn.payment.api.PaymentGateway;
 import site.awn.payment.api.PaymentReconciliationReport;
 import site.awn.payment.api.PaymentView;
 import site.awn.payment.api.RefundCallbackCommand;
@@ -52,6 +62,86 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     @Autowired OutboxDispatchService dispatcher;
     @Autowired OutboxMessageRepository outbox;
     @Autowired SandboxPaymentGateway sandbox;
+    @Autowired JdbcTemplate jdbc;
+
+    /**
+     * G5 验证用假渠道：down 受理即抛异常（模拟渠道故障），
+     * flaky-refund 支付受理正常但退款受理抛异常。
+     * 两者查询均返回 UNKNOWN（对账只报告不修复），验签均通过。
+     */
+    @TestConfiguration
+    static class FailingGateways {
+
+        @Bean
+        PaymentGateway downGateway() {
+            return new PaymentGateway() {
+                @Override
+                public String channelCode() {
+                    return "down";
+                }
+
+                @Override
+                public GatewayChargeResult createCharge(GatewayChargeCommand command) {
+                    throw new IllegalStateException("channel down");
+                }
+
+                @Override
+                public GatewayRefundResult createRefund(GatewayRefundCommand command) {
+                    throw new IllegalStateException("channel down");
+                }
+
+                @Override
+                public GatewayQueryResult queryCharge(String channelTxnNo) {
+                    return new GatewayQueryResult(channelTxnNo, GatewayChannelStatus.UNKNOWN);
+                }
+
+                @Override
+                public GatewayQueryResult queryRefund(String channelRefundNo) {
+                    return new GatewayQueryResult(channelRefundNo, GatewayChannelStatus.UNKNOWN);
+                }
+
+                @Override
+                public boolean verifyCallback(String rawBody, Map<String, String> headers) {
+                    return true;
+                }
+            };
+        }
+
+        @Bean
+        PaymentGateway flakyRefundGateway() {
+            return new PaymentGateway() {
+                @Override
+                public String channelCode() {
+                    return "flaky-refund";
+                }
+
+                @Override
+                public GatewayChargeResult createCharge(GatewayChargeCommand command) {
+                    return new GatewayChargeResult("FLK-" + UUID.randomUUID(), GatewayChannelStatus.PENDING);
+                }
+
+                @Override
+                public GatewayRefundResult createRefund(GatewayRefundCommand command) {
+                    throw new IllegalStateException("channel down");
+                }
+
+                @Override
+                public GatewayQueryResult queryCharge(String channelTxnNo) {
+                    return new GatewayQueryResult(channelTxnNo, GatewayChannelStatus.UNKNOWN);
+                }
+
+                @Override
+                public GatewayQueryResult queryRefund(String channelRefundNo) {
+                    return new GatewayQueryResult(channelRefundNo, GatewayChannelStatus.UNKNOWN);
+                }
+
+                @Override
+                public boolean verifyCallback(String rawBody, Map<String, String> headers) {
+                    return true;
+                }
+            };
+        }
+    }
 
     @Test
     void callbackSuccessClosesEventLoopToPaidOrder() {
@@ -208,6 +298,48 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
                 new RequestRefundCommand(payment.paymentNo(), "refund-early-" + UUID.randomUUID(), 500, null)))
                 .isInstanceOf(PaymentConflictException.class)
                 .hasMessageContaining("not allowed");
+    }
+
+    @Test
+    void chargeAcceptanceFailureKeepsCreatedPayment() {
+        OrderView order = newPaidPendingOrder(1, 500);
+
+        // 渠道受理故障：不得回滚本地支付单，保留 CREATED 交对账闭环
+        assertThatThrownBy(() -> payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "down", "CNY", order.payAmount())))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("channel down");
+
+        String status = jdbc.queryForObject(
+                "SELECT status FROM payments WHERE order_no = ? AND channel = 'down'",
+                String.class, order.orderNo());
+        assertThat(status).as("渠道受理失败：支付单须保留 CREATED 待对账").isEqualTo("CREATED");
+    }
+
+    @Test
+    void refundAcceptanceFailureKeepsCreatedRefund() {
+        OrderView order = newPaidPendingOrder(1, 1000);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "flaky-refund", "CNY", order.payAmount()));
+        assertThat(payment.status()).isEqualTo("PENDING");
+
+        // 渠道侧事实：支付成功 → 回调（flaky-refund 验签通过）
+        PaymentView after = payments.handleCallback(new PaymentCallbackCommand(
+                "flaky-refund", "{}", Map.of("X-Flaky-Signature", "ok"),
+                payment.channelTxnNo(), "CNY", order.payAmount(), true));
+        assertThat(after.status()).isEqualTo(PaymentStatus.SUCCEEDED.name());
+
+        // 退款受理时渠道故障：退款单须保留 CREATED 交对账闭环
+        assertThatThrownBy(() -> payments.requestRefund(
+                new RequestRefundCommand(payment.paymentNo(),
+                        "refund-flaky-" + UUID.randomUUID(), 400, "partial")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("channel down");
+
+        String status = jdbc.queryForObject(
+                "SELECT status FROM refunds WHERE payment_no = ?",
+                String.class, payment.paymentNo());
+        assertThat(status).as("渠道受理失败：退款单须保留 CREATED 待对账").isEqualTo("CREATED");
     }
 
     @Test
