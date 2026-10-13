@@ -51,17 +51,6 @@ public class OutboxMessage {
     @Column(insertable = false, updatable = false)
     private Instant processedAt;
 
-    public static OutboxMessage pending(String aggregateType, String aggregateId, String eventType, String payload) {
-        OutboxMessage message = new OutboxMessage();
-        message.aggregateType = aggregateType;
-        message.aggregateId = aggregateId;
-        message.eventType = eventType;
-        message.payload = payload;
-        message.status = "PENDING";
-        message.attempts = 0;
-        return message;
-    }
-
     public Long getId() {
         return id;
     }

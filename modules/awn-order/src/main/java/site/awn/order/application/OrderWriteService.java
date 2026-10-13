@@ -16,7 +16,6 @@ import site.awn.order.domain.OrderStatus;
 import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
-import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 
 import java.nio.charset.StandardCharsets;
@@ -132,8 +131,8 @@ public class OrderWriteService {
         }
 
         // 5) 同事务写 Outbox：事务提交则事件必然存在，Worker 才不会漏单
-        outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_CREATED",
-                payload(orderNo, order.getStatus().name(), order.getPayAmount(), order.getCurrency())));
+        outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_CREATED",
+                payload(orderNo, order.getStatus().name(), order.getPayAmount(), order.getCurrency()));
 
         return OrderReadService.toView(order, items.findByOrderId(order.getId()));
     }
@@ -146,8 +145,8 @@ public class OrderWriteService {
             for (OrderItem item : items.findByOrderId(order.getId())) {
                 inventory.release(item.getReservationNo());
             }
-            outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_CANCELLED",
-                    payload(orderNo, OrderStatus.CANCELLED.name(), order.getPayAmount(), order.getCurrency())));
+            outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_CANCELLED",
+                    payload(orderNo, OrderStatus.CANCELLED.name(), order.getPayAmount(), order.getCurrency()));
             return true;
         }
         // 迁移未发生：重读后按实际状态处理
@@ -166,8 +165,8 @@ public class OrderWriteService {
             for (OrderItem item : items.findByOrderId(order.getId())) {
                 inventory.confirm(item.getReservationNo());
             }
-            outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_PAID",
-                    payload(orderNo, OrderStatus.PAID.name(), order.getPayAmount(), order.getCurrency())));
+            outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_PAID",
+                    payload(orderNo, OrderStatus.PAID.name(), order.getPayAmount(), order.getCurrency()));
             return true;
         }
         OrderStatus current = orders.findByOrderNo(orderNo).orElseThrow().getStatus();
@@ -187,8 +186,8 @@ public class OrderWriteService {
         for (OrderStatus from : new OrderStatus[]{OrderStatus.PAID, OrderStatus.FULFILLING, OrderStatus.FULFILLED}) {
             if (orders.transition(orderNo, from, OrderStatus.REFUND_PENDING) == 1) {
                 Order order = orders.findByOrderNo(orderNo).orElseThrow();
-                outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_REFUND_PENDING",
-                        payload(orderNo, OrderStatus.REFUND_PENDING.name(), order.getPayAmount(), order.getCurrency())));
+                outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_REFUND_PENDING",
+                        payload(orderNo, OrderStatus.REFUND_PENDING.name(), order.getPayAmount(), order.getCurrency()));
                 return true;
             }
         }

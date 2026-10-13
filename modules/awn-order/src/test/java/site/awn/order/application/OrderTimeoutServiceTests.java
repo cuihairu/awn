@@ -12,7 +12,6 @@ import site.awn.order.domain.OrderItem;
 import site.awn.order.domain.OrderStatus;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
-import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 
 import java.time.Instant;
@@ -81,12 +80,9 @@ class OrderTimeoutServiceTests {
         assertThat(result.skipped()).isZero();
         assertThat(result.failed()).isEmpty();
         verify(inventory).release("R-1");
-        ArgumentCaptor<OutboxMessage> event = ArgumentCaptor.forClass(OutboxMessage.class);
-        verify(outbox).save(event.capture());
-        assertThat(event.getValue().getEventType()).isEqualTo("ORDER_EXPIRED");
-        assertThat(event.getValue().getAggregateType()).isEqualTo("ORDER");
-        assertThat(event.getValue().getAggregateId()).isEqualTo("TO-1");
-        assertThat(event.getValue().getPayload()).contains("TO-1").contains("EXPIRED");
+        ArgumentCaptor<String> eventPayload = ArgumentCaptor.forClass(String.class);
+        verify(outbox).insertPending(eq("ORDER"), eq("TO-1"), eq("ORDER_EXPIRED"), eventPayload.capture());
+        assertThat(eventPayload.getValue()).contains("TO-1").contains("EXPIRED");
     }
 
     @Test
@@ -104,7 +100,7 @@ class OrderTimeoutServiceTests {
         assertThat(result.skipped()).isEqualTo(1);
         assertThat(result.failed()).isEmpty();
         verify(inventory, never()).release(any());
-        verify(outbox, never()).save(any());
+        verify(outbox, never()).insertPending(any(), any(), any(), any());
     }
 
     @Test

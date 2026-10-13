@@ -416,6 +416,27 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void duplicateRefundCallbackWritesEventOnce() {
+        OrderView order = newPaidPendingOrder(1, 1000);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+        sandbox.succeedCharge(payment.channelTxnNo());
+        payments.handleCallback(success(payment));
+
+        RefundView refund = payments.requestRefund(new RequestRefundCommand(
+                payment.paymentNo(), "refund-once-" + UUID.randomUUID(), 1000, null));
+        sandbox.succeedRefund(refund.channelRefundNo());
+
+        payments.handleRefundCallback(refundCallback(refund));
+        payments.handleRefundCallback(refundCallback(refund));
+
+        assertThat(outbox.countByEventTypeAndAggregateId("REFUND_SUCCEEDED", refund.refundNo()))
+                .as("重复退款回调只产生一次有效退款事件").isEqualTo(1);
+        assertThat(payments.payment(payment.paymentNo()).status())
+                .isEqualTo(PaymentStatus.REFUNDED.name());
+    }
+
+    @Test
     void reconciliationDetectsChannelLocalDifferences() {
         OrderView order = newPaidPendingOrder(1, 500);
         PaymentView payment = payments.createPayment(

@@ -15,6 +15,20 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, Lo
 
     long countByEventTypeAndAggregateId(String eventType, String aggregateId);
 
+    /**
+     * Outbox 插入（原生 SQL，ADR-0007）：与业务数据同事务写入；
+     * 审计列（next_attempt_at/created_at）由数据库 DEFAULT 填充。
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO outbox_messages (aggregate_type, aggregate_id, event_type, payload, status, attempts)
+            VALUES (:aggregateType, :aggregateId, :eventType, CAST(:payload AS jsonb), 'PENDING', 0)
+            """, nativeQuery = true)
+    void insertPending(@Param("aggregateType") String aggregateType,
+                       @Param("aggregateId") String aggregateId,
+                       @Param("eventType") String eventType,
+                       @Param("payload") String payload);
+
     /** 认领候选：到期 PENDING + 租约过期的 PROCESSING（崩溃残留），行锁直到认领事务提交 */
     @Query(value = """
             SELECT id FROM outbox_messages

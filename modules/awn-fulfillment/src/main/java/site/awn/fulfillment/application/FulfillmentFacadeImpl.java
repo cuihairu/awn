@@ -13,7 +13,6 @@ import site.awn.fulfillment.domain.FulfillmentConflictException;
 import site.awn.fulfillment.domain.FulfillmentNotFoundException;
 import site.awn.fulfillment.infrastructure.DeliveryRecordRepository;
 import site.awn.fulfillment.infrastructure.FulfillmentRepository;
-import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 import site.awn.shared.url.StorageUrlValidator;
 
@@ -100,8 +99,8 @@ public class FulfillmentFacadeImpl implements FulfillmentFacade {
 
     /** 履约失败必须可见：FULFILLMENT_FAILED 事件进入异常流程（退款 / 人工介入） */
     private void emitFailure(Fulfillment fulfillment) {
-        outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, fulfillment.getFulfillmentNo(),
-                "FULFILLMENT_FAILED", payload(fulfillment)));
+        outbox.insertPending(AGGREGATE_TYPE, fulfillment.getFulfillmentNo(),
+                "FULFILLMENT_FAILED", payload(fulfillment));
     }
 
     private static String payload(Fulfillment fulfillment) {

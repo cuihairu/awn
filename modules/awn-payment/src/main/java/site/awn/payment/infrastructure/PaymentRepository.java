@@ -21,27 +21,42 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p.status FROM Payment p WHERE p.paymentNo = :paymentNo")
     Optional<site.awn.payment.domain.PaymentStatus> statusOf(@Param("paymentNo") String paymentNo);
 
-    /** 条件更新：重复回调只生效一次（并发下恰一个事务更新到行）；UNKNOWN 查实后可迁入成功 */
+    /**
+     * 条件更新（原生 SQL，ADR-0007）：重复回调只生效一次（并发下恰一个事务更新到行）；
+     * UNKNOWN 查实后可迁入成功。
+     */
     @Modifying
-    @Query("""
-            UPDATE Payment p SET p.status = site.awn.payment.domain.PaymentStatus.SUCCEEDED, p.paidAt = :paidAt
-            WHERE p.paymentNo = :paymentNo AND p.status IN (site.awn.payment.domain.PaymentStatus.CREATED, site.awn.payment.domain.PaymentStatus.PENDING, site.awn.payment.domain.PaymentStatus.UNKNOWN)
-            """)
+    @Query(value = """
+            UPDATE payments SET status = 'SUCCEEDED', paid_at = :paidAt
+            WHERE payment_no = :paymentNo
+              AND status IN ('CREATED', 'PENDING', 'UNKNOWN')
+            """, nativeQuery = true)
     int markSucceeded(@Param("paymentNo") String paymentNo, @Param("paidAt") java.time.Instant paidAt);
 
-    /** 条件更新：CREATED/PENDING 可直接失败，UNKNOWN 查实未扣款后迁入失败 */
+    /** 条件更新（原生 SQL）：CREATED/PENDING 可直接失败，UNKNOWN 查实未扣款后迁入失败 */
     @Modifying
-    @Query("""
-            UPDATE Payment p SET p.status = site.awn.payment.domain.PaymentStatus.FAILED
-            WHERE p.paymentNo = :paymentNo AND p.status IN (site.awn.payment.domain.PaymentStatus.CREATED, site.awn.payment.domain.PaymentStatus.PENDING, site.awn.payment.domain.PaymentStatus.UNKNOWN)
-            """)
+    @Query(value = """
+            UPDATE payments SET status = 'FAILED'
+            WHERE payment_no = :paymentNo
+              AND status IN ('CREATED', 'PENDING', 'UNKNOWN')
+            """, nativeQuery = true)
     int markFailed(@Param("paymentNo") String paymentNo);
 
-    /** 条件更新：待核实（订单已超时释放等竞态） */
+    /** 条件更新（原生 SQL）：待核实（订单已超时释放等竞态） */
     @Modifying
-    @Query("""
-            UPDATE Payment p SET p.status = site.awn.payment.domain.PaymentStatus.UNKNOWN
-            WHERE p.paymentNo = :paymentNo AND p.status IN (site.awn.payment.domain.PaymentStatus.CREATED, site.awn.payment.domain.PaymentStatus.PENDING)
-            """)
+    @Query(value = """
+            UPDATE payments SET status = 'UNKNOWN'
+            WHERE payment_no = :paymentNo
+              AND status IN ('CREATED', 'PENDING')
+            """, nativeQuery = true)
     int markUnknown(@Param("paymentNo") String paymentNo);
+
+    /** 条件更新（原生 SQL）：退款成功联动，全额 → REFUNDED / 部分 → PARTIALLY_REFUNDED */
+    @Modifying
+    @Query(value = """
+            UPDATE payments SET status = :status
+            WHERE payment_no = :paymentNo
+              AND status IN ('SUCCEEDED', 'PARTIALLY_REFUNDED')
+            """, nativeQuery = true)
+    int applyRefundState(@Param("paymentNo") String paymentNo, @Param("status") String status);
 }

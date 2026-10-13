@@ -34,7 +34,6 @@ import site.awn.payment.infrastructure.RefundRepository;
 import site.awn.shared.alert.AlertCategory;
 import site.awn.shared.alert.AlertRecorder;
 import site.awn.shared.alert.AlertSeverity;
-import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 
 import java.time.Instant;
@@ -162,8 +161,8 @@ public class PaymentFacadeImpl implements PaymentFacade {
                         .orElseThrow(() -> new PaymentNotFoundException(payment.getPaymentNo()));
                 return viewWithStatus(payment, current);
             }
-            outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, payment.getPaymentNo(), "PAYMENT_UNKNOWN",
-                    payload(payment, "UNKNOWN")));
+            outbox.insertPending(AGGREGATE_TYPE, payment.getPaymentNo(), "PAYMENT_UNKNOWN",
+                    payload(payment, "UNKNOWN"));
             return viewWithStatus(payment, PaymentStatus.UNKNOWN);
         }
 
@@ -180,8 +179,8 @@ public class PaymentFacadeImpl implements PaymentFacade {
         payment.markSucceeded();
 
         // 8) 同事务写支付成功事件：Worker 分发 → 订单转 PAID（事件闭环）
-        outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, payment.getPaymentNo(), "PAYMENT_SUCCEEDED",
-                payload(payment, "SUCCEEDED")));
+        outbox.insertPending(AGGREGATE_TYPE, payment.getPaymentNo(), "PAYMENT_SUCCEEDED",
+                payload(payment, "SUCCEEDED"));
         return viewWithStatus(payment, PaymentStatus.SUCCEEDED);
     }
 
@@ -227,14 +226,15 @@ public class PaymentFacadeImpl implements PaymentFacade {
                 new GatewayRefundCommand(refund.getRefundNo(), payment.getChannelTxnNo(),
                         refund.getCurrency(), refund.getAmount()));
 
-        // 5) 事务二：回填渠道退款编号 CREATED → PENDING
-        Refund pending = transactions.execute(status -> {
-            Refund fresh = refunds.findByRefundNo(refund.getRefundNo())
-                    .orElseThrow(() -> new RefundNotFoundException(refund.getRefundNo()));
-            fresh.markPending(accepted.channelRefundNo());
-            return fresh;
+        // 5) 事务二：回填渠道退款编号 CREATED → PENDING（原生守卫更新，并发只一笔生效）
+        transactions.executeWithoutResult(status -> {
+            int moved = refunds.markPending(refund.getRefundNo(), accepted.channelRefundNo());
+            if (moved == 0) {
+                throw new RefundConflictException("refund no longer accepts channel acceptance: "
+                        + currentStatus(refund));
+            }
         });
-        return toView(pending);
+        return view(refund, accepted.channelRefundNo(), RefundStatus.PENDING);
     }
 
     @Override
@@ -260,28 +260,34 @@ public class PaymentFacadeImpl implements PaymentFacade {
             return toView(refund);
         }
         if (!command.success()) {
-            refund.markFailed();
-            return toView(refund);
+            // 原生守卫更新：重复失败回调只生效一次，输家按现状返回
+            if (refunds.markFailed(refund.getRefundNo()) == 0) {
+                return view(refund, refund.getChannelRefundNo(), currentStatus(refund));
+            }
+            return view(refund, refund.getChannelRefundNo(), RefundStatus.FAILED);
         }
 
-        refund.markSucceeded();
+        // 原生守卫更新：重复退款回调只生效一次；输家不重复写事件、不重复联动支付单
+        if (refunds.markSucceeded(refund.getRefundNo()) == 0) {
+            return view(refund, refund.getChannelRefundNo(), currentStatus(refund));
+        }
 
-        // 联动支付单退款状态：全额 → REFUNDED，部分 → PARTIALLY_REFUNDED
+        // 联动支付单退款状态（原生守卫更新）：全额 → REFUNDED，部分 → PARTIALLY_REFUNDED
         Payment payment = payments.findByPaymentNo(refund.getPaymentNo())
                 .orElseThrow(() -> new PaymentNotFoundException(refund.getPaymentNo()));
         long succeeded = refunds.sumSucceededByPaymentNo(refund.getPaymentNo());
         if (succeeded > payment.getAmount()) {
             throw new RefundConflictException("refunded total exceeds paid amount: " + succeeded);
         }
-        if (succeeded == payment.getAmount()) {
-            payment.applyRefundState(PaymentStatus.REFUNDED);
-        } else {
-            payment.applyRefundState(PaymentStatus.PARTIALLY_REFUNDED);
+        PaymentStatus target = succeeded == payment.getAmount()
+                ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED;
+        if (payments.applyRefundState(payment.getPaymentNo(), target.name()) == 0) {
+            log.warn("payment refund state transition lost race: {}", payment.getPaymentNo());
         }
 
-        outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, refund.getRefundNo(), "REFUND_SUCCEEDED",
-                refundPayload(refund)));
-        return toView(refund);
+        outbox.insertPending(AGGREGATE_TYPE, refund.getRefundNo(), "REFUND_SUCCEEDED",
+                refundPayload(refund));
+        return view(refund, refund.getChannelRefundNo(), RefundStatus.SUCCEEDED);
     }
 
     @Override
@@ -426,7 +432,19 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     private RefundView toView(Refund r) {
-        return new RefundView(r.getRefundNo(), r.getPaymentNo(), r.getOrderNo(), r.getChannelRefundNo(),
-                r.getStatus().name(), r.getCurrency(), r.getAmount(), r.getReason());
+        return view(r, r.getChannelRefundNo(), r.getStatus());
+    }
+
+    /** 原生守卫更新不经过实体字段：手工构造视图以返回准确状态 */
+    private RefundView view(Refund r, String channelRefundNo, RefundStatus status) {
+        return new RefundView(r.getRefundNo(), r.getPaymentNo(), r.getOrderNo(), channelRefundNo,
+                status.name(), r.getCurrency(), r.getAmount(), r.getReason());
+    }
+
+    private RefundStatus currentStatus(Refund refund) {
+        return refunds.statusOf(refund.getRefundNo())
+                .map(RefundStatus::valueOf)
+                .orElseThrow(() -> new RefundConflictException(
+                        "refund status unavailable: " + refund.getRefundNo()));
     }
 }

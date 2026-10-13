@@ -11,7 +11,6 @@ import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderStatus;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
-import site.awn.shared.outbox.OutboxMessage;
 import site.awn.shared.outbox.OutboxMessageRepository;
 
 import java.time.Instant;
@@ -84,9 +83,9 @@ public class OrderTimeoutService {
         }
         Order fresh = orders.findByOrderNo(orderNo).orElseThrow();
         items.findByOrderId(fresh.getId()).forEach(item -> inventory.release(item.getReservationNo()));
-        outbox.save(OutboxMessage.pending(AGGREGATE_TYPE, orderNo, "ORDER_EXPIRED",
+        outbox.insertPending(AGGREGATE_TYPE, orderNo, "ORDER_EXPIRED",
                 "{\"orderNo\":\"" + orderNo + "\",\"status\":\"EXPIRED\",\"payAmount\":"
-                        + order.getPayAmount() + ",\"currency\":\"" + order.getCurrency() + "\"}"));
+                        + order.getPayAmount() + ",\"currency\":\"" + order.getCurrency() + "\"}");
         return true;
     }
 }
