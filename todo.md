@@ -90,7 +90,7 @@
 - [x] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 补齐 PublicEventController / PublicIntelligenceController；活动新增 `publish()` 守卫（仅 DRAFT 可发布，其余状态抛 EventConflictException→CONFLICT）与 `isPublic()`，公开读仅暴露 PUBLISHED/COMPLETED（列表按开始时间倒序；场次详情经 `publicSession` 校验父活动已公开，草稿活动场次一律 404）；价格历史按场次归集（`priceHistoryOfSessions`）；EventConflictException→CONFLICT 入异常处理器 — 7c81622；PublicEventApiTests 13 例绿，awn-api 全量 + awn-worker 全量绿
 - [x] 订单 HTTP 端点（POST /orders、GET /orders/{orderId}、POST /orders/{orderId}/cancel）— 7096392；OrderApiTests 7 例
 - [x] 支付与退款 HTTP 端点（POST/GET /orders/{orderId}/payments、POST /orders/{orderId}/refunds）— PaymentController：建单支付金额/币种服务端取订单应付快照（客户端只选渠道）、支付历史按订单归集（`paymentsOfOrder`）、退款走 Idempotency-Key 判重 + 支付单归属订单校验（跨单 404）；回调验签/去重/UNKNOWN 属渠道通道，模块层语义由 PaymentModuleTests 覆盖 — 9e049e6；PaymentApiTests 10 例绿，awn-api 全量 169 例绿（剔除并行会话在途 PlatformSeat WIP）
-- [ ] 履约与报价 HTTP 端点（GET /orders/{orderId}/fulfillment、POST /checkout/quote）— 只有模块层实现；验收：履约单查询、报价不含扣减；期次：Phase 04 / Phase 05
+- [x] 履约与报价 HTTP 端点（GET /orders/{orderId}/fulfillment、POST /checkout/quote）— CheckoutController：报价 `OrderFacade.quote` 与下单共用 `OrderWriteService.computeAmounts` 同一口径、不预留库存不落库不产生订单（增量断言），非法行 400；履约单查询未知订单/未支付 404 NOT_FOUND，支付事件闭环后返回 PENDING_SELLER — ed8d4f3；CheckoutApiTests 6 例绿，awn-api 全量 184 例 + awn-worker 全量绿
 
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
