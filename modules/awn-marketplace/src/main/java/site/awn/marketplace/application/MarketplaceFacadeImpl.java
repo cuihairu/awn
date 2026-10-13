@@ -15,6 +15,7 @@ import site.awn.marketplace.domain.MarketplaceConflictException;
 import site.awn.marketplace.domain.MarketplaceNotFoundException;
 import site.awn.marketplace.domain.Seller;
 import site.awn.marketplace.domain.SupplyReview;
+import site.awn.marketplace.domain.SupplyReviewStatus;
 import site.awn.marketplace.domain.TicketUnit;
 import site.awn.marketplace.infrastructure.ListingRepository;
 import site.awn.marketplace.infrastructure.SellerRepository;
@@ -137,6 +138,14 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
         Listing listing = Listing.create("LST-" + UUID.randomUUID(), seller.getId(), review,
                 review.getProductCode(), command.sessionCode(), command.unitPrice(),
                 command.platformGuaranteed());
+        // 额度守卫：platform_guaranteed 挂牌消耗审核额度，一次 APPROVED 不得挂任意多张
+        if (command.platformGuaranteed()) {
+            int consumed = reviews.consumeQuota(review.getId(), SupplyReviewStatus.APPROVED);
+            if (consumed == 0) {
+                throw new MarketplaceConflictException(
+                        "supply quota exhausted for review: " + command.reviewNo());
+            }
+        }
         Listing saved = listings.save(listing);
         // 挂牌对应一张独立票品（1:1），票品状态独立流转
         units.save(new TicketUnit("TKT-" + UUID.randomUUID(), saved.getId(), seller.getId()));

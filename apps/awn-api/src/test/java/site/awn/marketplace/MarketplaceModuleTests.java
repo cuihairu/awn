@@ -65,6 +65,32 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void platformGuaranteedListingRespectsSupplyQuota() {
+        String seller = registerSeller();
+        // quantity=2 的审核：额度为 2 张平台保证票
+        SupplyReviewView review = marketplace.submitSupplyReview(new SubmitSupplyReviewCommand(
+                seller, "prod-" + UUID.randomUUID().toString().substring(0, 8), null,
+                2, 6800, null));
+        marketplace.approveSupplyReview(review.reviewNo(), "审核员-1");
+
+        // 额度内：前两张平台保证挂牌成功
+        marketplace.createListing(new CreateListingCommand(seller, review.reviewNo(), null, 6800, true));
+        marketplace.createListing(new CreateListingCommand(seller, review.reviewNo(), null, 6800, true));
+
+        // 额度耗尽：第三张平台保证挂牌被拒（一次 APPROVED 不得挂任意多张）
+        assertThatThrownBy(() -> marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, true)))
+                .isInstanceOf(MarketplaceConflictException.class)
+                .hasMessageContaining("supply quota exhausted");
+
+        // 卖家自担挂牌不消耗审核额度：额度耗尽后仍可挂非保证票
+        ListingView risky = marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
+        assertThat(risky.platformGuaranteed()).isFalse();
+        assertThat(risky.status()).isEqualTo("LISTED");
+    }
+
+    @Test
     void supplyReviewLifecycleGuards() {
         String seller = registerSeller();
         SupplyReviewView review = submitReview(seller, "https://cdn.awn.site/voucher.pdf");

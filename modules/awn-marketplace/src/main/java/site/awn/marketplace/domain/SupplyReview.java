@@ -38,6 +38,10 @@ public class SupplyReview {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    /** 已消耗额度：platform_guaranteed 挂牌时累加，上限为 quantity */
+    @Column(name = "consumed_quantity", nullable = false)
+    private int consumedQuantity;
+
     @Column(name = "unit_price", nullable = false)
     private long unitPrice;
 
@@ -128,6 +132,10 @@ public class SupplyReview {
 
     public int getQuantity() {
         return quantity;
+    }
+
+    public int getConsumedQuantity() {
+        return consumedQuantity;
     }
 
     public long getUnitPrice() {
