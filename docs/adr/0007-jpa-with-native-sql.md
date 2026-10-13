@@ -13,7 +13,7 @@ AWN 交易核心对 SQL 有硬性要求（ADR-0002）：库存原子条件 UPDAT
 
 - JPA：负责领域实体、常规查询（方法名派生 / JPQL）、关联与级联关系。
 - 原生 SQL（`@Query(nativeQuery = true)` 或 `JdbcTemplate`）：库存扣减、行锁（`SELECT ... FOR UPDATE`、`pg_advisory_xact_lock`）必须手写 SQL，禁止交给 ORM 生成。
-- 当前实现的偏差：资金类操作（支付 / 退款状态迁移）是 JPQL 守卫更新，Outbox 插入走 JPA save，尚未原生化。
+- 资金类操作与 Outbox 插入已按本决策原生化（2026-10-13）：支付 / 退款状态守卫更新、退款单渠道受理、Outbox 插入均为原生 SQL（`PaymentRepository`、`RefundRepository`、`OutboxMessageRepository.insertPending`）。Outbox 分发的消息生命周期更新（claim / markProcessed / reschedule / fail）仍走实体路径，不属资金类状态迁移。
 - Schema 一律由 Flyway 管理（`ddl-auto: validate`），不使用 JPA 自动建表。
 
 ## 后果

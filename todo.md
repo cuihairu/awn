@@ -89,7 +89,7 @@
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
 - [ ] 交易角色最小权限化（应用当前以引导超级用户连接，仅情报 `awn_intel` 角色落地）— intelligence-isolation.md；验收：交易角色只读/写边界 + 迁移
-- [ ] 资金类操作 SQL 原生化（支付/退款状态迁移仍 JPQL 守卫更新，Outbox 插入走 JPA save）— ADR-0007 偏差；验收：关键资金 SQL 改原生 + 集成测试
+- [x] 资金类操作 SQL 原生化（支付/退款状态守卫更新、退款渠道受理、支付退款状态联动、全部 Outbox 插入均改原生 SQL，ADR-0007 偏差已消除；退款回调新增守卫更新）— 0b122bc；PaymentModuleTests 14 例、OrderTimeoutServiceTests 4 例绿（全量 108 例仅并行会话在途的情报 2 例失败）
 - [ ] 订单 `FULFILLING`/`FULFILLED` 联动（枚举允许，无代码主动驱动；支付成功只置 PAID）— payment-state-machine.md；验收：履约驱动订单状态迁移 + 测试
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
