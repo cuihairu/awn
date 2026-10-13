@@ -29,6 +29,7 @@ export default withMermaid(
             { text: '系统总览', link: '/architecture/system-overview' },
             { text: '模块边界', link: '/architecture/module-boundaries' },
             { text: '领域模型', link: '/architecture/domain-model' },
+            { text: '交易闭环模型', link: '/architecture/trading-model' },
             { text: '专场渲染', link: '/architecture/campaign-rendering' },
             { text: '库存一致性', link: '/architecture/inventory-consistency' },
             { text: '订单与支付状态机', link: '/architecture/payment-state-machine' },

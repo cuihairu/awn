@@ -154,8 +154,9 @@
 
 ## Phase 09 · 业务闭环审查（来源：用户 2026-10-12 转发外部评审）
 
-- [ ] 商品 / 票档 / 票品 / 库存池 / 卖家 / 供货 / 挂牌关系澄清（评审 P0 建议）
+- [x] 商品 / 票档 / 票品 / 库存池 / 卖家 / 供货 / 挂牌关系澄清（评审 P0 建议）
   验收：明确首期交易对象与四类业务事实（平台自营票量 / 第三方挂牌 / 独立票品 / 外部情报报价）的数据模型落点；全链时序图（活动创建→商品上架→卖家供货→库存建立→下单→支付→出票→交付→退款）标事务边界；关键不变量转化为集成测试清单。期次：Phase 09
+  完成（2026-10-13）：新增 `docs/architecture/trading-model.md`（交易闭环模型，进 vitepress 侧边栏）——①四类业务事实落点表（平台自营票量=唯一已接订单链路的事实；第三方挂牌 marketplace 内闭环已实现但交易接线未做；独立票品拆成"挂牌票品（已实现）/平台座位型票品（未实现，禁止复用 listings 外键的 ticket_units）"两概念；情报报价只读）；②概念关系图标注 FK 实约束 vs 字符串松耦合；③全链 T1–T18 事务边界时序图（T7 下单为唯一多模块同事务）；④16 条不变量→集成测试对照表（13 条已有真实 PG 测试，3 条对应缺口）；⑤缺口清单 G1–G6（建池不校验商品存在 / 挂牌未接订单链路 / 商品无发布 API / 供货额度不消耗 / 支付事务内调渠道 / PAYMENT_UNKNOWN 无异常单流程）。同步修正 domain-model.md 与实现的表名漂移（events/inventory_pools/product_rules/inventory_movements/order_transitions/payment_events/refund_events/idempotency_records 等均不存在，改为 Flyway 实际表并收录 marketplace/fulfillment/campaign_assets/notification 暂无表）、ticket_units 定位纠偏、inventory-consistency.md SQL 表名 inventory_balances→inventory_balance（ADR 按历史记录原则不改）。验证：pnpm -C docs build 通过（含死链检查）。
 - [x] 情报隔离表述与账号权限核对（评审指出「物理隔离」表述过强）
   验收：文档改为「同实例 intelligence schema + 独立角色 awn_intel 权限边界」；核对 API/Worker 运行账号不含绕过权限的说明写入部署文档（`IntelligenceIsolationTests` 已验证 awn_intel 零交易表权限，commit 4dce325）。期次：Phase 09
   完成（2026-10-13）：README.md / README.zh-CN.md「约束速记」第 5 条由「物理隔离」改为「同实例分库边界（独立 intelligence schema + 独立角色 awn_intel）」；`IntelligenceIsolationTests` javadoc 同步改为「权限边界验收（非物理隔离）」；deploy/README.md「关键约束」补两条——①情报隔离是权限边界不是物理隔离（awn_intel 仅 intelligence schema 授权、public schema 显式 REVOKE）；②账号权限现状如实记录：compose `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户，可读写 intelligence schema（awn_intel→交易表零权限方向不受影响），并写明生产收紧路径（独立引导管理员 + 无超级用户属性的受限 awn_app）；docker-compose.yml POSTGRES_USER 处加同款警示注释。ADR-0004 与 docs/architecture/intelligence-isolation.md 原表述本就准确（「初期共享实例，独立 schema 与角色」），未改。全量测试 16 模块 BUILD SUCCESS（awn-api surefire 88 tests / 0 failures / 0 errors）。
@@ -181,12 +182,14 @@
 
 ### 设计文档自洽性
 
-- [ ] `campaign_assets` 表仅见于 campaign-rendering.md（1 处），domain-model.md 总表 0 处
+- [x] `campaign_assets` 表仅见于 campaign-rendering.md（1 处），domain-model.md 总表 0 处
   验收：总表收录该表并标注归属模块。期次：Phase 02 内顺手
+  完成（2026-10-13）：domain-model.md 总表已按 Flyway 实际表重写并收录 `campaign_assets`（V5，专场），随交易闭环模型文档一并提交。
 - [ ] `inbox_messages` 已列入 domain-model.md，但 async-outbox.md 0 处提及——其去重职责（与渠道事务唯一约束的关系）无文档
   验收：async-outbox.md 增补 Inbox 消费与去重时序，或补一条 ADR。期次：Phase 04 前
-- [ ] marketplace / notification 两模块在 domain-model.md 中 0 表设计
+- [x] marketplace / notification 两模块在 domain-model.md 中 0 表设计
   验收：Phase 05 动工前补齐两模块表设计。期次：Phase 05 前
+  完成（2026-10-13）：marketplace 四表（sellers/supply_reviews/listings/ticket_units，V7）与 fulfillment 两表已收录进 domain-model.md 总表；notification 核实确无任何表（V1–V10 均未建），总表明示「暂无表（仅适配外部通道）」。
 
 ### 错误信封可选增强
 

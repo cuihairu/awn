@@ -7,7 +7,7 @@
 不能使用"先查库存，再扣库存"的普通流程。必须在 PostgreSQL 中使用条件更新：
 
 ```sql
-UPDATE inventory_balances
+UPDATE inventory_balance
 SET reserved_quantity = reserved_quantity + :quantity,
     version = version + 1,
     updated_at = NOW()

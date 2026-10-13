@@ -2,6 +2,9 @@
 
 AWN 的领域模型围绕一条主链展开：**活动 → 场次 → 商品 → 库存池 → 统一结算 → 统一订单 → 统一支付**。专场只是商品的组织与展示层，不参与交易语义。
 
+四类业务事实（平台自营票量 / 第三方挂牌 / 独立票品 / 外部情报报价）的数据模型落点、
+marketplace 供货挂牌链路与全链事务边界，见 [交易闭环模型](./trading-model)。
+
 ## 业务关系
 
 ```mermaid
@@ -32,19 +35,20 @@ flowchart TD
 
 推荐 PostgreSQL 为唯一交易权威数据库。初期使用一个数据库实例，按领域使用清晰的表命名或 Schema。高风险交易逻辑尽量放在同一数据库事务内。
 
-| 领域 | 表 |
+| 领域 | 表（与 Flyway 迁移一致） |
 |--------|--------|
-| 活动 | `events`、`sessions`、`venues` |
-| 商品 | `ticket_categories`、`products`、`product_rules` |
-| 库存 | `inventory_pools`、`inventory_balances`、`inventory_reservations`、`ticket_units`、`inventory_movements` |
-| 专场 | `campaigns`、`campaign_revisions`、`campaign_events`、`campaign_products` |
-| 订单 | `orders`、`order_items`、`order_transitions` |
-| 支付 | `payments`、`payment_events` |
-| 退款 | `refunds`、`refund_events` |
-| 履约 | `fulfillments`、`delivery_records` |
-| 幂等与事件 | `idempotency_records`、`outbox_messages`、`inbox_messages` |
-| 审计 | `audit_logs` |
-| 情报 | `data_sources`、`raw_observations`、`normalized_observations`、`price_history` |
+| 活动 / 场馆 | `venue`、`event`、`session`（V4） |
+| 商品 / 票档 | `ticket_category`、`product`（V4） |
+| 库存 | `inventory_pool`、`inventory_balance`、`inventory_reservation`、`inventory_transaction`（V2） |
+| 专场 | `campaigns`、`campaign_revisions`、`campaign_events`、`campaign_products`、`campaign_assets`（V5） |
+| 订单 | `orders`、`order_items`（V3；幂等键内联于 `orders.idempotency_key`） |
+| 支付 / 退款 | `payments`、`refunds`（V6；退款幂等键内联于 `refunds.idempotency_key`） |
+| 履约 | `fulfillments`、`delivery_records`（V7） |
+| marketplace | `sellers`、`supply_reviews`、`listings`、`ticket_units`（V7） |
+| 事件与收件 | `outbox_messages`（V3）、`inbox_messages`（V6） |
+| 审计与告警 | `audit_logs`、`alerts`（V8） |
+| 情报 | `intelligence.data_sources`、`intelligence.raw_observations`、`intelligence.normalized_observations`、`intelligence.price_history`（V8，独立 schema） |
+| 通知 | 暂无表（notification 模块当前仅适配外部通道） |
 
 ## 库存余额模型
 
@@ -75,7 +79,9 @@ reserved + sold <= total
 
 数据库应通过非负约束和库存上限约束提供最后一道防线。
 
-对于有独立座位、独立二维码或独立票品编号的商品，还需要 `ticket_units` 记录每张票的唯一状态，不能仅依靠数量余额。
+对于有独立座位、独立二维码或独立票品编号的商品，需要逐票的唯一状态记录，不能仅依靠数量余额。
+注意当前实现中 `ticket_units` 是**marketplace 挂牌的 1:1 票品实体**（外键挂在 `listings` 上）；
+平台自营座位型票品若落地，须独立建模，不得复用该表——详见 [交易闭环模型](./trading-model)。
 
 ## 订单快照
 
