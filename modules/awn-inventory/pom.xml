@@ -18,6 +18,10 @@
   <dependencies>
     <dependency>
       <groupId>site.awn</groupId>
+      <artifactId>awn-catalog</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>site.awn</groupId>
       <artifactId>awn-shared</artifactId>
     </dependency>
     <dependency>

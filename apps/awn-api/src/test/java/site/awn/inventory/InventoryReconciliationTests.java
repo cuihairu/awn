@@ -24,13 +24,15 @@ class InventoryReconciliationTests extends AbstractPostgresIntegrationTest {
     InventoryFacade inventory;
     @Autowired
     JdbcTemplate jdbc;
+    @Autowired
+    site.awn.support.CatalogProductFactory products;
 
     @Test
     void createPoolWritesBootstrapLedgerRow() {
         String poolCode = unique("ledger");
         int total = 10;
         inventory.createPool(new CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), total));
 
         Long ledgerSum = jdbc.queryForObject(
@@ -48,7 +50,7 @@ class InventoryReconciliationTests extends AbstractPostgresIntegrationTest {
     void totalLedgerDriftIsReported() {
         String poolCode = unique("drift");
         inventory.createPool(new CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), 10));
 
         // 模拟越权或丢失更新的计数器漂移（绕过程序直接改表）

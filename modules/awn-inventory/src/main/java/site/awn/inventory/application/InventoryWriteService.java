@@ -2,6 +2,7 @@ package site.awn.inventory.application;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import site.awn.catalog.api.CatalogFacade;
 import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.inventory.api.PoolView;
 import site.awn.inventory.api.ReservationView;
@@ -34,15 +35,18 @@ public class InventoryWriteService {
     private final InventoryBalanceRepository balanceRepository;
     private final InventoryReservationRepository reservationRepository;
     private final InventoryTransactionRepository transactionRepository;
+    private final CatalogFacade catalog;
 
     public InventoryWriteService(InventoryPoolRepository poolRepository,
                                  InventoryBalanceRepository balanceRepository,
                                  InventoryReservationRepository reservationRepository,
-                                 InventoryTransactionRepository transactionRepository) {
+                                 InventoryTransactionRepository transactionRepository,
+                                 CatalogFacade catalog) {
         this.poolRepository = poolRepository;
         this.balanceRepository = balanceRepository;
         this.reservationRepository = reservationRepository;
         this.transactionRepository = transactionRepository;
+        this.catalog = catalog;
     }
 
     /**
@@ -76,6 +80,9 @@ public class InventoryWriteService {
 
     @Transactional
     public PoolView createPool(CreatePoolCommand command) {
+        // G1：商品编码必须真实存在（经 catalog api 校验），编码写错不得静默建池；
+        // 不存在时 ProductNotFoundException 先于任何写入抛出
+        catalog.product(command.productId());
         if (command.totalQuantity() < 0) {
             throw new IllegalArgumentException("totalQuantity must be >= 0");
         }

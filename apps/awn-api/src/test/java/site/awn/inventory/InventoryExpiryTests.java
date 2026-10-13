@@ -29,6 +29,8 @@ class InventoryExpiryTests extends AbstractPostgresIntegrationTest {
 
     @Autowired
     InventoryFacade inventory;
+    @Autowired
+    site.awn.support.CatalogProductFactory products;
 
     @Test
     void expiredReservationIsReleasedAndInventoryRestored() {
@@ -71,7 +73,7 @@ class InventoryExpiryTests extends AbstractPostgresIntegrationTest {
     }
 
     private void reserve(String poolCode) {
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + poolCode, "sess-" + poolCode, TOTAL));
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(poolCode), "sess-" + poolCode, TOTAL));
         inventory.reserve(new ReserveInventoryCommand(poolCode, "ORD-" + poolCode, QTY, Duration.ofSeconds(30)));
     }
 

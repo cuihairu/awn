@@ -45,6 +45,7 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
     @Autowired OrderTimeoutTask orderTimeoutTask;
     @Autowired InventoryReconciliationTask reconciliationTask;
     @Autowired JdbcTemplate jdbc;
+    @Autowired site.awn.support.CatalogProductFactory products;
 
     private String uid() {
         return UUID.randomUUID().toString().substring(0, 8);
@@ -52,7 +53,7 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
 
     private String newPool(int totalQuantity) {
         String poolCode = "wt-" + uid();
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + uid(), "sess-" + uid(), totalQuantity));
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(poolCode), "sess-" + uid(), totalQuantity));
         return poolCode;
     }
 

@@ -36,11 +36,14 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     @Autowired
     InventoryFacade inventory;
 
+    @Autowired
+    site.awn.support.CatalogProductFactory products;
+
     @Test
     void concurrentReserveDoesNotOversell() throws Exception {
         String poolCode = unique("oversell");
         inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), 10));
 
         int threads = 24;
@@ -82,7 +85,7 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     void concurrentAdjustmentsDoNotLoseUpdates() throws Exception {
         String poolCode = unique("adjust");
         inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), 100));
 
         // 16 线程各做 25 次 +1 调整；计数器必须原子累加，不允许读写改写丢失更新
@@ -122,7 +125,7 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     void confirmReleaseLifecycleIsGuardedAndIdempotent() {
         String poolCode = unique("lifecycle");
         inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), 5));
 
         var r1 = inventory.reserve(new ReserveInventoryCommand(poolCode, "order-1", 1, Duration.ofMinutes(5)));
@@ -156,6 +159,20 @@ class InventoryConcurrencyTests extends AbstractPostgresIntegrationTest {
     void reserveUnknownPoolFails() {
         assertThatThrownBy(() -> inventory.reserve(new ReserveInventoryCommand(unique("missing"), "order-x", 1, null)))
                 .isInstanceOf(site.awn.inventory.domain.PoolNotFoundException.class);
+    }
+
+    @Test
+    void createPoolRejectsUnknownProductCode() {
+        // G1：createPool 必须经 catalog api 校验商品编码存在，编码写错不得静默建池
+        String poolCode = unique("g1-reject");
+        assertThatThrownBy(() -> inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(
+                poolCode,
+                "no-such-product-" + UUID.randomUUID().toString().substring(0, 8),
+                "sess-" + UUID.randomUUID().toString().substring(0, 8), 10)))
+                .isInstanceOf(site.awn.catalog.domain.ProductNotFoundException.class);
+
+        // 校验先于任何写入：失败的建池不留下残余空池
+        assertThat(inventory.balances()).noneMatch(b -> b.poolCode().equals(poolCode));
     }
 
     private static String unique(String prefix) {

@@ -24,6 +24,7 @@ import site.awn.payment.api.PaymentCallbackCommand;
 import site.awn.payment.api.PaymentFacade;
 import site.awn.payment.api.PaymentGateway;
 import site.awn.payment.api.PaymentReconciliationReport;
+import site.awn.payment.api.PaymentUnknownResolutionResult;
 import site.awn.payment.api.PaymentView;
 import site.awn.payment.api.RefundCallbackCommand;
 import site.awn.payment.api.RefundView;
@@ -63,6 +64,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     @Autowired OutboxMessageRepository outbox;
     @Autowired SandboxPaymentGateway sandbox;
     @Autowired JdbcTemplate jdbc;
+    @Autowired site.awn.support.CatalogProductFactory products;
 
     /**
      * G5 验证用假渠道：down 受理即抛异常（模拟渠道故障），
@@ -343,6 +345,77 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void unknownPaymentResolvesToSucceededAndAutoRefundsAfterRelease() {
+        OrderView order = newPaidPendingOrder(1, 500);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+        sandbox.succeedCharge(payment.channelTxnNo());
+
+        // 订单先到期释放，成功回调后到 → 支付单 UNKNOWN（不盲目确认）
+        orderFacade.releaseExpiredOrders(Instant.now().plusSeconds(3600));
+        assertThat(payments.handleCallback(success(payment)).status())
+                .isEqualTo(PaymentStatus.UNKNOWN.name());
+
+        // 消费者核实：渠道查实成功 → UNKNOWN → SUCCEEDED
+        // 共享测试库可能含历史 UNKNOWN 支付单，计数只断言下限
+        PaymentUnknownResolutionResult result = payments.resolveUnknownPayments();
+        assertThat(result.resolvedSucceeded()).isGreaterThanOrEqualTo(1);
+        assertThat(payments.payment(payment.paymentNo()).status())
+                .isEqualTo(PaymentStatus.SUCCEEDED.name());
+
+        // 异常单处理：已扣款但库存已释放 → 原路退款，不假装履约
+        String channelRefundNo = jdbc.queryForObject(
+                "SELECT channel_refund_no FROM refunds WHERE payment_no = ?",
+                String.class, payment.paymentNo());
+        assertThat(channelRefundNo).isNotNull();
+        sandbox.succeedRefund(channelRefundNo);
+        payments.handleRefundCallback(new RefundCallbackCommand(
+                "sandbox", "{}", validSignature(), channelRefundNo, true));
+        assertThat(payments.payment(payment.paymentNo()).status())
+                .isEqualTo(PaymentStatus.REFUNDED.name());
+    }
+
+    @Test
+    void unknownPaymentResolvesToFailedWhenChannelConfirmsNotPaid() {
+        OrderView order = newPaidPendingOrder(1, 500);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+        sandbox.failCharge(payment.channelTxnNo());
+
+        orderFacade.releaseExpiredOrders(Instant.now().plusSeconds(3600));
+        assertThat(payments.handleCallback(success(payment)).status())
+                .isEqualTo(PaymentStatus.UNKNOWN.name());
+
+        // 渠道查实未扣款 → FAILED；订单已释放，账实一致，无需退款
+        payments.resolveUnknownPayments();
+        assertThat(payments.payment(payment.paymentNo()).status())
+                .isEqualTo(PaymentStatus.FAILED.name());
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM refunds WHERE payment_no = ?",
+                Long.class, payment.paymentNo())).isZero();
+    }
+
+    @Test
+    void unknownPaymentStaysWhenChannelStillPending() {
+        OrderView order = newPaidPendingOrder(1, 500);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+        // 渠道侧保持 PENDING：查实无结论
+
+        orderFacade.releaseExpiredOrders(Instant.now().plusSeconds(3600));
+        assertThat(payments.handleCallback(success(payment)).status())
+                .isEqualTo(PaymentStatus.UNKNOWN.name());
+
+        payments.resolveUnknownPayments();
+
+        assertThat(payments.payment(payment.paymentNo()).status())
+                .as("渠道未定：保持 UNKNOWN 待下轮核实").isEqualTo(PaymentStatus.UNKNOWN.name());
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM refunds WHERE payment_no = ?",
+                Long.class, payment.paymentNo())).isZero();
+    }
+
+    @Test
     void reconciliationDetectsChannelLocalDifferences() {
         OrderView order = newPaidPendingOrder(1, 500);
         PaymentView payment = payments.createPayment(
@@ -404,7 +477,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     private OrderView newPaidPendingOrder(int quantity, long unitPrice) {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + suffix,
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
                 "sess-" + suffix, quantity * 5));
         var line = new OrderLineCommand(poolCode, "prod-" + suffix, "支付测试演出",
                 "sess-" + suffix, null, quantity, unitPrice, 0, 0);

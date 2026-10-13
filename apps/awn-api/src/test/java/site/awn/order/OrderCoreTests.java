@@ -53,6 +53,9 @@ class OrderCoreTests extends AbstractPostgresIntegrationTest {
     OutboxMessageRepository outbox;
 
     @Autowired
+    site.awn.support.CatalogProductFactory products;
+
+    @Autowired
     JdbcTemplate jdbc;
 
     @Test
@@ -255,7 +258,7 @@ class OrderCoreTests extends AbstractPostgresIntegrationTest {
 
     private String pool(String productPrefix, int total) {
         String poolCode = "pool-" + UUID.randomUUID().toString().substring(0, 12);
-        inventory.createPool(new CreatePoolCommand(poolCode, productPrefix + "-" + UUID.randomUUID().toString().substring(0, 6),
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(productPrefix),
                 "sess-" + UUID.randomUUID().toString().substring(0, 6), total));
         return poolCode;
     }

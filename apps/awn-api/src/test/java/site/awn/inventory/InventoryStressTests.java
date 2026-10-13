@@ -36,13 +36,15 @@ class InventoryStressTests extends AbstractPostgresIntegrationTest {
 
     @Autowired
     InventoryFacade inventory;
+    @Autowired
+    site.awn.support.CatalogProductFactory products;
 
     @Test
     void mixedWorkloadKeepsInvariantAndNeverOversells() throws Exception {
         String poolCode = unique("stress");
         int total = 50;
         inventory.createPool(new site.awn.inventory.api.CreatePoolCommand(poolCode,
-                "prod-" + UUID.randomUUID().toString().substring(0, 8),
+                products.productCode(poolCode),
                 "sess-" + UUID.randomUUID().toString().substring(0, 8), total));
 
         int threads = 32;

@@ -50,6 +50,7 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
     @Autowired OutboxDispatchService dispatcher;
     @Autowired OutboxMessageRepository outbox;
     @Autowired SandboxPaymentGateway sandbox;
+    @Autowired site.awn.support.CatalogProductFactory products;
 
     @Test
     void paymentSuccessCreatesPendingSellerNotCompleted() {
@@ -186,7 +187,7 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
     private OrderView newPaidPendingOrder(int quantity, long unitPrice) {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + suffix, "sess-" + suffix, quantity * 5));
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix), "sess-" + suffix, quantity * 5));
         var line = new OrderLineCommand(poolCode, "prod-" + suffix, "履约测试演出",
                 "sess-" + suffix, null, quantity, unitPrice, 0, 0);
         return orderFacade.createOrder(new CreateOrderCommand("ful-" + suffix, 42L, "CNY", List.of(line)));

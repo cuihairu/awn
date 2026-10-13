@@ -57,6 +57,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
     @Autowired OutboxDispatchService dispatcher;
     @Autowired SandboxPaymentGateway sandbox;
     @Autowired JdbcTemplate jdbc;
+    @Autowired site.awn.support.CatalogProductFactory products;
 
     @Test
     void adminEndpointsRequireToken() throws Exception {
@@ -87,7 +88,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
     void inventoryAdjustmentRequiresReasonWritesAuditAndUpdatesBalance() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + suffix, "sess-" + suffix, 10));
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix), "sess-" + suffix, 10));
 
         // 缺少操作原因 → 400
         mockMvc.perform(post("/api/v1/admin/inventory/adjustments").header(TOKEN_HEADER, TOKEN)
@@ -169,7 +170,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
     void inventoryReconciliationDifferenceRaisesAlert() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + suffix, "sess-" + suffix, 10));
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix), "sess-" + suffix, 10));
 
         String poolWhere = "WHERE inventory_pool_id = (SELECT id FROM inventory_pool WHERE pool_code = ?)";
         Integer original = jdbc.queryForObject(
@@ -196,7 +197,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
         lastPoolCode = poolCode;
-        inventory.createPool(new CreatePoolCommand(poolCode, "prod-" + suffix,
+        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
                 "sess-" + suffix, quantity * 5));
         var line = new OrderLineCommand(poolCode, "prod-" + suffix, "运营接口测试演出",
                 "sess-" + suffix, null, quantity, unitPrice, 0, 0);
