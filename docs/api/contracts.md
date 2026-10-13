@@ -92,7 +92,7 @@ GET /api/v1/intelligence/events/{eventId}/prices
 - `GET /api/v1/events/{eventId}` 与 `GET /api/v1/sessions/{sessionId}` 对未知资源、以及父活动未发布（草稿）的场次一律 404，不泄露草稿内容；
 - `GET /api/v1/intelligence/events/{eventId}/prices` 返回该活动下**所有场次**的价格历史（按观测时间倒序，每条可溯源）；活动未知或未公开 → 404；场次无价格数据时返回空数组。
 
-活动发布（`DRAFT` → `PUBLISHED`）目前只有模块层接口 `EventFacade.publishEvent(eventCode)`，**未暴露 HTTP**：发布是运营动作，待管理面落地后按 `X-Admin-Token` 鉴权接入；重复发布返回 `CONFLICT`。
+活动发布（`DRAFT` → `PUBLISHED`）是运营动作，经 `X-Admin-Token` 鉴权暴露：`POST /api/v1/admin/events/{eventCode}/publish`（见「运营接口」）；仅草稿可发布，重复发布 → 409 `CONFLICT`，未知活动 → 404 `EVENT_NOT_FOUND`。
 
 公共商品接口的库存摘要为展示口径（当前直查数据库，未接缓存），**下单时必须重新验证**。
 
@@ -149,6 +149,8 @@ GET  /api/v1/admin/reconciliation
 GET  /api/v1/admin/anomalies
 POST /api/v1/admin/anomalies/{alertId}/acknowledge
 GET  /api/v1/admin/audit-logs
+
+POST /api/v1/admin/events/{eventCode}/publish
 ```
 
 专场管理写操作与运营接口同权（`X-Admin-Token`），公开读 GET 放行。
