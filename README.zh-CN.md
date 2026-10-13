@@ -38,7 +38,7 @@
 │  ├─ awn-payment           收单、退款、对账
 │  ├─ awn-fulfillment       出票与交付
 │  ├─ awn-marketplace       卖家、挂牌、供货审核
-│  ├─ awn-promotion         营销与优惠券（空壳模块，待实现）
+│  ├─ awn-promotion         优惠券：模板、配额发放、核销（与订单金额联动待裁决）
 │  ├─ awn-intelligence      情报：独立 schema，禁止写交易表
 │  ├─ awn-notification      站内信已落地（邮件 / 短信通道待接入）
 │  └─ awn-audit             操作审计、敏感业务操作记录

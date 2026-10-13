@@ -38,7 +38,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 │  ├─ awn-payment           Acquiring, refunds, reconciliation
 │  ├─ awn-fulfillment       Ticketing & delivery
 │  ├─ awn-marketplace       Sellers, listings, supply review
-│  ├─ awn-promotion         Marketing & coupons (skeleton, pending)
+│  ├─ awn-promotion         Coupons: templates, quota-guarded issuance, redemption
 │  ├─ awn-intelligence      Intelligence: separate schema, never writes trading tables
 │  ├─ awn-notification      In-app messages delivered (email / SMS channel pending)
 │  └─ awn-audit             Operation audit, sensitive action records
