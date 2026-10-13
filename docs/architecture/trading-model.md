@@ -12,7 +12,7 @@ Phase 09 外部评审 P0 项的落地文档：澄清**商品 / 票档 / 票品 /
 |---|---|---|---|
 | 平台自营票量 | `product` + `inventory_pool`（`(product_id, session_id)` 唯一）+ `inventory_balance` | 下单时原子条件 UPDATE 预留，支付确认转已售 | **已实现**（数量型订单行） |
 | 第三方挂牌 | `sellers` → `supply_reviews`（资质审核）→ `listings`（售卖入口）→ `ticket_units`（1:1 票品） | 凭证型订单行下单，票品 IN_STOCK → RESERVED → SOLD（G2 已接通） | **已实现**，有并发抢单与回滚集成测试 |
-| 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品（未实现，需独立建模，禁止复用 ①） | ① 挂牌生命周期；② 未来平台逐座交易 | 仅 ① 已实现 |
+| 独立票品 | 两个概念必须分开：① 挂牌票品 `ticket_units`（FK→`listings`）；② 平台座位型票品 `platform_seats`（挂场次与商品编码，独立建模，禁止复用 ①） | ① 挂牌生命周期；② 平台逐座交易 | ①② 均已实现 |
 | 外部情报报价 | `intelligence` schema（`data_sources` / `raw_observations` / `normalized_observations` / `price_history`） | 只读展示，永不回写交易表（ADR-0004） | 已实现，权限边界有集成测试 |
 
 ## 概念关系
@@ -33,6 +33,7 @@ flowchart TD
         POOL["inventory_pool 库存池"] -->|1:1| BAL["inventory_balance 余额"]
         RES["inventory_reservation 预留"] -->|FK| POOL
         TXN["inventory_transaction 流水"] -->|FK| POOL
+        SEAT["platform_seats 平台座位"]
     end
 
     subgraph MP[marketplace：第三方]
@@ -43,6 +44,8 @@ flowchart TD
 
     PRODUCT -.->|"product_code 字符串·无FK·建池不校验"| POOL
     SESSION -.->|"session_code 字符串·无FK"| POOL
+    SESSION -.->|"session_code 字符串·无FK"| SEAT
+    PRODUCT -.->|"product_code 字符串·铺座经 catalog 校验"| SEAT
     PRODUCT -.->|"product_code 字符串·无FK"| LISTING
     PRODUCT ==>|"数量型订单行 poolCode+productId"| POOL
     ORDER["orders 订单"]
@@ -57,7 +60,7 @@ flowchart TD
 2. **库存池只属于平台交易链路**：`(product_id, session_id)` 唯一约束保证同商品同场次只有一个池；池只能由运营在 inventory 模块创建（`createPool` / `adjustPool`），**商品上架不会自动建池**（现状）。marketplace 永远不创建池（模块边界禁令：「未经确认就创建平台可信库存」不允许）。
 3. **"票品"有两个概念，禁止混用**：
    - **挂牌票品（已实现）**：`ticket_units.listing_id` FK→`listings`，1:1，是转售场景下唯一编号票的凭证实体，状态机 `IN_STOCK → RESERVED/SOLD/DELIVERED/INVALID` 与挂牌状态解耦。
-   - **平台座位型票品（未实现）**：若未来平台自营座位票需要逐座状态，必须建独立的平台票品模型，**不得复用**挂牌的 `ticket_units`（其外键挂在 `listings` 上，语义是"卖家的票"）。
+   - **平台座位型票品（已实现）**：`platform_seats`（V17）挂场次与商品编码（字符串松耦合，与库存池同口径），逐座状态机 `IN_STOCK → RESERVED → SOLD → DELIVERED`，`INVALID` 为作废终态；`SOLD` 必经 `RESERVED`（卖出走预留，占座订单号有落点）；迁移走守卫条件 UPDATE，并发抢座只放行一单。**不复用**挂牌的 `ticket_units`（其外键挂在 `listings` 上，语义是"卖家的票"）。
    旧版领域模型把 `ticket_units` 表述为"座位型商品的数量余额替代"，与实现冲突，已修正。
 4. **供货审核是资质，不是库存**：`supply_reviews` APPROVED 只给 `listings.platform_guaranteed = true` 的资格（`Listing.create` 领域工厂强制），**不向任何库存池注入数量**；挂牌也不校验审核 `quantity` 是否已被耗尽（缺口 G4）。
 5. **挂牌与订单链路已接通（G2）**：`OrderLineCommand` 支持两种互斥形态——数量型行（`poolCode` + `quantity`）与凭证型行（`listingNo`，`quantity` 必须为 1，`poolCode` 为 null）。凭证型行下单时把挂牌 `LISTED → RESERVED`、票品 `IN_STOCK → RESERVED`（两条守卫条件 UPDATE，与订单同事务）；支付确认转 SOLD，取消 / 超时释放回 LISTED / IN_STOCK。并发抢单由守卫迁移裁决，只放行一单。订单行须落库 `listing_no` / `unit_no`，数据库 `CHECK ck_order_item_source` 兜底「一行恰有一条库存路径」。
