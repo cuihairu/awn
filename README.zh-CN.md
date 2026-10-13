@@ -40,7 +40,7 @@
 │  ├─ awn-marketplace       卖家、挂牌、供货审核
 │  ├─ awn-promotion         营销与优惠券（空壳模块，待实现）
 │  ├─ awn-intelligence      情报：独立 schema，禁止写交易表
-│  ├─ awn-notification      站内信 / 短信 / 订阅消息（空壳模块，待实现）
+│  ├─ awn-notification      站内信已落地（邮件 / 短信通道待接入）
 │  └─ awn-audit             操作审计、敏感业务操作记录
 ├─ apps/
 │  ├─ awn-api             模块化单体 API（:8080）

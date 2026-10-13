@@ -77,7 +77,7 @@
 ### 模块空壳（Phase 01 规划职责，当前仅 `package-info.java`）
 - [ ] identity 模块：用户、登录、角色、授权 — 设计见 module-boundaries.md；验收：注册/登录/角色校验 + 集成测试
 - [ ] promotion 模块：优惠券、活动优惠、使用限制 — 设计见 module-boundaries.md；验收：券创建/使用/限额 + 集成测试
-- [ ] notification 模块：站内信、邮件、短信适配 — 设计见 module-boundaries.md；async-outbox.md 明确「通知发送未实现」；验收：至少一种通道适配 + 失败不回滚订单
+- [x] notification 模块（站内信通道落地：`NotificationFacade` 统一投递留痕，INBOX 通道真实落库、EMAIL/SMS 显式未接入占位；任何渠道失败记 FAILED 不抛——通知失败不回滚订单；`ORDER_CREATED`/`ORDER_PAID` 事件经 Outbox 消费者投递买家站内信）— 7d8acdf；NotificationModuleTests 4 例；全量 117 例绿
 
 ### 交易全链缺口（trading-model.md G1–G6，均有建议方向）
 - [x] G1 createPool 经 catalog api 校验商品编码存在（未知编码抛 ProductNotFoundException 且不留残余池）— 08c0ae2；InventoryConcurrencyTests 新增 1 例共 5 例；全量 113 例绿

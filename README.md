@@ -40,7 +40,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 │  ├─ awn-marketplace       Sellers, listings, supply review
 │  ├─ awn-promotion         Marketing & coupons (skeleton, pending)
 │  ├─ awn-intelligence      Intelligence: separate schema, never writes trading tables
-│  ├─ awn-notification      In-app messages / SMS / subscribe messages (skeleton, pending)
+│  ├─ awn-notification      In-app messages delivered (email / SMS channel pending)
 │  └─ awn-audit             Operation audit, sensitive action records
 ├─ apps/
 │  ├─ awn-api             Modular monolith API (:8080)

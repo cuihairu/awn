@@ -47,7 +47,7 @@ Worker 进程与 API 共享同一代码包，只启用后台任务：
 - 分发并重试 Outbox 事件，按处理器路由到履约等下游。
 - 告警并处理超过重试上限的事件（转入 FAILED 并告警，无独立死信存储）。
 
-未实现：通知发送（`notification` 模块为空壳，`awn.worker.tasks.notification-dispatch` 为死配置）。
+未实现：邮件 / 短信通道接入（`notification` 模块已落地站内信：`ORDER_CREATED` / `ORDER_PAID` 事件经 Outbox 投递，通道失败记 FAILED 不回滚订单；`EMAIL` / `SMS` 通道为显式未接入占位。`awn.worker.tasks.notification-dispatch` 仍为无任务认领的死配置）。
 
 多个 Worker 实例竞争处理任务时，需要通过**行锁、条件更新或明确的任务租约**保证不会产生重复业务副作用。
 
