@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import site.awn.intelligence.api.CollectAllReport;
 import site.awn.intelligence.api.CreateSourceCommand;
 import site.awn.intelligence.api.IntelligenceFacade;
 import site.awn.intelligence.api.PricePointView;
@@ -22,6 +23,7 @@ import site.awn.intelligence.infrastructure.NormalizedObservationRepository;
 import site.awn.intelligence.infrastructure.PriceHistoryRepository;
 import site.awn.intelligence.infrastructure.RawObservationRepository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +125,38 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
             ok++;
         }
         return new CollectReport(sourceNo, drafts.size(), ok, rejected, null);
+    }
+
+    /**
+     * 全量采集（调度器入口）：逐个启用来源调用 {@link #collect}，单源失败不中断整轮。
+     * collect 已把适配器失败记录在报告中不抛出；整轮一个事务，某源持久化异常会回滚本轮、
+     * 下轮重采（来源内去重保证幂等）。停用来源跳过；手动单源采集不受限。
+     */
+    @Override
+    @Transactional
+    public CollectAllReport collectAll() {
+        List<CollectReport> reports = new ArrayList<>();
+        int failed = 0;
+        for (DataSource source : sources.findAll()) {
+            if (!source.isEnabled()) {
+                continue;
+            }
+            CollectReport report = collect(source.getSourceNo());
+            if (report.failed()) {
+                failed++;
+            }
+            reports.add(report);
+        }
+        return new CollectAllReport(reports.size(), failed, List.copyOf(reports));
+    }
+
+    @Override
+    @Transactional
+    public SourceView disableSource(String sourceNo) {
+        DataSource source = sources.findBySourceNo(sourceNo)
+                .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
+        source.disable();
+        return toView(sources.save(source));
     }
 
     @Override

@@ -44,8 +44,10 @@ awn:
       refund-reconciliation: true
       notification-dispatch: true
       outbox-dispatch: true
+      intelligence-collection: true
     intervals:
       order-timeout-ms: 60000
       inventory-expiry-ms: 60000
       inventory-reconciliation-ms: 600000
       payment-unknown-resolution-ms: 120000
+      intelligence-collection-ms: 1800000

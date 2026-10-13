@@ -7,6 +7,7 @@ import site.awn.intelligence.api.CreateSourceCommand;
 import site.awn.intelligence.api.IntelligenceFacade;
 import site.awn.intelligence.api.PricePointView;
 import site.awn.intelligence.api.SourceView;
+import site.awn.intelligence.api.CollectAllReport;
 import site.awn.intelligence.domain.CollectReport;
 import site.awn.intelligence.sandbox.SandboxIntelligenceAdapter;
 import site.awn.support.AbstractPostgresIntegrationTest;
@@ -122,6 +123,54 @@ class IntelligenceModuleTests extends AbstractPostgresIntegrationTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         intelligence.registerSource(new CreateSourceCommand(null, "非法", "THIRD_PARTY_LISTED", 9)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void collectAllCoversEverySourceAndIsolatesFailures() {
+        registerSandboxSource();
+        SourceView noAdapter = intelligence.registerSource(
+                new CreateSourceCommand(null, "无适配器来源", "THIRD_PARTY_LISTED", 3));
+        String productRef = "ref-prod-all-" + UUID.randomUUID().toString().substring(0, 8);
+        sandbox.offer(sandbox.nextRef(), productRef, 7700, "CNY", "AVAILABLE", "{}");
+
+        CollectAllReport report = intelligence.collectAll();
+
+        // 每个启用来源都被轮到：沙箱来源成功采集
+        CollectReport sandboxReport = report.reports().stream()
+                .filter(r -> r.sourceNo().equals(SandboxIntelligenceAdapter.SOURCE_NO))
+                .findFirst().orElseThrow();
+        assertThat(sandboxReport.failed()).isFalse();
+        assertThat(sandboxReport.okCount()).isEqualTo(1);
+
+        // 无适配器来源报告失败，但不中断整轮
+        CollectReport noAdapterReport = report.reports().stream()
+                .filter(r -> r.sourceNo().equals(noAdapter.sourceNo()))
+                .findFirst().orElseThrow();
+        assertThat(noAdapterReport.failed()).as("无适配器来源必须报告失败").isTrue();
+        assertThat(report.failedCount()).as("失败来源必须计数").isGreaterThanOrEqualTo(1);
+
+        assertThat(intelligence.priceHistoryOf(productRef.substring("ref-".length()))).hasSize(1);
+    }
+
+    @Test
+    void collectAllSkipsDisabledSourcesButManualCollectStillWorks() {
+        registerSandboxSource();
+        SourceView disabled = intelligence.disableSource(SandboxIntelligenceAdapter.SOURCE_NO);
+        assertThat(disabled.enabled()).isFalse();
+
+        String productRef = "ref-prod-dis-" + UUID.randomUUID().toString().substring(0, 8);
+        sandbox.offer(sandbox.nextRef(), productRef, 5500, "CNY", null, "{}");
+
+        CollectAllReport report = intelligence.collectAll();
+        assertThat(report.reports())
+                .as("停用来源不参与调度采集")
+                .noneMatch(r -> r.sourceNo().equals(SandboxIntelligenceAdapter.SOURCE_NO));
+
+        // 手动单源采集不受停用限制（运营显式要求时仍可采集）
+        CollectReport manual = intelligence.collect(SandboxIntelligenceAdapter.SOURCE_NO);
+        assertThat(manual.failed()).isFalse();
+        assertThat(manual.okCount()).isEqualTo(1);
+        assertThat(intelligence.priceHistoryOf(productRef.substring("ref-".length()))).hasSize(1);
     }
 
     // ------------------------------------------------------------------

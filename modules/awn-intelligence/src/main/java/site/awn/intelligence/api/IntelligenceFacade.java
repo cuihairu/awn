@@ -18,6 +18,12 @@ public interface IntelligenceFacade {
     /** 对指定来源执行一轮采集：原始落库 → 标准化 → 质量检查 → 价格历史 */
     CollectReport collect(String sourceNo);
 
+    /** 全量采集（调度器调用）：逐个启用来源执行一轮采集，单源失败不中断整轮 */
+    CollectAllReport collectAll();
+
+    /** 停用来源：调度采集跳过停用来源；手动单源采集不受限 */
+    SourceView disableSource(String sourceNo);
+
     /** 价格历史（可溯源：来源、更新时间、可信度） */
     List<PricePointView> priceHistoryOf(String productCode);
 }
