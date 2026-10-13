@@ -53,7 +53,10 @@ export default withMermaid(
           items: [
             { text: '实施计划', link: '/implementation-plan' },
             { text: '测试清单', link: '/testing/checklist' },
+            { text: '压测报告', link: '/testing/load-test-report' },
             { text: '部署结构', link: '/deployment/structure' },
+            { text: '备份与恢复', link: '/deployment/backup-restore' },
+            { text: '生产部署手册', link: '/deployment/production' },
           ],
         },
         {

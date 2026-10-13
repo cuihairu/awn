@@ -149,8 +149,8 @@
 - [x] 审计、监控、告警
   验收：库存异常、支付异常、对账差异三类告警可触发；敏感操作有审计记录。期次：Phase 06
   完成：三类告警（INVENTORY/PAYMENT/RECONCILIATION）分别在库存对账差异、outbox 转 FAILED、支付对账差异三处触发（`AlertRecorder` REQUIRES_NEW 独立事务，业务回滚不丢告警）；`AdminApiTests` 逐类断言 + 确认后从异常视图消失；审计记录覆盖库存调整/供货审核/卖家暂停，commit 4dce325。
-- [ ] 备份恢复演练 + 压测报告 + 生产部署手册
-  验收：一次完整恢复演练记录；压测报告含吞吐与瓶颈结论。期次：Phase 06
+- [x] 备份恢复演练 + 压测报告 + 生产部署手册
+  完成：演练记录 docs/deployment/backup-restore.md；基线报告 docs/testing/load-test-report.md；手册 docs/deployment/production.md。压测抓到调整接口并发丢失更新（P0 已修，eb35c32）；全量 89/0/0。
 
 ## Phase 09 · 业务闭环审查（来源：用户 2026-10-12 转发外部评审）
 
@@ -191,7 +191,10 @@
   验收：Phase 05 动工前补齐两模块表设计。期次：Phase 05 前
   完成（2026-10-13）：marketplace 四表（sellers/supply_reviews/listings/ticket_units，V7）与 fulfillment 两表已收录进 domain-model.md 总表；notification 核实确无任何表（V1–V10 均未建），总表明示「暂无表（仅适配外部通道）」。
 
-### 错误信封可选增强
+#- [ ] 库存对账未覆盖 total 与 ADJUST 流水累计
+  验收：对账服务增加 total vs sum(ADJUST) 校验与告警。期次：Phase 09 压测发现，待排期
+
+## 错误信封可选增强
 
 - [ ] ErrorResponse 无字段级校验明细：contracts.md 的 VALIDATION_FAILED 未规定字段明细，当前实现合规；但多端表单场景（admin/小程序）拿不到「哪个字段错」
   验收：若多端接入后确认需要，扩展信封 `fieldErrors` 并同步 contracts.md；不需要则维持现状。期次：暂缓，待多端实际接入后裁决
