@@ -27,6 +27,7 @@
 | ORDER_NOT_FOUND | 404 | 订单不存在 |
 | INVENTORY_POOL_NOT_FOUND | 404 | 库存池不存在 |
 | EVENT_NOT_FOUND | 404 | 活动不存在 |
+| SESSION_NOT_FOUND | 404 | 场次不存在 |
 | CAMPAIGN_NOT_FOUND | 404 | 专场不存在 |
 | PAYMENT_NOT_FOUND | 404 | 支付单不存在 |
 | REFUND_NOT_FOUND | 404 | 退款单不存在 |
@@ -63,6 +64,7 @@
 ```text
 GET /api/v1/products/{productId}
 GET /api/v1/products/{productId}/availability
+GET /api/v1/sessions/{sessionId}/products
 GET /api/v1/campaigns/{campaignCode}
 GET /api/v1/campaigns/{campaignCode}/published
 GET /api/v1/campaigns/{campaignCode}/render

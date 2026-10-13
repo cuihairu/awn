@@ -56,8 +56,9 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
                 "PAYMENT_NOT_FOUND", "REFUND_NOT_FOUND",
                 "ORDER_CONFLICT", "IDEMPOTENCY_CONFLICT", "INSUFFICIENT_INVENTORY",
                 "INVENTORY_CONFLICT", "PAYMENT_CONFLICT", "PAYMENT_CALLBACK_REJECTED",
-                "REFUND_CONFLICT", "CONFLICT", "RATE_LIMITED", "INTERNAL_ERROR");
-        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(18);
+                "REFUND_CONFLICT", "CONFLICT", "RATE_LIMITED", "INTERNAL_ERROR",
+                "SESSION_NOT_FOUND");
+        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(19);
     }
 
     @Test

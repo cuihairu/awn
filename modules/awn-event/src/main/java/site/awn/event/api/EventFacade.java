@@ -17,5 +17,7 @@ public interface EventFacade {
 
     SessionView createSession(CreateSessionCommand command);
 
+    SessionView session(Long sessionId);
+
     List<SessionView> sessions(Long eventId);
 }

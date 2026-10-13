@@ -146,4 +146,63 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
         assertThat(AvailabilityResponse.of(ProductStatus.DRAFT, "p", 10, 5).sellable()).isFalse();
         assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p", 10, 0).sellable()).isFalse();
     }
+
+    @Test
+    void sessionProductsListReturnsPublishedWithAvailability() throws Exception {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "场馆", "北京", null));
+        Instant start = Instant.now().plusSeconds(3600);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-" + suffix, "演唱会", null, start, start.plusSeconds(7200), venue.id()));
+        SessionView session = events.createSession(new CreateSessionCommand(
+                "s-" + suffix, event.id(), "第一场", start, start.plusSeconds(7200)));
+        var category = catalog.createCategory(new CreateCategoryCommand(
+                "c-" + suffix, "VIP票", null));
+
+        // 已发布 + 有库存池：可售数量进列表
+        catalog.createProduct(new CreateProductCommand(
+                "p-a-" + suffix, event.id(), session.id(), category.id(), "VIP票·第一场", 199900L));
+        catalog.publishProduct("p-a-" + suffix);
+        inventory.createPool(new CreatePoolCommand(
+                "pool-a-" + suffix, "p-a-" + suffix, "s-" + suffix, 4));
+        // 已发布但无池：available 缺省（未开售）
+        catalog.createProduct(new CreateProductCommand(
+                "p-c-" + suffix, event.id(), session.id(), category.id(), "普通票·第一场", 59900L));
+        catalog.publishProduct("p-c-" + suffix);
+        // 草稿商品不得出现在列表
+        catalog.createProduct(new CreateProductCommand(
+                "p-b-" + suffix, event.id(), session.id(), category.id(), "草稿票", 100L));
+
+        mvc.perform(get("/api/v1/sessions/" + session.id() + "/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                // 按创建顺序（id 升序）返回
+                .andExpect(jsonPath("$[0].productCode").value("p-a-" + suffix))
+                .andExpect(jsonPath("$[0].status").value("PUBLISHED"))
+                .andExpect(jsonPath("$[0].unitPrice").value(199900))
+                .andExpect(jsonPath("$[0].categoryId").value(category.id()))
+                .andExpect(jsonPath("$[0].sessionId").value(session.id()))
+                .andExpect(jsonPath("$[0].available").value(4))
+                .andExpect(jsonPath("$[1].productCode").value("p-c-" + suffix))
+                .andExpect(jsonPath("$[1].available").doesNotExist());
+    }
+
+    @Test
+    void sessionProductsListIsEmptyWhenNoPublishedProducts() throws Exception {
+        Fixture f = createProductWithPool(uid(), 1);
+        // 商品保持 DRAFT：列表为空而不是报错
+        mvc.perform(get("/api/v1/sessions/" + f.session().id() + "/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void unknownSessionProductsReturnsNotFound() throws Exception {
+        mvc.perform(get("/api/v1/sessions/999999999/products"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").isNotEmpty())
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
 }

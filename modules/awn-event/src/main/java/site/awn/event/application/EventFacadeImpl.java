@@ -13,6 +13,7 @@ import site.awn.event.domain.Event;
 import site.awn.event.domain.EventNotFoundException;
 import site.awn.event.domain.EventStatus;
 import site.awn.event.domain.Session;
+import site.awn.event.domain.SessionNotFoundException;
 import site.awn.event.domain.SessionStatus;
 import site.awn.event.domain.Venue;
 import site.awn.event.infrastructure.EventRepository;
@@ -77,6 +78,14 @@ public class EventFacadeImpl implements EventFacade {
                 command.name(), command.startTime(), command.endTime());
         session.setStatus(SessionStatus.DRAFT);
         return toView(sessions.save(session));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SessionView session(Long sessionId) {
+        return sessions.findById(sessionId)
+                .map(this::toView)
+                .orElseThrow(() -> new SessionNotFoundException(sessionId));
     }
 
     @Override

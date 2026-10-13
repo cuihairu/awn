@@ -14,6 +14,7 @@ import site.awn.catalog.domain.TicketCategory;
 import site.awn.catalog.infrastructure.ProductRepository;
 import site.awn.catalog.infrastructure.TicketCategoryRepository;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -81,7 +82,9 @@ public class CatalogFacadeImpl implements CatalogFacade {
     @Override
     @Transactional(readOnly = true)
     public List<ProductView> publishedProductsBySession(Long sessionId) {
+        // 按创建顺序（id 升序）返回：列表端点的稳定展示顺序
         return products.findPublishedBySession(sessionId, ProductStatus.PUBLISHED).stream()
+                .sorted(Comparator.comparing(Product::getId))
                 .map(this::toView)
                 .toList();
     }
