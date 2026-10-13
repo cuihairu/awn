@@ -50,7 +50,15 @@ public class CatalogFacadeImpl implements CatalogFacade {
         Product product = new Product(command.productCode(), command.eventId(),
                 command.sessionId(), command.categoryId(), command.name(),
                 command.unitPrice());
-        product.setStatus(ProductStatus.DRAFT);
+        return toView(products.save(product));
+    }
+
+    @Override
+    @Transactional
+    public ProductView publishProduct(String productCode) {
+        Product product = products.findByProductCode(productCode)
+                .orElseThrow(() -> new ProductNotFoundException(productCode));
+        product.publish();
         return toView(products.save(product));
     }
 

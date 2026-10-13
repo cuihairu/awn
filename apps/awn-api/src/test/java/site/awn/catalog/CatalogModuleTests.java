@@ -8,6 +8,7 @@ import site.awn.catalog.api.CreateCategoryCommand;
 import site.awn.catalog.api.CreateProductCommand;
 import site.awn.catalog.api.ProductView;
 import site.awn.catalog.api.TicketCategoryView;
+import site.awn.catalog.domain.ProductNotFoundException;
 import site.awn.catalog.domain.ProductStatus;
 import site.awn.event.api.CreateEventCommand;
 import site.awn.event.api.CreateSessionCommand;
@@ -103,6 +104,71 @@ class CatalogModuleTests extends AbstractPostgresIntegrationTest {
 
         List<ProductView> published = catalog.publishedProductsBySession(session.id());
         assertThat(published).isEmpty();
+    }
+
+    @Test
+    void draftProductCanBePublishedAndThenAppearsInPublishedQuery() {
+        String suffix = uid();
+
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "场馆", "广州", "天河"));
+        Instant start = Instant.now().plusSeconds(3600);
+        Instant end = start.plusSeconds(7200);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-" + suffix, "演唱会", null, start, end, venue.id()));
+        SessionView session = events.createSession(new CreateSessionCommand(
+                "s-" + suffix, event.id(), "第一场", start, end));
+        TicketCategoryView category = catalog.createCategory(new CreateCategoryCommand(
+                "c-" + suffix, "VIP票", null));
+
+        ProductView draft = catalog.createProduct(new CreateProductCommand(
+                "p1-" + suffix, event.id(), session.id(), category.id(),
+                "VIP票·第一场", 199900L));
+        assertThat(draft.status()).isEqualTo(ProductStatus.DRAFT);
+
+        ProductView published = catalog.publishProduct(draft.productCode());
+        assertThat(published.status()).isEqualTo(ProductStatus.PUBLISHED);
+        assertThat(published.productCode()).isEqualTo(draft.productCode());
+
+        ProductView fetched = catalog.product(draft.productCode());
+        assertThat(fetched.status()).isEqualTo(ProductStatus.PUBLISHED);
+
+        List<ProductView> publishedList = catalog.publishedProductsBySession(session.id());
+        assertThat(publishedList).hasSize(1);
+        assertThat(publishedList.get(0).productCode()).isEqualTo(draft.productCode());
+        assertThat(publishedList.get(0).status()).isEqualTo(ProductStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishedProductCannotBeRepublished() {
+        String suffix = uid();
+
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "场馆", "深圳", "南山"));
+        Instant start = Instant.now().plusSeconds(3600);
+        Instant end = start.plusSeconds(7200);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-" + suffix, "音乐节", null, start, end, venue.id()));
+        SessionView session = events.createSession(new CreateSessionCommand(
+                "s-" + suffix, event.id(), "日场", start, end));
+        TicketCategoryView category = catalog.createCategory(new CreateCategoryCommand(
+                "c-" + suffix, "普通票", null));
+
+        ProductView draft = catalog.createProduct(new CreateProductCommand(
+                "p1-" + suffix, event.id(), session.id(), category.id(),
+                "普通票·日场", 59900L));
+        catalog.publishProduct(draft.productCode());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                catalog.publishProduct(draft.productCode()))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void publishUnknownProductThrowsNotFound() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                catalog.publishProduct("no-such-product-" + uid()))
+                .isInstanceOf(ProductNotFoundException.class);
     }
 
     @Test

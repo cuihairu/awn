@@ -105,6 +105,18 @@ public class Product {
         this.status = status;
     }
 
+    /**
+     * 发布商品：仅允许 DRAFT → PUBLISHED。
+     * 状态迁移必须经 {@link ProductStatus#canTransitionTo} 守卫（架构原则：不允许任意 API 直接修改状态字符串）。
+     */
+    public void publish() {
+        if (!status.canTransitionTo(ProductStatus.PUBLISHED)) {
+            throw new IllegalStateException(
+                    "cannot publish product from status " + status);
+        }
+        this.status = ProductStatus.PUBLISHED;
+    }
+
     public Long getUnitPrice() {
         return unitPrice;
     }

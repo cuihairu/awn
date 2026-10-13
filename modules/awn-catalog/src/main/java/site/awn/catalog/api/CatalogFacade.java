@@ -13,6 +13,8 @@ public interface CatalogFacade {
 
     ProductView createProduct(CreateProductCommand command);
 
+    ProductView publishProduct(String productCode);
+
     ProductView product(String productCode);
 
     List<ProductView> products(Long eventId);
