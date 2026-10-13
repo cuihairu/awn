@@ -93,7 +93,11 @@ docker compose up -d --no-deps --force-recreate api worker
 
 1. **应用账号即实例引导超级用户**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号
    不受 schema 权限约束（`awn_intel → 交易表` 零权限方向不受影响）。
-   生产收紧：独立管理员账号做初始化，另建无超级用户属性的受限 `awn_app`（见 deploy/README「关键约束」）。
+   受限交易角色已落地：`V12__trading_role.sql` 建 `awn_trading`（仅交易表组读写、无 CREATE、
+   对 `intelligence` schema 零权限），验证见 `TradingRoleIsolationTests`；其占位密码
+   `change-me-trading-password` 必须在部署前替换。
+   剩余收紧：独立管理员账号做初始化，Flyway 以管理员执行、api/worker 改连 `awn_trading`
+   （见 deploy/README「关键约束」）。
 2. **AWN_ADMIN_TOKEN 必须覆盖默认值**（见密钥表）；泄露后更换令牌只需改 `.env` 重建 api/worker。
    管理面口径：`/api/v1/admin/**` 与专场管理写操作（`POST /api/v1/campaigns**`）都需要 `X-Admin-Token`，
    公开读（`GET /api/v1/campaigns**`）不需要。

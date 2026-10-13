@@ -47,6 +47,6 @@ docker compose exec postgresql psql -U awn_app -d awn -tAc \
 
 - **PostgreSQL 是库存唯一权威**：禁止引入库存相关的外部缓存写路径，Redis 只做读缓存与锁。
 - **情报隔离**：同实例下 `intelligence` schema 使用独立角色 `awn_intel`，对交易表零权限（`config/postgres/init-intel.sql`；验证见 `IntelligenceIsolationTests`）。是权限边界，不是物理隔离。
-- **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。生产收紧路径：用独立管理员账号执行初始化，另建无超级用户属性的 `awn_app`，只授予业务表所需权限，Flyway 与应用统一以该账号连接。
+- **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。受限交易角色 `awn_trading` 已由 `V12__trading_role.sql` 建立（仅业务表读写、无 CREATE、情报 schema 零权限，验证见 `TradingRoleIsolationTests`）。生产收紧路径：用独立管理员账号执行初始化，api/worker 改连 `awn_trading`，Flyway 以管理员账号执行，并替换 `awn_trading` 与 `awn_intel` 的占位密码。
 - **Outbox 分发**：由 awn-worker 的 `outbox-dispatch` 任务轮询，无 Kafka 依赖（docs/architecture/async-outbox.md）。
 - **幂等**：所有写接口要求 `Idempotency-Key`，Worker 任务自身也按任务周期幂等（docs/architecture/payment-state-machine.md）。
