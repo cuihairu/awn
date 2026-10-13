@@ -87,8 +87,8 @@
 - [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务逐单查渠道，迁移 UNKNOWN → SUCCEEDED/FAILED，渠道未定保持待核实；查实成功但订单已终态 → 告警 + 原路全额退款，不假装履约）— 708b1b8；PaymentModuleTests 新增 3 例共 13 例；全量 104 例绿
 
 ### 公开 HTTP 端点缺口（contracts.md 已列、控制器未落地）
-- [ ] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 只有模块层 facade；验收：端点 200 返回视图、未知资源 404 + 统一错误信封；期次：Phase 02 / Phase 06
-- [ ] 订单 HTTP 端点（POST /orders、GET /orders/{orderId}、POST /orders/{orderId}/cancel）— 只有模块层实现；验收：POST 走 Idempotency-Key 幂等头 + 模块层原子预留，GET 404 ORDER_NOT_FOUND，取消幂等且释放库存；期次：Phase 03
+- [x] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 补齐 PublicEventController / PublicIntelligenceController；活动新增 `publish()` 守卫（仅 DRAFT 可发布，其余状态抛 EventConflictException→CONFLICT）与 `isPublic()`，公开读仅暴露 PUBLISHED/COMPLETED（列表按开始时间倒序；场次详情经 `publicSession` 校验父活动已公开，草稿活动场次一律 404）；价格历史按场次归集（`priceHistoryOfSessions`）；EventConflictException→CONFLICT 入异常处理器 — 7c81622；PublicEventApiTests 13 例绿，awn-api 全量 + awn-worker 全量绿
+- [x] 订单 HTTP 端点（POST /orders、GET /orders/{orderId}、POST /orders/{orderId}/cancel）— 7096392；OrderApiTests 7 例
 - [ ] 支付与退款 HTTP 端点（POST/GET /orders/{orderId}/payments、POST /orders/{orderId}/refunds）— 只有模块层实现；验收：建单支付、回调验签、退款受理；期次：Phase 04
 - [ ] 履约与报价 HTTP 端点（GET /orders/{orderId}/fulfillment、POST /checkout/quote）— 只有模块层实现；验收：履约单查询、报价不含扣减；期次：Phase 04 / Phase 05
 
