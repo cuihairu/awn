@@ -1,5 +1,7 @@
 package site.awn.payment.application;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -13,6 +15,7 @@ import site.awn.payment.api.PaymentCallbackCommand;
 import site.awn.payment.api.PaymentFacade;
 import site.awn.payment.api.PaymentGateway;
 import site.awn.payment.api.PaymentReconciliationReport;
+import site.awn.payment.api.PaymentUnknownResolutionResult;
 import site.awn.payment.api.PaymentView;
 import site.awn.payment.api.RefundCallbackCommand;
 import site.awn.payment.api.RefundView;
@@ -46,6 +49,8 @@ import java.util.UUID;
  */
 @Service
 public class PaymentFacadeImpl implements PaymentFacade {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentFacadeImpl.class);
 
     private static final String AGGREGATE_TYPE = "PAYMENT";
 
@@ -322,6 +327,67 @@ public class PaymentFacadeImpl implements PaymentFacade {
         return payments.findByPaymentNo(refund.getPaymentNo())
                 .map(Payment::getChannel)
                 .orElseThrow(() -> new PaymentNotFoundException(refund.getPaymentNo()));
+    }
+
+    /**
+     * UNKNOWN 支付单核实（G6）：渠道查询在事务外（外部调用不出长事务），
+     * 查实后按守卫条件更新迁移；查询故障保持 UNKNOWN 下轮再核实。
+     * 查实成功但订单已终态 → 异常单处理（原路退款）。
+     */
+    @Override
+    public PaymentUnknownResolutionResult resolveUnknownPayments() {
+        int resolvedSucceeded = 0;
+        int resolvedFailed = 0;
+        int stillUnknown = 0;
+        for (Payment payment : payments.findByStatusIn(List.of(PaymentStatus.UNKNOWN))) {
+            GatewayChannelStatus channelStatus;
+            try {
+                channelStatus = router.forChannel(payment.getChannel())
+                        .queryCharge(payment.getChannelTxnNo()).status();
+            } catch (RuntimeException e) {
+                log.warn("payment unknown resolution channel query failed: {}", payment.getPaymentNo(), e);
+                stillUnknown++;
+                continue;
+            }
+            switch (channelStatus) {
+                case SUCCEEDED -> {
+                    Boolean resolved = transactions.execute(tx ->
+                            payments.markSucceeded(payment.getPaymentNo(), Instant.now()) == 1);
+                    if (Boolean.TRUE.equals(resolved)) {
+                        resolvedSucceeded++;
+                        handleOrderReleasedAfterSuccess(payment);
+                    }
+                }
+                case FAILED -> {
+                    Boolean resolved = transactions.execute(tx ->
+                            payments.markFailed(payment.getPaymentNo()) == 1);
+                    if (Boolean.TRUE.equals(resolved)) {
+                        resolvedFailed++;
+                    }
+                }
+                default -> stillUnknown++;
+            }
+        }
+        return new PaymentUnknownResolutionResult(resolvedSucceeded, resolvedFailed, stillUnknown);
+    }
+
+    /**
+     * 异常单处理：支付查实成功但订单已终态（库存已释放）→
+     * 告警 + 原路全额退款；不假装履约，不重复扣减。
+     * 幂等键取支付单派生值：同一支付单的异常退款只发起一次。
+     */
+    private void handleOrderReleasedAfterSuccess(Payment payment) {
+        site.awn.order.api.OrderView order = orders.orderOf(payment.getOrderNo());
+        if (order.status() != site.awn.order.domain.OrderStatus.EXPIRED
+                && order.status() != site.awn.order.domain.OrderStatus.CANCELLED) {
+            return;
+        }
+        alerts.raise(AlertCategory.PAYMENT, AlertSeverity.CRITICAL,
+                "payment confirmed after order released, auto refund initiated: " + payment.getPaymentNo(),
+                payment.getPaymentNo());
+        requestRefund(new RequestRefundCommand(payment.getPaymentNo(),
+                "after-release-" + payment.getPaymentNo(), payment.getAmount(),
+                "payment confirmed after order expired"));
     }
 
     /** 渠道已给出确定结论而本地未跟上 → 差异 */

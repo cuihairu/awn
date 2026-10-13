@@ -34,4 +34,10 @@ public interface PaymentFacade {
      * 发现本地与渠道状态差异即报告，不自动修复。
      */
     PaymentReconciliationReport reconcile();
+
+    /**
+     * UNKNOWN 支付单核实（Worker 调用）：逐单向渠道查询并迁移到查实后的状态。
+     * 查实成功但订单已终态（库存已释放）→ 异常单处理：告警 + 原路退款，不假装履约。
+     */
+    PaymentUnknownResolutionResult resolveUnknownPayments();
 }
