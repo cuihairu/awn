@@ -27,7 +27,7 @@ stateDiagram-v2
     REFUNDED --> [*]
 ```
 
-`PAID → FULFILLING → FULFILLED` 这两步在枚举中允许，当前没有代码主动驱动：支付成功只把订单置为 PAID，履约状态由 `FulfillmentFacade` 管理，订单的 FULFILLING / FULFILLED 由履约侧后续版本联动。
+`PAID → FULFILLING → FULFILLED` 由履约事件驱动（2026-10-13 落地）：履约单创建（PENDING_SELLER）时履约模块发出 `FULFILLMENT_STARTED`，订单模块消费后置 FULFILLING；平台核验通过（交付完成）时发出 `FULFILLMENT_COMPLETED`，订单模块消费后置 FULFILLED。两步均为守卫迁移（`OrderWriteService.markFulfilling` / `markFulfilled`），事件重放幂等。
 
 ## 支付状态
 

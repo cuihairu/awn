@@ -90,7 +90,7 @@
 - [x] 库存预留到期扫描（带 TTL 预留过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例；全量 94 例绿
 - [x] 交易角色最小权限化（V12 建 `awn_trading`：仅 public 交易表组读写、无 CREATE、对 intelligence schema 零权限，默认授权亦撤销；验证见 TradingRoleIsolationTests；应用改连该角色仍属部署收紧步骤，见 production.md）— 9fbd92e；全量 119 例绿
 - [x] 资金类操作 SQL 原生化（支付/退款状态守卫更新、退款渠道受理、支付退款状态联动、全部 Outbox 插入均改原生 SQL，ADR-0007 偏差已消除；退款回调新增守卫更新）— 0b122bc；PaymentModuleTests 14 例、OrderTimeoutServiceTests 4 例绿（全量 108 例仅并行会话在途的情报 2 例失败）
-- [ ] 订单 `FULFILLING`/`FULFILLED` 联动（枚举允许，无代码主动驱动；支付成功只置 PAID）— payment-state-machine.md；验收：履约驱动订单状态迁移 + 测试
+- [x] 订单 `FULFILLING`/`FULFILLED` 联动（履约单创建发 `FULFILLMENT_STARTED` → 订单 FULFILLING；平台核验通过发 `FULFILLMENT_COMPLETED` → 订单 FULFILLED；守卫迁移 + 事件重放幂等）— 8997e33；FulfillmentModuleTests 7 例、PaymentModuleTests 14 例绿（全量 109 例仅并行会话在途的情报 2 例失败）
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
 - [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 各仅 1 个 stub 文件，零消费方零测试；验收：至少一端接入 + 组件测试
