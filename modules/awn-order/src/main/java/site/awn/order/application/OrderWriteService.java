@@ -75,22 +75,11 @@ public class OrderWriteService {
         }
 
         // 2) 计算金额（服务端计算，禁止浮点；金额为最小货币单位整数）
-        long totalAmount = 0;
-        long discountAmount = 0;
-        long feeAmount = 0;
-        for (OrderLineCommand line : command.lines()) {
-            long lineTotal = line.lineTotal();
-            if (lineTotal < 0) {
-                throw new IllegalArgumentException("line total must be non-negative: " + line.productId());
-            }
-            totalAmount += (long) line.quantity() * line.unitPrice();
-            discountAmount += line.discountAmount();
-            feeAmount += line.feeAmount();
-        }
-        long payAmount = totalAmount - discountAmount + feeAmount;
-        if (payAmount < 0) {
-            throw new IllegalArgumentException("pay amount must be non-negative");
-        }
+        Amounts amounts = computeAmounts(command.lines());
+        long totalAmount = amounts.totalAmount();
+        long discountAmount = amounts.discountAmount();
+        long feeAmount = amounts.feeAmount();
+        long payAmount = amounts.payAmount();
 
         // 3) 逐行原子预留（orderRef 用订单号；预留与订单同事务提交）
         //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）
@@ -150,6 +139,34 @@ public class OrderWriteService {
                         order.getUserId()));
 
         return OrderReadService.toView(order, items.findByOrderId(order.getId()));
+    }
+
+    /**
+     * 金额计算（服务端计算，禁止浮点；金额为最小货币单位整数）。
+     * 创建订单与结算报价共用同一口径：报价改动必然同步反映到下单金额。
+     */
+    static Amounts computeAmounts(java.util.List<OrderLineCommand> lines) {
+        long totalAmount = 0;
+        long discountAmount = 0;
+        long feeAmount = 0;
+        for (OrderLineCommand line : lines) {
+            long lineTotal = line.lineTotal();
+            if (lineTotal < 0) {
+                throw new IllegalArgumentException("line total must be non-negative: " + line.productId());
+            }
+            totalAmount += (long) line.quantity() * line.unitPrice();
+            discountAmount += line.discountAmount();
+            feeAmount += line.feeAmount();
+        }
+        long payAmount = totalAmount - discountAmount + feeAmount;
+        if (payAmount < 0) {
+            throw new IllegalArgumentException("pay amount must be non-negative");
+        }
+        return new Amounts(totalAmount, discountAmount, feeAmount, payAmount);
+    }
+
+    /** 服务端金额计算结果（创建订单与报价共用） */
+    record Amounts(long totalAmount, long discountAmount, long feeAmount, long payAmount) {
     }
 
     @Transactional

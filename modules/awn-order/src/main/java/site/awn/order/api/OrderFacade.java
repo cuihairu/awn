@@ -19,6 +19,12 @@ public interface OrderFacade {
 
     OrderView orderOf(String orderNo);
 
+    /**
+     * 结算报价（POST /api/v1/checkout/quote）：按订单行同一口径计算金额，
+     * 不预留库存、不落库、不产生订单；下单时金额重新计算并校验。
+     */
+    QuoteView quote(QuoteCommand command);
+
     /** 运营后台订单视图：最近订单（新→旧，限 50 条） */
     java.util.List<OrderView> recentOrders();
 

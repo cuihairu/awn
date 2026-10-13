@@ -5,6 +5,8 @@ import site.awn.order.api.CreateOrderCommand;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderTimeoutResult;
 import site.awn.order.api.OrderView;
+import site.awn.order.api.QuoteCommand;
+import site.awn.order.api.QuoteView;
 
 import java.time.Instant;
 
@@ -29,6 +31,14 @@ public class OrderFacadeImpl implements OrderFacade {
     @Override
     public OrderView orderOf(String orderNo) {
         return reads.orderOf(orderNo);
+    }
+
+    /** 报价：纯计算，不预留库存、不落库 */
+    @Override
+    public QuoteView quote(QuoteCommand command) {
+        OrderWriteService.Amounts amounts = OrderWriteService.computeAmounts(command.lines());
+        return new QuoteView(command.currency(), amounts.totalAmount(), amounts.discountAmount(),
+                amounts.feeAmount(), amounts.payAmount());
     }
 
     @Override

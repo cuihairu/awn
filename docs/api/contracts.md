@@ -76,6 +76,9 @@ POST /api/v1/orders/{orderId}/cancel
 POST /api/v1/orders/{orderId}/payments
 GET  /api/v1/orders/{orderId}/payments
 POST /api/v1/orders/{orderId}/refunds
+GET  /api/v1/orders/{orderId}/fulfillment
+
+POST /api/v1/checkout/quote
 
 GET /api/v1/events
 GET /api/v1/events/{eventId}
@@ -95,6 +98,15 @@ GET /api/v1/intelligence/events/{eventId}/prices
 
 ## 交易接口
 
+以下接口已暴露 HTTP：
+
+- `POST /api/v1/checkout/quote`：结算报价。请求体与创建订单同构（不含幂等键与用户），
+  按订单行同一服务端口径计算金额；**报价不扣减任何库存、不产生订单**，
+  下单时金额重新计算并逐行原子预留。非法行（负行合计 / 双来源 / 非正数量）→ 400 `VALIDATION_FAILED`。
+- `GET /api/v1/orders/{orderId}/fulfillment`：订单履约单查询。
+  订单未知或未进入履约（未支付）→ 404 `NOT_FOUND`；
+  履约单停在 `PENDING_SELLER` 直到卖家交付 + 平台核验（见 `docs/architecture/trading-model.md`）。
+
 支付与退款接口已暴露 HTTP：
 
 - `POST /api/v1/orders/{orderId}/payments`：为订单发起支付，**金额与币种由服务端取订单应付快照**，
@@ -108,13 +120,6 @@ GET /api/v1/intelligence/events/{eventId}/prices
 
 支付回调（验签、去重、UNKNOWN 待核实）属渠道到后端的通道，**不在这组客户端端点内**，
 模块层语义见 `docs/architecture/payment-state-machine.md`。
-
-以下接口目前只有模块层实现（`FulfillmentFacade`），**未暴露 HTTP**，端点落地后本节方可验收：
-
-```text
-POST /api/v1/checkout/quote
-GET  /api/v1/orders/{orderId}/fulfillment
-```
 
 ### 幂等键规则
 
