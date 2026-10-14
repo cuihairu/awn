@@ -63,6 +63,7 @@ describe('productToTier', () => {
     unitPrice: 168000,
     categoryId: null,
     sessionId: '9',
+    poolCode: 'POOL-1',
     available: 120,
     ...overrides,
   })
@@ -72,11 +73,16 @@ describe('productToTier', () => {
       productId: 'p-1',
       name: '内场 A 区',
       sessionId: '9',
+      poolCode: 'POOL-1',
       unitPriceMinor: 168000,
       currency: 'CNY',
       quantityLimit: null,
       availability: 'Selling',
     })
+  })
+
+  it('keeps the pool code null (not on sale) when the backend has no pool', () => {
+    expect(productToTier(product({ poolCode: null })).poolCode).toBeNull()
   })
 
   it('leaves quantityLimit null when the backend has not shipped purchase rules', () => {

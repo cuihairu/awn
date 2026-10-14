@@ -14,7 +14,11 @@
     "dev:h5": "npm run build:h5 -- --watch",
     "build:h5": "taro build --type h5"
   },
-  "browserslist": ["last 3 versions", "Android >= 4.1", "ios >= 8"],
+  "browserslist": [
+    "last 3 versions",
+    "Android >= 4.1",
+    "ios >= 8"
+  ],
   "dependencies": {
     "@babel/runtime": "^7.24.4",
     "@tarojs/components": "4.1.2",
@@ -33,6 +37,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.4",
+    "@babel/preset-react": "^7.29.7",
     "@tarojs/cli": "4.1.2",
     "@tarojs/taro-loader": "4.1.2",
     "@tarojs/webpack5-runner": "4.1.2",

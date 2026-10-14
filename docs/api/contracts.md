@@ -105,7 +105,7 @@ GET /api/v1/works/{workId}
 
 活动发布（`DRAFT` → `PUBLISHED`）是运营动作，经 `X-Admin-Token` 鉴权暴露：`POST /api/v1/admin/events/{eventCode}/publish`（见「运营接口」）；仅草稿可发布，重复发布 → 409 `CONFLICT`，未知活动 → 404 `EVENT_NOT_FOUND`。
 
-公共商品接口的库存摘要为展示口径（当前直查数据库，未接缓存），**下单时必须重新验证**。
+公共商品接口的库存摘要为展示口径（当前直查数据库，未接缓存），**下单时必须重新验证**。商品详情、可售摘要与场次商品列表均透出 `poolCode`（未建池为 `null`，按未开售处理）：`POST /orders` 数量行需要它，未建池商品无法拼出合法订单行。
 
 ## 交易接口
 

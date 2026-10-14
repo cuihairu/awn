@@ -12,3 +12,203 @@ page {
     'Microsoft YaHei',
     sans-serif;
 }
+
+/* 共享页面骨架（各页面复用；页面特有样式写在页面自己的 css） */
+.page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.link {
+  font-size: 26px;
+  color: var(--awn-gold-deep);
+}
+
+.state {
+  font-size: 26px;
+  color: #78716c;
+  padding: 32px 0;
+}
+
+.state-error {
+  color: #dc2626;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-title {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.muted {
+  font-size: 24px;
+  color: #78716c;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  font-size: 20px;
+  padding: 2px 14px;
+  border-radius: 999px;
+  border: 1px solid #e7e5e4;
+  color: #57534e;
+  white-space: nowrap;
+}
+
+.badge-success {
+  border-color: transparent;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.badge-warning {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+.price {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* 票档行 */
+.tier-row {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tier-row--off {
+  opacity: 0.55;
+}
+
+.tier-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--awn-gold);
+}
+
+.tier-dot--2 {
+  background: #a16207;
+}
+
+.tier-dot--3 {
+  background: #4a7fb5;
+}
+
+.tier-dot--4 {
+  background: #7a6a53;
+}
+
+.tier-dot--5 {
+  background: #5a5f6e;
+}
+
+.btn {
+  background: var(--awn-gold);
+  color: #fff;
+  font-size: 28px;
+  border-radius: 12px;
+  padding: 16px 32px;
+  text-align: center;
+  border: none;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: var(--awn-gold-deep);
+  border: 1px solid var(--awn-gold);
+}
+
+.btn--disabled {
+  opacity: 0.5;
+}
+
+.input {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 26px;
+}
+
+/* 专场渲染子集 */
+.notice-bar {
+  background: rgba(213, 152, 25, 0.12);
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 24px;
+  color: var(--awn-gold-deep);
+}
+
+.section-card {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.section-paragraph {
+  font-size: 26px;
+  color: #44403c;
+  line-height: 1.7;
+}
+
+.section-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entry-q {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.entry-a {
+  font-size: 24px;
+  color: #57534e;
+  line-height: 1.6;
+}

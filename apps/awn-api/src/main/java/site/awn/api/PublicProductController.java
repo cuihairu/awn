@@ -33,7 +33,8 @@ public class PublicProductController {
     public ProductResponse product(@PathVariable String productId) {
         ProductView product = catalog.product(productId);
         return new ProductResponse(product.productCode(), product.name(), product.status(),
-                product.unitPrice(), product.categoryId(), product.sessionId());
+                product.unitPrice(), product.categoryId(), product.sessionId(),
+                poolCodeOf(productId));
     }
 
     @GetMapping("/api/v1/products/{productId}/availability")
@@ -41,7 +42,7 @@ public class PublicProductController {
         ProductView product = catalog.product(productId);
         return inventory.balanceOfProduct(productId)
                 .map(balance -> AvailabilityResponse.of(product.status(), productId,
-                        balance.totalQuantity(), balance.available()))
+                        balance.poolCode(), balance.totalQuantity(), balance.available()))
                 .orElseGet(() -> AvailabilityResponse.of(product.status(), productId));
     }
 
@@ -55,8 +56,16 @@ public class PublicProductController {
         return catalog.publishedProductsBySession(sessionId).stream()
                 .map(p -> new ProductListItem(p.productCode(), p.name(), p.status(),
                         p.unitPrice(), p.categoryId(), p.sessionId(),
+                        poolCodeOf(p.productCode()),
                         inventory.balanceOfProduct(p.productCode())
                                 .map(BalanceView::available).orElse(null)))
                 .toList();
+    }
+
+    /** 数量行下单所需的池编码；未建池为 null（客户端按未开售处理） */
+    private String poolCodeOf(String productCode) {
+        return inventory.balanceOfProduct(productCode)
+                .map(BalanceView::poolCode)
+                .orElse(null);
     }
 }

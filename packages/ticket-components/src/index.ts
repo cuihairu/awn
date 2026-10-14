@@ -17,6 +17,8 @@ export interface TicketTier {
   productId: string
   name: string
   sessionId: string
+  /** 数量行下单所需（POST /orders 的 lines[].poolCode）；后端未建池时为 null */
+  poolCode?: string | null
   /** 最小货币单位整数，禁止浮点金额 */
   unitPriceMinor: number
   currency: 'CNY'

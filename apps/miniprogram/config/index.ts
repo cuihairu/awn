@@ -19,6 +19,11 @@ export default defineConfig(async (merge) => {
     framework: 'react',
     compiler: 'webpack5',
     mini: {
+      webpackChain(chain) {
+        // webpackbar 5.0.2 把自身选项（color/reporters 等）透传给 webpack.ProgressPlugin，
+        // 在 webpack 5.111 的严格 schema 下校验不过；进度条非构建必需，直接移除。
+        chain.plugins.delete('webpackbar')
+      },
       postcss: {
         pxtransform: { enable: true, config: {} },
         cssModules: { enable: false },

@@ -257,12 +257,15 @@ export interface ProductResponse {
   unitPrice: number
   categoryId: string | null
   sessionId: string | null
+  /** 数量行下单所需（POST /orders 的 lines[].poolCode）；未建池为 null */
+  poolCode: string | null
 }
 
 export interface AvailabilityResponse {
   productId: string
   status: ProductStatus
   sellable: boolean
+  poolCode: string | null
   total: number | null
   available: number | null
 }
@@ -274,6 +277,8 @@ export interface ProductListItem {
   unitPrice: number
   categoryId: string | null
   sessionId: string | null
+  /** 数量行下单所需（POST /orders 的 lines[].poolCode）；未建池为 null */
+  poolCode: string | null
   available: number | null
 }
 

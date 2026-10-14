@@ -9,6 +9,7 @@ public record ProductResponse(
         ProductStatus status,
         Long unitPrice,
         Long categoryId,
-        Long sessionId
+        Long sessionId,
+        String poolCode
 ) {
 }

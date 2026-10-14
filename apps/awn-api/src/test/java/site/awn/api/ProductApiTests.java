@@ -87,7 +87,8 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
                 .andExpect(jsonPath("$.productId").value(f.productCode()))
                 .andExpect(jsonPath("$.name").value("VIP票·第一场"))
                 .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$.unitPrice").value(199900));
+                .andExpect(jsonPath("$.unitPrice").value(199900))
+                .andExpect(jsonPath("$.poolCode").value(f.poolCode()));
     }
 
     @Test
@@ -97,6 +98,7 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
         mvc.perform(get("/api/v1/products/" + f.productCode() + "/availability"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(f.productCode()))
+                .andExpect(jsonPath("$.poolCode").value(f.poolCode()))
                 .andExpect(jsonPath("$.total").value(2))
                 .andExpect(jsonPath("$.available").value(2));
 
@@ -135,6 +137,7 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(productCode))
                 .andExpect(jsonPath("$.sellable").value(false))
+                .andExpect(jsonPath("$.poolCode").doesNotExist())
                 .andExpect(jsonPath("$.total").doesNotExist())
                 .andExpect(jsonPath("$.available").doesNotExist());
     }
@@ -142,9 +145,11 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
     @Test
     void sellableRequiresPublishedStatus() {
         // PUBLISHED + 有余量才可售；DRAFT 与售罄均为 false（发布流属 Phase 02 后续条目）
-        assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p", 10, 5).sellable()).isTrue();
-        assertThat(AvailabilityResponse.of(ProductStatus.DRAFT, "p", 10, 5).sellable()).isFalse();
-        assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p", 10, 0).sellable()).isFalse();
+        assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p", "pool-p", 10, 5).sellable()).isTrue();
+        assertThat(AvailabilityResponse.of(ProductStatus.DRAFT, "p", "pool-p", 10, 5).sellable()).isFalse();
+        assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p", "pool-p", 10, 0).sellable()).isFalse();
+        // 未建池：不可售，且不透出池编码
+        assertThat(AvailabilityResponse.of(ProductStatus.PUBLISHED, "p").sellable()).isFalse();
     }
 
     @Test
@@ -184,8 +189,10 @@ class ProductApiTests extends AbstractPostgresIntegrationTest {
                 .andExpect(jsonPath("$[0].categoryId").value(category.id()))
                 .andExpect(jsonPath("$[0].sessionId").value(session.id()))
                 .andExpect(jsonPath("$[0].available").value(4))
+                .andExpect(jsonPath("$[0].poolCode").value("pool-a-" + suffix))
                 .andExpect(jsonPath("$[1].productCode").value("p-c-" + suffix))
-                .andExpect(jsonPath("$[1].available").doesNotExist());
+                .andExpect(jsonPath("$[1].available").doesNotExist())
+                .andExpect(jsonPath("$[1].poolCode").doesNotExist());
     }
 
     @Test

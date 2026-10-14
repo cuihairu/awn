@@ -14,6 +14,7 @@ public record ProductListItem(
         Long unitPrice,
         Long categoryId,
         Long sessionId,
+        String poolCode,
         Integer available
 ) {
 }

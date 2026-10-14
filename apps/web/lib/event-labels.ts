@@ -53,6 +53,7 @@ export function productToTier(product: ProductListItem): TicketTier {
     productId: product.productCode,
     name: product.name,
     sessionId: product.sessionId ?? '',
+    poolCode: product.poolCode ?? null,
     unitPriceMinor: product.unitPrice,
     currency: 'CNY',
     // 后端购买规则（限购）未下发前不渲染限购行
