@@ -16,9 +16,9 @@ import java.util.Map;
 @Component
 public class CampaignTemplateRenderer {
 
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
-    public CampaignTemplateRenderer(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+    public CampaignTemplateRenderer(tools.jackson.databind.ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 

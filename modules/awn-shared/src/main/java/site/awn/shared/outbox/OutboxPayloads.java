@@ -1,14 +1,14 @@
 package site.awn.shared.outbox;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Outbox 载荷读取助手：事件载荷为 JSON 文本（落库 JSONB）。
  */
 public final class OutboxPayloads {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     private OutboxPayloads() {
     }

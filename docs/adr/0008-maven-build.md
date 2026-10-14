@@ -13,6 +13,6 @@
 
 ## 后果
 
-- 正面：Spring Boot / Spring Modulith 官方示例与社区惯用技术栈；依赖版本由 BOM 统一管理；CI 命令简单（`mvn -B -ntp verify`）。
+- 正面：Spring Boot / Spring Modulith 官方示例与社区惯用技术栈；依赖版本由 BOM 统一管理；CI 命令简单（`./mvnw -B -ntp verify`，Maven 版本经 wrapper 钉定）。
 - 负面：全量构建速度不及 Gradle 的增量构建。
 - 约束：**禁止同时引入 Gradle 构建脚本**，避免出现双构建体系与依赖版本分叉；如后续因构建速度实际成为瓶颈，需另立 ADR 记录整体迁移。

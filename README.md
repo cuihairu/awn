@@ -61,7 +61,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | Target | Command | Notes |
 |---|---|---|
 | Docs site | `pnpm install && pnpm docs:dev` | http://localhost:5173 |
-| API | `mvn -pl apps/awn-api spring-boot:run` (needs local PostgreSQL + Redis) | http://localhost:8080/actuator/health |
+| API | `./mvnw -pl apps/awn-api spring-boot:run` (needs local PostgreSQL + Redis) | http://localhost:8080/actuator/health |
 | Web | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | Admin | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | Miniprogram | `pnpm --filter @awn/miniprogram dev:weapp` | Import `apps/miniprogram` into WeChat DevTools |
@@ -73,14 +73,14 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 
 ## 本地测试口径
 
-CI 与本地开发按改动面三路分流——改一行文档不该全量编译。
+CI 与本地开发按改动面三路分流——改一行文档不该全量编译。Maven 版本经 wrapper 钉定（`./mvnw`，3.10.0，首次运行自动下载），本地与 CI 一致。
 
 1. **文档改动**（`*.md`、`docs/**`、图片）：不编译。主 CI workflow 的
    `paths-ignore` 已跳过这些路径。
 2. **代码改动**：只跑改动子集，不全量。
-   - `mvn -pl <改动模块> -am test`
+   - `./mvnw -pl <改动模块> -am test`
    - `pnpm --filter @awn/<包> test`
-3. **全量**（`mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`）：仅以下情形触发——pom.xml / pnpm-lock.yaml / package.json、
+3. **全量**（`./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`）：仅以下情形触发——pom.xml / pnpm-lock.yaml / package.json、
    `.github/**`、Docker/Compose 配置、发布前。
 
 ## Implementation phases

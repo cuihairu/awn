@@ -42,7 +42,7 @@ jobs:
       # 测试含 Testcontainers（PostgreSQL 16），ubuntu-latest 自带 Docker
       # 覆盖：上下文装配、Flyway 迁移、Spring Modulith 边界校验
       - name: Build and test
-        run: mvn -B -ntp verify -pl apps/awn-api,apps/awn-worker -am
+        run: ./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am
 
   frontend:
     name: frontend (docs + web + admin)
