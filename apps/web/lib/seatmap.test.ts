@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest'
+import {
+  SEAT_STATUSES,
+  SEAT_STATUS_LABEL_ZH,
+  groupSeatSections,
+  isSeatSelectable,
+  seatOccupied,
+  type SeatInput,
+} from './seatmap'
+
+/**
+ * 座位图数据层契约（原型 seatmap-2d.html + V17__platform_seats.sql）：
+ * 座位图 = 空间与编号，库存 = 可售状态；图上只有 IN_STOCK 可选，
+ * 其余四态同为置灰不可选，悬停文案区分五种状态。
+ */
+
+const seat = (overrides: Partial<SeatInput> = {}): SeatInput => ({
+  seatNo: 'SEAT-1',
+  section: 'A',
+  row: '1',
+  seat: '1',
+  status: 'IN_STOCK',
+  ...overrides,
+})
+
+describe('seat status semantics', () => {
+  it('covers every backend seat status without inventing new ones', () => {
+    expect(SEAT_STATUSES).toEqual(['IN_STOCK', 'RESERVED', 'SOLD', 'DELIVERED', 'INVALID'])
+    expect(Object.keys(SEAT_STATUS_LABEL_ZH).sort()).toEqual([...SEAT_STATUSES].sort())
+  })
+
+  it('treats only IN_STOCK as selectable', () => {
+    expect(isSeatSelectable('IN_STOCK')).toBe(true)
+    for (const status of ['RESERVED', 'SOLD', 'DELIVERED', 'INVALID'] as const) {
+      expect(isSeatSelectable(status)).toBe(false)
+      expect(seatOccupied(status)).toBe(true)
+    }
+    expect(seatOccupied('IN_STOCK')).toBe(false)
+  })
+
+  it('labels every status in Chinese', () => {
+    expect(SEAT_STATUS_LABEL_ZH.IN_STOCK).toBe('可选')
+    expect(SEAT_STATUS_LABEL_ZH.RESERVED).toBe('已预留')
+    expect(SEAT_STATUS_LABEL_ZH.SOLD).toBe('已售')
+    expect(SEAT_STATUS_LABEL_ZH.DELIVERED).toBe('已出票')
+    expect(SEAT_STATUS_LABEL_ZH.INVALID).toBe('不可用')
+  })
+})
+
+describe('groupSeatSections', () => {
+  it('groups flat seat rows into sections, rows and cells', () => {
+    const sections = groupSeatSections([
+      seat({ seatNo: 'S1', section: 'B', row: '2', seat: '1' }),
+      seat({ seatNo: 'S2', section: 'A', row: '1', seat: '2' }),
+      seat({ seatNo: 'S3', section: 'A', row: '1', seat: '1' }),
+    ])
+    expect(sections.map((section) => section.name)).toEqual(['A', 'B'])
+    expect(sections[0].rows.map((row) => row.label)).toEqual(['1'])
+    expect(sections[0].rows[0].seats.map((cell) => cell.seatNo)).toEqual(['S3', 'S2'])
+  })
+
+  it('sorts labels numerically, not lexicographically', () => {
+    const rows = groupSeatSections([
+      seat({ seatNo: 'S10', row: '10', seat: '10' }),
+      seat({ seatNo: 'S2', row: '2', seat: '2' }),
+    ])[0].rows
+    expect(rows.map((row) => row.label)).toEqual(['2', '10'])
+    const seats = groupSeatSections([
+      seat({ seatNo: 'S10', section: 'C', row: '1', seat: '10' }),
+      seat({ seatNo: 'S2', section: 'C', row: '1', seat: '2' }),
+    ])[0].rows[0].seats
+    expect(seats.map((cell) => cell.label)).toEqual(['2', '10'])
+  })
+
+  it('returns an empty list for empty input', () => {
+    expect(groupSeatSections([])).toEqual([])
+  })
+})

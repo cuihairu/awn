@@ -829,3 +829,101 @@ li {
   color: var(--awn-ink-2);
   border: 1px solid var(--awn-border);
 }
+
+/* ---------- 2D 座位图（原型 seatmap-2d.html） ---------- */
+
+.seatmap-svg {
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--awn-ink) 4%, var(--awn-bg));
+}
+
+.seatmap-stage {
+  fill: var(--awn-gold-soft);
+  stroke: var(--awn-gold);
+  stroke-width: 1.5;
+}
+
+.seatmap-stage-title {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--awn-gold-deep);
+}
+
+.seatmap-stage-note {
+  font-size: 9px;
+  fill: var(--awn-ink-2);
+}
+
+.seatmap-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--awn-ink);
+}
+
+.seatmap-row-label {
+  font-size: 10px;
+  fill: var(--awn-ink-2);
+}
+
+.seat rect {
+  stroke: var(--awn-border);
+  stroke-width: 1;
+}
+
+.seat rect.seat--free {
+  fill: var(--awn-bg);
+  stroke: var(--awn-gold);
+}
+
+.seat rect.seat--occupied {
+  fill: color-mix(in srgb, var(--awn-ink) 14%, var(--awn-bg));
+  stroke: transparent;
+  cursor: not-allowed;
+}
+
+.seat rect.seat--selected {
+  fill: var(--awn-gold);
+  stroke: var(--awn-gold-deep);
+}
+
+.seat:focus-visible {
+  outline: 2px solid var(--awn-gold-deep);
+  outline-offset: 2px;
+}
+
+.seat-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: var(--fs-xs, 12px);
+  color: var(--awn-ink-2);
+}
+
+.seat-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.seat-dot--free {
+  background: var(--awn-bg);
+  border: 1px solid var(--awn-gold);
+}
+
+.seat-dot--occupied {
+  background: color-mix(in srgb, var(--awn-ink) 14%, var(--awn-bg));
+}
+
+.seat-dot--selected {
+  background: var(--awn-gold);
+}
