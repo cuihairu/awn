@@ -42,4 +42,10 @@ public class PublicEventController {
     public SessionView session(@PathVariable Long sessionId) {
         return events.publicSession(sessionId);
     }
+
+    /** 公开场次列表（活动页选场次）；活动未知或未公开 → 404 */
+    @GetMapping("/api/v1/events/{eventId}/sessions")
+    public List<SessionView> sessions(@PathVariable Long eventId) {
+        return events.publicSessions(eventId);
+    }
 }

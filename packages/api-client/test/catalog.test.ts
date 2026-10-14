@@ -6,6 +6,7 @@ import {
   getProductAvailability,
   getSession,
   getSessionProducts,
+  listEventSessions,
   listEvents,
 } from '../src/index'
 
@@ -38,6 +39,15 @@ describe('events / sessions / products', () => {
     const fetchMock = mockFetchOnce([])
     await listEvents()
     expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/events`, undefined)
+  })
+
+  it('lists sessions of an event for the activity page', async () => {
+    const fetchMock = mockFetchOnce([])
+    await listEventSessions('3')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/events/3/sessions`,
+      undefined,
+    )
   })
 
   it('reads one event', async () => {

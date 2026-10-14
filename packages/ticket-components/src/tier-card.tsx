@@ -16,12 +16,12 @@ const TIER_DOT_CLASS: Record<number, string> = {
   5: 'tier-dot-5',
 }
 
+/** 角标修饰类（与宿主 CSS 的 BEM 风格对齐：badge badge--xxx） */
 const STATUS_BADGE: Record<AvailabilityLabel, string> = {
-  Selling: 'badge-success',
-  PreSale: 'badge-info',
-  LowStock: 'badge-warning',
-  Restocking: 'badge-info',
-  SoldOut: 'badge-outline',
+  Selling: 'badge--success',
+  LowStock: 'badge--warning',
+  SoldOut: '',
+  NotOnSale: '',
 }
 
 export interface TierCardProps {
@@ -33,22 +33,24 @@ export interface TierCardProps {
 
 export function TierCard({ tier, tierLevel, onSelect }: TierCardProps) {
   const dotClass = TIER_DOT_CLASS[tierLevel] ?? 'tier-dot-1'
-  const isSoldOut = tier.availability === 'SoldOut'
+  // 售罄与未开售都不可下发动作，区别只在文案与角标色
+  const notClickable = tier.availability === 'SoldOut' || tier.availability === 'NotOnSale'
   const yuan = (tier.unitPriceMinor / 100).toFixed(2)
 
   return (
     <button
       type="button"
       className="tier-row"
-      aria-disabled={isSoldOut}
-      onClick={() => !isSoldOut && onSelect?.(tier)}
+      aria-disabled={notClickable}
+      onClick={() => !notClickable && onSelect?.(tier)}
     >
       <div className="row" style={{ gap: 12 }}>
         <span className={`tier-dot ${dotClass}`} aria-hidden />
         <div>
           <strong>{tier.name}</strong>
           <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
-            {AVAILABILITY_LABEL_ZH[tier.availability]} · 限购 {tier.quantityLimit} 张
+            {AVAILABILITY_LABEL_ZH[tier.availability]}
+            {tier.quantityLimit != null && ` · 限购 ${tier.quantityLimit} 张`}
           </div>
         </div>
       </div>

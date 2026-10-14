@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-CN" style={awnVars}>
       <body>
         <nav className="topnav" aria-label="主导航">
-          <Link href="/">首页</Link>
+          <Link href="/">发现</Link>
           <Link href="/stars">明星图鉴</Link>
         </nav>
         {children}

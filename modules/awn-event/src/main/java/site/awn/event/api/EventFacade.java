@@ -31,5 +31,8 @@ public interface EventFacade {
     /** 公开场次详情：场次不存在或父活动未公开 → SessionNotFoundException */
     SessionView publicSession(Long sessionId);
 
+    /** 公开场次列表：父活动未公开 → EventNotFoundException；按开始时间升序 */
+    List<SessionView> publicSessions(Long eventId);
+
     List<SessionView> sessions(Long eventId);
 }

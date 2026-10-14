@@ -20,6 +20,7 @@ import site.awn.event.infrastructure.EventRepository;
 import site.awn.event.infrastructure.SessionRepository;
 import site.awn.event.infrastructure.VenueRepository;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -130,6 +131,20 @@ public class EventFacadeImpl implements EventFacade {
                 .filter(this::publiclyVisible)
                 .map(this::toView)
                 .orElseThrow(() -> new SessionNotFoundException(sessionId));
+    }
+
+    /** 公开场次列表：父活动守卫与 publicSession 同口径（场次可见性 = 父活动可见性），按开始时间升序 */
+    @Override
+    @Transactional(readOnly = true)
+    public List<SessionView> publicSessions(Long eventId) {
+        events.findById(eventId)
+                .filter(Event::isPublic)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        return sessions.findByEventId(eventId).stream()
+                .sorted(Comparator.comparing(Session::getStartTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toView)
+                .toList();
     }
 
     @Override

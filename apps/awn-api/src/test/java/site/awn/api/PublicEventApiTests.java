@@ -171,6 +171,47 @@ class PublicEventApiTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void sessionListReturnsPublishedEventSessionsInStartOrder() throws Exception {
+        String uid = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + uid, "场馆", "北京", null));
+        Instant base = Instant.now().plusSeconds(3600);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-" + uid, "演唱会", null, base, base.plusSeconds(7200), venue.id()));
+        // 故意乱序创建，公开列表必须按开始时间升序
+        SessionView late = events.createSession(new CreateSessionCommand(
+                "s-" + uid + "-late", event.id(), "第二场",
+                base.plusSeconds(86400), base.plusSeconds(93600)));
+        SessionView early = events.createSession(new CreateSessionCommand(
+                "s-" + uid + "-early", event.id(), "第一场",
+                base, base.plusSeconds(7200)));
+        events.publishEvent(event.eventCode());
+
+        mvc.perform(get("/api/v1/events/" + event.id() + "/sessions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", hasItem(early.id().intValue())))
+                .andExpect(jsonPath("$[0].id").value(early.id()))
+                .andExpect(jsonPath("$[1].id").value(late.id()));
+    }
+
+    @Test
+    void sessionListOfDraftEventIsInvisible() throws Exception {
+        EventView draft = eventWithSessions(uid(), 2, false);
+
+        mvc.perform(get("/api/v1/events/" + draft.id() + "/sessions"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("EVENT_NOT_FOUND"));
+    }
+
+    @Test
+    void sessionListOfUnknownEventReturnsNotFoundEnvelope() throws Exception {
+        mvc.perform(get("/api/v1/events/999999999/sessions"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("EVENT_NOT_FOUND"))
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
+
+    @Test
     void eventPricesReturnTraceableHistoryOfItsSessions() throws Exception {
         String uid = uid();
         EventView event = eventWithSessions(uid, 2, true);

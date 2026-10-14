@@ -6,7 +6,12 @@
  */
 
 /** 可售状态展示枚举（与后端 availability 接口对齐） */
-export type AvailabilityLabel = 'Selling' | 'PreSale' | 'LowStock' | 'Restocking' | 'SoldOut'
+/**
+ * 与后端可售摘要对齐（GET /api/v1/products/{id}/availability 的 available 字段）：
+ * null = 未建库存池（未开售）、0 = 已售罄、> 阈值 = 余票紧张、其余 = 售票中。
+ * 枚举不留无后端来源的取值。
+ */
+export type AvailabilityLabel = 'Selling' | 'LowStock' | 'SoldOut' | 'NotOnSale'
 
 export interface TicketTier {
   productId: string
@@ -15,17 +20,17 @@ export interface TicketTier {
   /** 最小货币单位整数，禁止浮点金额 */
   unitPriceMinor: number
   currency: 'CNY'
-  quantityLimit: number
+  /** 单次限购张数；后端购买规则未下发时为 null（卡片不渲染限购行） */
+  quantityLimit: number | null
   availability: AvailabilityLabel
 }
 
 /** 展示层文案映射（情报与真实库存必须区分） */
 export const AVAILABILITY_LABEL_ZH: Record<AvailabilityLabel, string> = {
   Selling: '售票中',
-  PreSale: '预售中',
   LowStock: '余票紧张',
-  Restocking: '补货中',
   SoldOut: '已售罄',
+  NotOnSale: '未开售',
 }
 
 export { TierCard } from './tier-card'

@@ -7,10 +7,9 @@ import { AVAILABILITY_LABEL_ZH, type AvailabilityLabel, type TicketTier } from '
  */
 const ALL_LABELS: AvailabilityLabel[] = [
   'Selling',
-  'PreSale',
   'LowStock',
-  'Restocking',
   'SoldOut',
+  'NotOnSale',
 ]
 
 describe('AVAILABILITY_LABEL_ZH', () => {

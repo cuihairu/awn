@@ -289,6 +289,14 @@ export async function getEvent(
     .then((res) => readJson<EventView>(res))
 }
 
+export async function listEventSessions(
+  eventId: string,
+  init?: RequestInit,
+): Promise<SessionView[]> {
+  return fetch(`${API_BASE}/events/${eventId}/sessions`, init)
+    .then((res) => readJson<SessionView[]>(res))
+}
+
 export async function getSession(
   sessionId: string,
   init?: RequestInit,

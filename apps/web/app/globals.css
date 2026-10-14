@@ -407,3 +407,202 @@ li {
   color: var(--awn-ink-2);
   white-space: nowrap;
 }
+
+/* ---- 活动 / 场次 / 票档（原型 web/home.html · activity-*.html · purchase.html）---- */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  border: 1px solid var(--awn-border);
+  color: var(--awn-ink-2);
+  white-space: nowrap;
+}
+
+.badge--success {
+  border-color: transparent;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.badge--warning {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+.badge--danger {
+  border-color: transparent;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.price {
+  font-weight: 600;
+}
+
+.price::before {
+  content: '¥';
+  font-size: 0.75em;
+  margin-right: 2px;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--awn-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--awn-card);
+  text-decoration: none;
+  color: var(--awn-ink);
+  transition: border-color 0.15s ease;
+}
+
+.event-card:hover {
+  border-color: var(--awn-gold);
+}
+
+.event-card__cover {
+  height: 96px;
+  background: linear-gradient(135deg, var(--awn-gold-soft), transparent 60%),
+    var(--awn-card);
+  border-bottom: 1px solid var(--awn-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-card__cover span {
+  font-size: 12px;
+  color: var(--awn-ink-2);
+}
+
+.event-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--awn-border);
+  border-radius: 14px;
+  background: var(--awn-card);
+  text-decoration: none;
+  color: var(--awn-ink);
+  transition: border-color 0.15s ease;
+}
+
+.session-card:hover {
+  border-color: var(--awn-gold);
+}
+
+/* 票档行（@awn/ticket-components TierCard 的宿主样式，与原型 tier-row 同构） */
+.tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--awn-border);
+  border-radius: 12px;
+  background: var(--awn-card);
+  cursor: pointer;
+  font: inherit;
+  color: var(--awn-ink);
+  text-align: left;
+}
+
+.tier-row[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tier-row:hover {
+  border-color: var(--awn-gold);
+}
+
+.tier-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  flex: none;
+  background: var(--awn-gold);
+}
+
+.tier-dot-2 {
+  background: #a16207;
+}
+
+.tier-dot-3 {
+  background: #4a7fb5;
+}
+
+.tier-dot-4 {
+  background: #7a6a53;
+}
+
+.tier-dot-5 {
+  background: #5a5f6e;
+}
+
+.geo-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.geo-row svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: currentColor;
+  opacity: 0.7;
+}
+
+/* 活动页 / 场次页头部（纵排：标题行 + 时间行；星图详情的 detail-head 为横排图文，不复用） */
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+/* 场次页票档列表（TierCard 宿主容器） */
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
