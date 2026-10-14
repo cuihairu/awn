@@ -2,24 +2,44 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
-import { CampaignRenderer } from '@awn/campaign-renderer'
-import { ApiError, renderCampaign, type RenderedPageView } from '@awn/api-client'
+import { useEffect, useState } from 'react'
+import { CampaignRenderer, type CampaignConfig } from '@awn/campaign-renderer'
+import {
+  ApiError,
+  getSessionProducts,
+  listEventSessions,
+  renderCampaign,
+} from '@awn/api-client'
+import { PENDING_SECTION_LABELS, resolveSections } from '../../../lib/campaign-resolve'
 import { toCampaignConfig } from '../../../lib/campaign-config'
 
 /**
  * 专场页 /campaigns/{code}（原型 web/activity-*.html 模板 + docs/architecture/campaign-rendering.md）。
- * 只读已发布版本快照（GET /api/v1/campaigns/{code}/render）：
- * 未发布 / 未知专场一律 404，草稿改动不影响线上页面。
- * 模块类型白名单与渲染由 @awn/campaign-renderer 负责，本页只做载荷适配与状态呈现。
+ *
+ * 只读已发布版本快照（GET /api/v1/campaigns/{code}/render）：未发布 / 未知专场一律 404，
+ * 草稿改动不影响线上页面。渲染分两步：
+ * 1. toCampaignConfig —— 载荷适配 + 白名单过滤（渲染器自身还有一层拒绝渲染）；
+ * 2. resolveSections —— 把后端的引用型 props（eventIds / ruleDocumentId / faqId …）
+ *    解析成渲染器要读的展示型 props（sessions / tiers / paragraphs …）；
+ *    无公开数据源的模块标记待接入并显式说明，不渲染空白区块也不造假内容。
  */
-const EMPTY_SKIPPED: { id: string; type: string }[] = []
+const CAMPAIGN_API = {
+  listEventSessions,
+  getSessionProducts,
+}
+
+interface PendingSection {
+  id: string
+  label: string
+  reason: string
+}
 
 export default function CampaignPage() {
   const params = useParams<{ code: string }>()
   const campaignCode = params.code
 
-  const [page_, setPage] = useState<RenderedPageView | null>(null)
+  const [config, setConfig] = useState<CampaignConfig | null>(null)
+  const [pending, setPending] = useState<PendingSection[]>([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
@@ -28,12 +48,32 @@ export default function CampaignPage() {
     let alive = true
     setLoading(true)
     renderCampaign(campaignCode)
-      .then((data) => {
-        if (alive) setPage(data)
-      })
-      .catch((err) => {
+      .then(async (page) => {
+        const adapted = toCampaignConfig(page)
+        if (alive && adapted.skipped.length > 0) {
+          console.warn(
+            `campaign ${campaignCode}: dropped ${adapted.skipped.length} section(s) outside the whitelist`,
+          )
+        }
+        const resolutions = await resolveSections(adapted.config.sections, CAMPAIGN_API)
         if (!alive) return
-        if (err instanceof ApiError && err.status === 404) {
+        setConfig({
+          ...adapted.config,
+          sections: resolutions.filter((section) => section.status === 'ready'),
+        })
+        setPending(
+          resolutions
+            .filter((section) => section.status === 'pending')
+            .map((section) => ({
+              id: section.id,
+              label: PENDING_SECTION_LABELS[section.type] ?? section.type,
+              reason: section.reason ?? '内容待接入',
+            })),
+        )
+      })
+      .catch((error) => {
+        if (!alive) return
+        if (error instanceof ApiError && error.status === 404) {
           setNotFound(true)
         } else {
           setFailed(true)
@@ -46,18 +86,6 @@ export default function CampaignPage() {
       alive = false
     }
   }, [campaignCode])
-
-  const adapted = useMemo(() => (page_ ? toCampaignConfig(page_) : null), [page_])
-  const config = adapted?.config ?? null
-  const skipped = adapted?.skipped ?? EMPTY_SKIPPED
-
-  useEffect(() => {
-    if (page_ && skipped && skipped.length > 0) {
-      console.warn(
-        `campaign ${campaignCode}: dropped ${skipped.length} section(s) outside the whitelist`,
-      )
-    }
-  }, [campaignCode, page_, skipped])
 
   useEffect(() => {
     if (config) {
@@ -109,6 +137,20 @@ export default function CampaignPage() {
       )}
 
       <CampaignRenderer config={config} />
+
+      {pending.length > 0 && (
+        <section className="detail-section" data-section="pending">
+          <h2>以下内容待接入</h2>
+          <ul className="entry-list">
+            {pending.map((section) => (
+              <li key={section.id} className="entry">
+                <span className="entry__title">{section.label}</span>
+                <span className="entry__meta muted">{section.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   )
 }
