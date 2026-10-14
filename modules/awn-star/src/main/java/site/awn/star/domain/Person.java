@@ -83,6 +83,36 @@ public class Person {
         this.status = STATUS_PUBLISHED;
     }
 
+    /** 编辑草稿字段：仅 DRAFT 可改；已发布内容冻结，需先 unpublish */
+    public void update(String name, String originalName, List<String> aliases,
+                       String nationality, List<String> professionTypes, String bio,
+                       String photoUrl, String photoSource) {
+        requireDraft();
+        this.name = name;
+        this.originalName = originalName;
+        this.aliases = aliases;
+        this.nationality = nationality;
+        this.professionTypes = professionTypes;
+        this.bio = bio;
+        this.photoUrl = photoUrl;
+        this.photoSource = photoSource;
+    }
+
+    /** PUBLISHED → DRAFT 守卫：未发布抛冲突。撤回后内容才可再编辑或删除。 */
+    public void unpublish() {
+        if (!STATUS_PUBLISHED.equals(status)) {
+            throw new StarConflictException("person is not published: " + id);
+        }
+        this.status = STATUS_DRAFT;
+    }
+
+    /** 冻结守卫：仅 DRAFT 可改 / 可删；已发布内容需先 unpublish */
+    public void requireDraft() {
+        if (!STATUS_DRAFT.equals(status)) {
+            throw new StarConflictException("published person is frozen; unpublish first: " + id);
+        }
+    }
+
     /** 照片是否可公开：有 URL 且有授权来源说明 */
     public boolean hasPublishablePhoto() {
         return photoUrl != null && !photoUrl.isBlank()

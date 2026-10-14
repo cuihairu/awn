@@ -148,6 +148,78 @@ class StarModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void draftEditsAreGuardedAndUnpublishReopens() {
+        PersonView draft = stars.createPerson(person("旧名", List.of("actor")));
+
+        // 草稿可编辑：字段更新后仍是 DRAFT
+        PersonView edited = stars.updatePerson(draft.id(), person("新名", List.of("singer"), "别名甲"));
+        assertThat(edited.name()).isEqualTo("新名");
+        assertThat(edited.professionTypes()).containsExactly("singer");
+        assertThat(edited.aliases()).containsExactly("别名甲");
+        assertThat(edited.status()).isEqualTo("DRAFT");
+
+        // 发布后冻结：编辑与删除都抛冲突，提示先 unpublish
+        stars.publishPerson(draft.id());
+        assertThatThrownBy(() -> stars.updatePerson(draft.id(), person("改名", List.of("actor"))))
+                .isInstanceOf(StarConflictException.class)
+                .hasMessageContaining("unpublish");
+        assertThatThrownBy(() -> stars.deletePerson(draft.id()))
+                .isInstanceOf(StarConflictException.class)
+                .hasMessageContaining("unpublish");
+
+        // unpublish 回到草稿：公开面 404，可再次编辑；重复 unpublish 抛冲突
+        assertThat(stars.unpublishPerson(draft.id()).status()).isEqualTo("DRAFT");
+        assertThatThrownBy(() -> stars.publicPerson(draft.id()))
+                .isInstanceOf(PersonNotFoundException.class);
+        assertThatThrownBy(() -> stars.unpublishPerson(draft.id()))
+                .isInstanceOf(StarConflictException.class);
+        assertThat(stars.updatePerson(draft.id(), person("三改", List.of("host"))).name())
+                .isEqualTo("三改");
+
+        // 删除草稿后公开面与后续编辑都 404
+        stars.deletePerson(draft.id());
+        assertThatThrownBy(() -> stars.publicPerson(draft.id()))
+                .isInstanceOf(PersonNotFoundException.class);
+        assertThatThrownBy(() -> stars.updatePerson(draft.id(), person("x", List.of("actor"))))
+                .isInstanceOf(PersonNotFoundException.class);
+    }
+
+    @Test
+    void workEditsAndDeleteCascadeBindings() {
+        PersonView person = stars.publishPerson(
+                stars.createPerson(person("柯屿", List.of("actor"))).id());
+        WorkView work = stars.createWork(new CreateWorkCommand("初稿片名", "movie", 2024, null));
+
+        // 作品草稿可编辑
+        WorkView edited = stars.updateWork(work.id(),
+                new CreateWorkCommand("定稿片名", "movie", 2025, "简介"));
+        assertThat(edited.title()).isEqualTo("定稿片名");
+        assertThat(edited.year()).isEqualTo(2025);
+        assertThat(edited.status()).isEqualTo("DRAFT");
+
+        stars.bindCast(work.id(), new BindCastCommand(person.id(), "cast_lead", "饰 主角", 1));
+        stars.publishWork(work.id());
+        assertThatThrownBy(() -> stars.updateWork(work.id(),
+                new CreateWorkCommand("再改", "movie", 2025, null)))
+                .isInstanceOf(StarConflictException.class);
+        assertThat(stars.unpublishWork(work.id()).status()).isEqualTo("DRAFT");
+        stars.publishWork(work.id());
+        assertThat(stars.publicPerson(person.id()).works()).hasSize(1);
+
+        // 已发布冻结：删除也需先撤回
+        assertThatThrownBy(() -> stars.deleteWork(work.id()))
+                .isInstanceOf(StarConflictException.class)
+                .hasMessageContaining("unpublish");
+
+        // 删除作品：关系行随 FK 级联清除（残留的话 publicPerson 查作品会抛 WorkNotFound）
+        stars.unpublishWork(work.id());
+        stars.deleteWork(work.id());
+        assertThat(stars.publicPerson(person.id()).works()).isEmpty();
+        assertThatThrownBy(() -> stars.publicWork(work.id()))
+                .isInstanceOf(WorkNotFoundException.class);
+    }
+
+    @Test
     void publicSearchHitsNameAliasAndFilters() {
         // 测试库从不截断：检索断言按名称等值匹配，名称追加随机段避免重复运行撞数据
         String tag = UUID.randomUUID().toString().substring(0, 8);

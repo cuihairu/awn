@@ -55,6 +55,30 @@ public class Work {
         this.status = STATUS_PUBLISHED;
     }
 
+    /** 编辑草稿字段：仅 DRAFT 可改；已发布内容冻结，需先 unpublish */
+    public void update(String title, String type, Integer year, String description) {
+        requireDraft();
+        this.title = title;
+        this.type = type;
+        this.year = year;
+        this.description = description;
+    }
+
+    /** PUBLISHED → DRAFT 守卫：未发布抛冲突。撤回后内容才可再编辑或删除。 */
+    public void unpublish() {
+        if (!STATUS_PUBLISHED.equals(status)) {
+            throw new StarConflictException("work is not published: " + id);
+        }
+        this.status = STATUS_DRAFT;
+    }
+
+    /** 冻结守卫：仅 DRAFT 可改 / 可删；已发布内容需先 unpublish */
+    public void requireDraft() {
+        if (!STATUS_DRAFT.equals(status)) {
+            throw new StarConflictException("published work is frozen; unpublish first: " + id);
+        }
+    }
+
     public Long getId() {
         return id;
     }

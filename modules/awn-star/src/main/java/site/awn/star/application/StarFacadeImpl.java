@@ -52,24 +52,10 @@ public class StarFacadeImpl implements StarFacade {
     @Override
     @Transactional
     public PersonView createPerson(CreatePersonCommand command) {
-        String name = trimToNull(command.name());
-        if (name == null) {
-            throw new IllegalArgumentException("person name is required");
-        }
-        String nationality = trimToNull(command.nationality());
-        if (nationality == null) {
-            throw new IllegalArgumentException("person nationality is required");
-        }
-        List<String> professionTypes = distinctValidated(command.professionTypes(),
-                StarCatalogTypes.PROFESSIONS, "profession");
-        String photoUrl = trimToNull(command.photoUrl());
-        String photoSource = trimToNull(command.photoSource());
-        if (photoUrl != null && photoSource == null) {
-            throw new IllegalArgumentException("photo source is required for a licensed photo");
-        }
-
-        Person person = new Person(name, trimToNull(command.originalName()), cleanList(command.aliases()),
-                nationality, professionTypes, trimToNull(command.bio()), photoUrl, photoSource);
+        PersonFields fields = validatePerson(command);
+        Person person = new Person(fields.name(), fields.originalName(), fields.aliases(),
+                fields.nationality(), fields.professionTypes(), fields.bio(),
+                fields.photoUrl(), fields.photoSource());
         return toView(persons.saveAndFlush(person));
     }
 
@@ -83,20 +69,35 @@ public class StarFacadeImpl implements StarFacade {
 
     @Override
     @Transactional
+    public PersonView updatePerson(long personId, CreatePersonCommand command) {
+        Person person = persons.findById(personId).orElseThrow(() -> new PersonNotFoundException(personId));
+        PersonFields fields = validatePerson(command);
+        person.update(fields.name(), fields.originalName(), fields.aliases(), fields.nationality(),
+                fields.professionTypes(), fields.bio(), fields.photoUrl(), fields.photoSource());
+        return toView(person);
+    }
+
+    @Override
+    @Transactional
+    public PersonView unpublishPerson(long personId) {
+        Person person = persons.findById(personId).orElseThrow(() -> new PersonNotFoundException(personId));
+        person.unpublish();
+        return toView(person);
+    }
+
+    @Override
+    @Transactional
+    public void deletePerson(long personId) {
+        Person person = persons.findById(personId).orElseThrow(() -> new PersonNotFoundException(personId));
+        person.requireDraft();
+        persons.delete(person);
+    }
+
+    @Override
+    @Transactional
     public WorkView createWork(CreateWorkCommand command) {
-        String title = trimToNull(command.title());
-        if (title == null) {
-            throw new IllegalArgumentException("work title is required");
-        }
-        String type = trimToNull(command.type());
-        if (type == null || !StarCatalogTypes.WORK_TYPES.contains(type)) {
-            throw new IllegalArgumentException("unknown work type: " + command.type());
-        }
-        Integer year = command.year();
-        if (year != null && (year < 1900 || year > 2100)) {
-            throw new IllegalArgumentException("work year out of range: " + year);
-        }
-        Work work = new Work(title, type, year, trimToNull(command.description()));
+        WorkFields fields = validateWork(command);
+        Work work = new Work(fields.title(), fields.type(), fields.year(), fields.description());
         return toView(works.saveAndFlush(work));
     }
 
@@ -106,6 +107,31 @@ public class StarFacadeImpl implements StarFacade {
         Work work = works.findById(workId).orElseThrow(() -> new WorkNotFoundException(workId));
         work.publish();
         return toView(work);
+    }
+
+    @Override
+    @Transactional
+    public WorkView updateWork(long workId, CreateWorkCommand command) {
+        Work work = works.findById(workId).orElseThrow(() -> new WorkNotFoundException(workId));
+        WorkFields fields = validateWork(command);
+        work.update(fields.title(), fields.type(), fields.year(), fields.description());
+        return toView(work);
+    }
+
+    @Override
+    @Transactional
+    public WorkView unpublishWork(long workId) {
+        Work work = works.findById(workId).orElseThrow(() -> new WorkNotFoundException(workId));
+        work.unpublish();
+        return toView(work);
+    }
+
+    @Override
+    @Transactional
+    public void deleteWork(long workId) {
+        Work work = works.findById(workId).orElseThrow(() -> new WorkNotFoundException(workId));
+        work.requireDraft();
+        works.delete(work);
     }
 
     @Override
@@ -226,6 +252,52 @@ public class StarFacadeImpl implements StarFacade {
         }
         return person.getAliases() != null && person.getAliases().stream()
                 .anyMatch(a -> a != null && a.toLowerCase(Locale.ROOT).contains(needle));
+    }
+
+    /** 校验并清洗人物入参（创建与编辑共用同一口径） */
+    private PersonFields validatePerson(CreatePersonCommand command) {
+        String name = trimToNull(command.name());
+        if (name == null) {
+            throw new IllegalArgumentException("person name is required");
+        }
+        String nationality = trimToNull(command.nationality());
+        if (nationality == null) {
+            throw new IllegalArgumentException("person nationality is required");
+        }
+        List<String> professionTypes = distinctValidated(command.professionTypes(),
+                StarCatalogTypes.PROFESSIONS, "profession");
+        String photoUrl = trimToNull(command.photoUrl());
+        String photoSource = trimToNull(command.photoSource());
+        if (photoUrl != null && photoSource == null) {
+            throw new IllegalArgumentException("photo source is required for a licensed photo");
+        }
+        return new PersonFields(name, trimToNull(command.originalName()), cleanList(command.aliases()),
+                nationality, professionTypes, trimToNull(command.bio()), photoUrl, photoSource);
+    }
+
+    /** 校验并清洗作品入参（创建与编辑共用同一口径） */
+    private WorkFields validateWork(CreateWorkCommand command) {
+        String title = trimToNull(command.title());
+        if (title == null) {
+            throw new IllegalArgumentException("work title is required");
+        }
+        String type = trimToNull(command.type());
+        if (type == null || !StarCatalogTypes.WORK_TYPES.contains(type)) {
+            throw new IllegalArgumentException("unknown work type: " + command.type());
+        }
+        Integer year = command.year();
+        if (year != null && (year < 1900 || year > 2100)) {
+            throw new IllegalArgumentException("work year out of range: " + year);
+        }
+        return new WorkFields(title, type, year, trimToNull(command.description()));
+    }
+
+    private record PersonFields(String name, String originalName, List<String> aliases,
+                                String nationality, List<String> professionTypes, String bio,
+                                String photoUrl, String photoSource) {
+    }
+
+    private record WorkFields(String title, String type, Integer year, String description) {
     }
 
     private List<String> distinctValidated(List<String> raw, Set<String> whitelist, String label) {

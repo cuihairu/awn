@@ -148,7 +148,10 @@ erDiagram
 | `POST /api/v1/admin/stars`、`POST /api/v1/admin/works` | 管理建草稿，`X-Admin-Token` | 已实现 |
 | `POST /api/v1/admin/works/{id}/cast` | 绑定人物与身份 | 已实现 |
 | `POST /api/v1/admin/stars/{id}/publish`、`/api/v1/admin/works/{id}/publish` | 发布守卫，对齐 `/admin/events/{code}/publish` | 已实现 |
-| 编辑更新（`PUT`）、分页（`page=`） | 第一版未做：列表返回全量，写入只建草稿 | 待拍板 §4.5 |
+| `PUT /api/v1/admin/stars/{id}`、`/api/v1/admin/works/{id}` | 编辑草稿（校验同创建）；已发布冻结 | 已实现 |
+| `POST /api/v1/admin/stars/{id}/unpublish`、`/api/v1/admin/works/{id}/unpublish` | 撤回 `PUBLISHED` → `DRAFT`，对齐专场 `unpublish` | 已实现 |
+| `DELETE /api/v1/admin/stars/{id}`、`/api/v1/admin/works/{id}` | 删草稿；关系行随外键级联清除 | 已实现 |
+| 分页（`page=`） | 列表仍返回全量；人物与作品规模上来后补 | 待拍板 §4.3 |
 
 ---
 
@@ -170,4 +173,6 @@ erDiagram
 
 1. **人物 ↔ 活动 / 场次关联**（出演阵容区块）是否纳入第一版。
 2. **页面视觉**：列表 / 详情 / 卡片的视觉稿随 Phase 07 原型口径统一，原型过目后对齐。
-3. **编辑能力**：更新（`PUT`）、删除、分页与列表规模控制——第一版列表返回全量，人物与作品规模上来后需要补。
+3. **分页与列表规模控制**：公开列表仍返回全量，人物与作品规模上来后需要补。
+
+已代决（巡检 R2）：**编辑能力**落地为草稿可改（`PUT`）可删（`DELETE`）、已发布内容冻结、改动需先 `unpublish`——与专场模块「发布版本不可变 + 撤回」同构，避免未评审内容被静默改写；关系行随外键级联清除。分页暂不做（列表规模未到，且会改动刚交付的公开响应形状）。

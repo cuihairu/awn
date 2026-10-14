@@ -8,8 +8,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import site.awn.support.AbstractPostgresIntegrationTest;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -196,6 +198,53 @@ class StarApiTests extends AbstractPostgresIntegrationTest {
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("WORK_NOT_FOUND"));
+    }
+
+    @Test
+    void adminEditsUnpublishesAndDeletes() throws Exception {
+        long personId = idField(createPerson("编辑前"));
+
+        // PUT 编辑草稿
+        mvc.perform(put("/api/v1/admin/stars/{id}", personId)
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"编辑后","nationality":"中国","professionTypes":["singer"]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("编辑后"))
+                .andExpect(jsonPath("$.professionTypes[0]").value("singer"));
+
+        // 发布后冻结：PUT → 409
+        mvc.perform(post("/api/v1/admin/stars/{id}/publish", personId).header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/v1/admin/stars/{id}", personId)
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"改名","nationality":"中国","professionTypes":["actor"]}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+
+        // unpublish → DRAFT，重新可编辑
+        mvc.perform(post("/api/v1/admin/stars/{id}/unpublish", personId).header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        // DELETE → 公开面 404
+        mvc.perform(delete("/api/v1/admin/stars/{id}", personId).header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/stars/{id}", personId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+
+        // 未知 id 的写操作 → 404 统一信封；无 token → 401
+        mvc.perform(delete("/api/v1/admin/stars/{id}", 987654321).header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mvc.perform(delete("/api/v1/admin/stars/{id}", 1))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

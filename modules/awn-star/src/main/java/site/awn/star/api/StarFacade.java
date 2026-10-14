@@ -14,11 +14,29 @@ public interface StarFacade {
     /** 发布人物：DRAFT → PUBLISHED 守卫，重复发布抛冲突。 */
     PersonView publishPerson(long personId);
 
+    /** 编辑人物草稿（仅 DRAFT，校验同创建）；已发布内容冻结，先 unpublish。 */
+    PersonView updatePerson(long personId, CreatePersonCommand command);
+
+    /** 撤回人物：PUBLISHED → DRAFT 守卫，未发布抛冲突。 */
+    PersonView unpublishPerson(long personId);
+
+    /** 删除人物草稿（仅 DRAFT；关系行随外键级联清除）。 */
+    void deletePerson(long personId);
+
     /** 创建作品（草稿）。校验：标题非空、类型白名单、年份区间。 */
     WorkView createWork(CreateWorkCommand command);
 
     /** 发布作品：DRAFT → PUBLISHED 守卫，重复发布抛冲突。 */
     WorkView publishWork(long workId);
+
+    /** 编辑作品草稿（仅 DRAFT，校验同创建）；已发布内容冻结，先 unpublish。 */
+    WorkView updateWork(long workId, CreateWorkCommand command);
+
+    /** 撤回作品：PUBLISHED → DRAFT 守卫，未发布抛冲突。 */
+    WorkView unpublishWork(long workId);
+
+    /** 删除作品草稿（仅 DRAFT；关系行随外键级联清除）。 */
+    void deleteWork(long workId);
 
     /**
      * 给作品绑定人物身份（多对多关系行带 role_type / role_name / billing_order）。
