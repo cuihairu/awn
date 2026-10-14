@@ -5,6 +5,7 @@ import {
   deriveAvailability,
   eventStatusLabel,
   formatEventDateTime,
+  geoLine,
   productToTier,
 } from './event-labels'
 
@@ -93,5 +94,31 @@ describe('productToTier', () => {
     expect(productToTier(product({ available: null })).availability).toBe('NotOnSale')
     expect(productToTier(product({ available: 0 })).availability).toBe('SoldOut')
     expect(productToTier(product({ available: 5 })).availability).toBe('LowStock')
+  })
+})
+
+describe('geoLine', () => {
+  const geo = (overrides: Partial<import('@awn/api-client').SessionVenueView> = {}) => ({
+    venueCode: 'v-1',
+    venueName: '北京工人体育场',
+    city: '北京',
+    address: '朝阳工人体育场北路',
+    latitude: 39.9308,
+    longitude: 116.4435,
+    ...overrides,
+  })
+
+  it('joins venue name, city and address with a dot separator', () => {
+    expect(geoLine(geo())).toBe('北京工人体育场 · 北京 · 朝阳工人体育场北路')
+  })
+
+  it('skips missing parts instead of rendering blanks', () => {
+    expect(geoLine(geo({ address: null }))).toBe('北京工人体育场 · 北京')
+    expect(geoLine(geo({ city: null, address: null }))).toBe('北京工人体育场')
+  })
+
+  it('returns null for missing geo or an all-empty venue (no fake location)', () => {
+    expect(geoLine(null)).toBeNull()
+    expect(geoLine(geo({ venueName: '', city: null, address: null }))).toBeNull()
   })
 })

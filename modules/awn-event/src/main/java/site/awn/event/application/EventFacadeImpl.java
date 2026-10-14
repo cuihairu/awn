@@ -149,7 +149,7 @@ public class EventFacadeImpl implements EventFacade {
     public SessionView publicSession(Long sessionId) {
         return sessions.findById(sessionId)
                 .filter(this::publiclyVisible)
-                .map(this::toView)
+                .map(s -> toView(s).withGeo(sessionGeo(s)))
                 .orElseThrow(() -> new SessionNotFoundException(sessionId));
     }
 
@@ -163,7 +163,7 @@ public class EventFacadeImpl implements EventFacade {
         return sessions.findByEventId(eventId).stream()
                 .sorted(Comparator.comparing(Session::getStartTime,
                         Comparator.nullsLast(Comparator.naturalOrder())))
-                .map(this::toView)
+                .map(s -> toView(s).withGeo(sessionGeo(s)))
                 .toList();
     }
 
@@ -249,5 +249,10 @@ public class EventFacadeImpl implements EventFacade {
     private SessionView toView(Session s) {
         return SessionView.of(s.getId(), s.getSessionCode(), s.getEventId(),
                 s.getName(), s.getStatus(), s.getStartTime(), s.getEndTime());
+    }
+
+    /** 公开面地理解析：场次场馆覆盖 → 父活动场馆 → null（场馆信息不录全是正常态，不造假坐标） */
+    private SessionVenueView sessionGeo(Session s) {
+        return resolveVenue(s).map(VenueView::toSessionVenue).orElse(null);
     }
 }

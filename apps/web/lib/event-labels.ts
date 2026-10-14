@@ -1,4 +1,4 @@
-import type { EventStatus, ProductListItem } from '@awn/api-client'
+import type { EventStatus, ProductListItem, SessionVenueView } from '@awn/api-client'
 import type { AvailabilityLabel, TicketTier } from '@awn/ticket-components'
 
 /**
@@ -60,4 +60,16 @@ export function productToTier(product: ProductListItem): TicketTier {
     quantityLimit: null,
     availability: deriveAvailability(product.available),
   }
+}
+
+/**
+ * 场次 geo 行文案：场馆名 / 城市 / 地址非空项以「·」连接。
+ * geo 为 null 或全空 → null（不渲染假地点，缺信息是正常态）。
+ */
+export function geoLine(geo: SessionVenueView | null): string | null {
+  if (!geo) return null
+  const parts = [geo.venueName, geo.city, geo.address].filter(
+    (part): part is string => Boolean(part),
+  )
+  return parts.length > 0 ? parts.join(' · ') : null
 }

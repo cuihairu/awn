@@ -18,6 +18,7 @@ const session: SessionView = {
   status: 'PUBLISHED',
   startTime: '2026-11-06T11:30:00Z',
   endTime: '2026-11-06T13:30:00Z',
+  geo: null,
 }
 
 const product: ProductListItem = {

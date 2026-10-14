@@ -154,4 +154,61 @@ class VenueGeoModuleTests extends AbstractPostgresIntegrationTest {
         assertThatThrownBy(() -> events.detachSessionVenue("nope-" + suffix))
                 .isInstanceOf(SessionNotFoundException.class);
     }
+
+    @Test
+    void publicSessionCarriesResolvedGeo() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "北京工人体育场", "北京", "朝阳工人体育场北路", 39.9308, 116.4435));
+        EventView event = eventWithVenue(suffix, venue);
+        events.publishEvent(event.eventCode());
+        SessionView session = session(suffix, event);
+
+        SessionView view = events.publicSession(session.id());
+        assertThat(view.geo()).isNotNull();
+        assertThat(view.geo().venueCode()).isEqualTo(venue.venueCode());
+        assertThat(view.geo().venueName()).isEqualTo("北京工人体育场");
+        assertThat(view.geo().city()).isEqualTo("北京");
+        assertThat(view.geo().latitude()).isEqualTo(39.9308);
+    }
+
+    @Test
+    void publicSessionGeoPrefersTheSessionVenueOverride() {
+        String suffix = uid();
+        VenueView home = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix + "-a", "主赛场", "北京", null, null, null));
+        VenueView onTour = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix + "-b", "上海站", "上海", "徐汇", 31.1885, 121.4380));
+        EventView event = eventWithVenue(suffix, home);
+        events.publishEvent(event.eventCode());
+        SessionView session = session(suffix, event);
+        events.attachSessionVenue(session.sessionCode(), onTour.venueCode());
+
+        assertThat(events.publicSession(session.id()).geo().venueCode())
+                .isEqualTo(onTour.venueCode());
+    }
+
+    @Test
+    void publicSessionWithoutAnyVenueHasNullGeo() {
+        String suffix = uid();
+        EventView event = eventWithVenue(suffix, null);
+        events.publishEvent(event.eventCode());
+        SessionView session = session(suffix, event);
+
+        assertThat(events.publicSession(session.id()).geo()).isNull();
+    }
+
+    @Test
+    void publicSessionsListCarriesGeoForEachSession() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "上海大舞台", "上海", "天钥桥路", 31.1885, 121.4380));
+        EventView event = eventWithVenue(suffix, venue);
+        events.publishEvent(event.eventCode());
+        session(suffix, event);
+
+        java.util.List<SessionView> publicList = events.publicSessions(event.id());
+        assertThat(publicList).isNotEmpty();
+        assertThat(publicList).allMatch(s -> s.geo() != null && "上海".equals(s.geo().city()));
+    }
 }

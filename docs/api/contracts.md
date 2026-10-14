@@ -104,6 +104,7 @@ GET /api/v1/works/{workId}
 - `GET /api/v1/events` 仅返回 `PUBLISHED` / `COMPLETED` 活动，按开始时间倒序；
 - `GET /api/v1/events/{eventId}` 与 `GET /api/v1/sessions/{sessionId}` 对未知资源、以及父活动未发布（草稿）的场次一律 404，不泄露草稿内容；
 - `GET /api/v1/sessions/{sessionId}/seatmap` 返回场次座位图条目（`seatNo` / `productCode` / `section` / `row` / `seat` / `status`），可见性与场次详情同口径（父活动未公开 → 404 `SESSION_NOT_FOUND`）；`status` 为逐座状态机 `IN_STOCK` / `RESERVED` / `SOLD` / `DELIVERED` / `INVALID`，占座订单号不进公开面；图上「可选」仅为数据标记，实际可售以下单时后端原子预留为准；
+- 场次公开读（详情与列表）响应带 `geo`（场馆派生：场次指定场馆优先，未指定继承父活动场馆；无任何场馆为 `null`）。坐标缺失为 `null` 是正常态，客户端不得按 (0,0) 或占位坐标兜底；
 - `GET /api/v1/intelligence/events/{eventId}/prices` 返回该活动下**所有场次**的价格历史（按观测时间倒序，每条可溯源）；活动未知或未公开 → 404；场次无价格数据时返回空数组。
 
 活动发布（`DRAFT` → `PUBLISHED`）是运营动作，经 `X-Admin-Token` 鉴权暴露：`POST /api/v1/admin/events/{eventCode}/publish`（见「运营接口」）；仅草稿可发布，重复发布 → 409 `CONFLICT`，未知活动 → 404 `EVENT_NOT_FOUND`。

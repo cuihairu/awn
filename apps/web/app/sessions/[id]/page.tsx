@@ -14,6 +14,7 @@ import {
 } from '@awn/api-client'
 import { TierCard, type TicketTier } from '@awn/ticket-components'
 import { SeatMap } from '../../../components/SeatMap'
+import { GeoRow } from '../../../components/GeoRow'
 import { formatEventDateTime, productToTier } from '../../../lib/event-labels'
 import { groupSeatSections, seatProductCodes, seatsOfProduct } from '../../../lib/seatmap'
 
@@ -143,6 +144,7 @@ export default function SessionProductsPage() {
         {session.startTime && (
           <p className="muted num">{formatEventDateTime(session.startTime)} 开演</p>
         )}
+        <GeoRow geo={session.geo} />
       </header>
 
       <section className="detail-section">

@@ -392,6 +392,16 @@ export interface EventView {
   venueId: string | null
 }
 
+/** 场次地理位置（场馆派生：场次场馆覆盖 → 父活动场馆；坐标缺失为 null，不按 (0,0) 处理） */
+export interface SessionVenueView {
+  venueCode: string
+  venueName: string
+  city: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
 export interface SessionView {
   id: string
   sessionCode: string
@@ -400,6 +410,7 @@ export interface SessionView {
   status: SessionStatus
   startTime: string
   endTime: string
+  geo: SessionVenueView | null
 }
 
 export interface ProductResponse {

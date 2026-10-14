@@ -11,6 +11,7 @@ import {
   type SessionView,
 } from '@awn/api-client'
 import { eventStatusLabel, formatEventDateTime } from '../../../lib/event-labels'
+import { GeoRow } from '../../../components/GeoRow'
 
 /**
  * 活动页 /events/{id}（原型 web/activity-*.html 模板区块①Hero + ③场次列表）。
@@ -117,6 +118,7 @@ export default function EventDetailPage() {
                 <span className="badge">选择场次</span>
               </div>
               <span className="muted num">{formatEventDateTime(session.startTime)}</span>
+              <GeoRow geo={session.geo} />
               <span className="muted">查看票档 →</span>
             </Link>
           ))}
