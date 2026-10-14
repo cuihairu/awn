@@ -125,13 +125,25 @@ public class CampaignTemplateRenderer {
     }
 
     private String generateRulePanel(Map<String, Object> props) {
-        String ruleDocumentId = getString(props, "ruleDocumentId", "");
-        return "<div class=\"rule-panel\" data-rules=\"" + ruleDocumentId + "\"></div>";
+        List<String> rules = getStringList(props, "rules");
+        StringBuilder html = new StringBuilder("<div class=\"rule-panel\"><ol>");
+        for (String rule : rules) {
+            html.append("<li>").append(escapeHtml(rule)).append("</li>");
+        }
+        html.append("</ol></div>");
+        return html.toString();
     }
 
+    @SuppressWarnings("unchecked")
     private String generateFaq(Map<String, Object> props) {
-        String faqId = getString(props, "faqId", "");
-        return "<div class=\"faq\" data-faq=\"" + faqId + "\"></div>";
+        List<Map<String, String>> entries = (List<Map<String, String>>) (List<?>) getObjectList(props, "entries");
+        StringBuilder html = new StringBuilder("<div class=\"faq\">");
+        for (Map<String, String> entry : entries) {
+            html.append("<dt>").append(escapeHtml(entry.getOrDefault("question", ""))).append("</dt>")
+                .append("<dd>").append(escapeHtml(entry.getOrDefault("answer", ""))).append("</dd>");
+        }
+        html.append("</div>");
+        return html.toString();
     }
 
     private String generateNoticeBar(Map<String, Object> props) {
@@ -142,6 +154,18 @@ public class CampaignTemplateRenderer {
     private String getString(Map<String, Object> props, String key, String defaultValue) {
         Object value = props.get(key);
         return value != null ? value.toString() : defaultValue;
+    }
+
+    private List<String> getStringList(Map<String, Object> props, String key) {
+        return getObjectList(props, key).stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .toList();
+    }
+
+    private List<?> getObjectList(Map<String, Object> props, String key) {
+        Object value = props.get(key);
+        return value instanceof List<?> list ? list : List.of();
     }
 
     private String escapeHtml(String text) {

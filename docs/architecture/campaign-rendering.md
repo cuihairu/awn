@@ -98,7 +98,7 @@ DRAFT
       "id": "rules",
       "type": "rulePanel",
       "props": {
-        "ruleDocumentId": "rules_001"
+        "rules": ["凭电子票入场", "禁止携带外区食品"]
       }
     }
   ]

@@ -46,7 +46,7 @@ class CampaignModuleTests extends AbstractPostgresIntegrationTest {
 
         // 草稿写入配置
         var config = CampaignTemplates.motorsport("AWN F1 专场", "查看赛事与票务",
-                "asset_" + suffix, "event-" + suffix, "rules_" + suffix);
+                "asset_" + suffix, "event-" + suffix, java.util.List.of("凭电子票入场"));
         campaigns.updateDraft("camp-" + suffix, new UpdateCampaignCommand(null, null, config));
 
         // 未校验直接发布被拒绝
@@ -66,7 +66,8 @@ class CampaignModuleTests extends AbstractPostgresIntegrationTest {
 
         // 草稿修改不影响已发布版本
         var newConfig = CampaignTemplates.concert("AWN 音乐节", "另一模板",
-                "asset_" + suffix, "event-" + suffix, "faq_" + suffix);
+                "asset_" + suffix, "event-" + suffix,
+                java.util.List.of(java.util.Map.of("question", "如何取票？", "answer", "开演前 1 小时取票")));
         campaigns.updateDraft("camp-" + suffix, new UpdateCampaignCommand(null, null, newConfig));
 
         CampaignRevisionView stillPublished = campaigns.publishedRevision("camp-" + suffix);
@@ -121,7 +122,8 @@ class CampaignModuleTests extends AbstractPostgresIntegrationTest {
         campaigns.createCampaign(new CreateCampaignCommand("camp-render-" + suffix, "渲染专场", null));
 
         var config = CampaignTemplates.concert("AWN 演唱会", "渲染测试",
-                "asset_r", "event_r", "faq_r");
+                "asset_r", "event_r",
+                java.util.List.of(java.util.Map.of("question", "如何取票？", "answer", "开演前 1 小时取票")));
         campaigns.updateDraft("camp-render-" + suffix, new UpdateCampaignCommand(null, null, config));
         campaigns.validateCampaign("camp-render-" + suffix);
         campaigns.publish("camp-render-" + suffix);
@@ -135,7 +137,7 @@ class CampaignModuleTests extends AbstractPostgresIntegrationTest {
                 .containsExactly("heroBanner", "eventList", "ticketGrid", "countdown", "faq", "noticeBar");
 
         // 草稿修改不影响渲染（只读已发布版本）
-        var newConfig = CampaignTemplates.motorsport("AWN F1", "新模板", "a", "e", "r");
+        var newConfig = CampaignTemplates.motorsport("AWN F1", "新模板", "a", "e", java.util.List.of("r"));
         campaigns.updateDraft("camp-render-" + suffix, new UpdateCampaignCommand(null, null, newConfig));
         var pageStill = campaigns.renderPublished("camp-render-" + suffix);
         assertThat(pageStill.template()).isEqualTo("concert");

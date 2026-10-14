@@ -82,29 +82,36 @@ public class CampaignConfigValidator {
 
     private void validateProps(String prefix, Map<String, Object> props, List<String> errors) {
         for (var entry : props.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
+            validateValue(prefix + "." + entry.getKey(), entry.getKey(), entry.getValue(), errors);
+        }
+    }
 
-            if (value instanceof String str) {
-                String lower = str.toLowerCase();
-                if (lower.contains("<script") || lower.contains("javascript:")) {
-                    errors.add(prefix + "." + key + " must not contain script");
-                }
-                if (lower.contains("<iframe") || lower.contains("<object") || lower.contains("<embed")) {
-                    errors.add(prefix + "." + key + " must not contain embedded HTML");
-                }
-                // 受控资源引用：URL 键仅允许白名单域
-                if (isResourceUrlKey(key) && !ResourceDomainWhitelist.isAllowed(str)) {
-                    errors.add(prefix + "." + key + " references non-whitelisted domain: " + str);
-                }
-            } else if (value instanceof java.util.List<?> list) {
-                for (int i = 0; i < list.size(); i++) {
-                    Object item = list.get(i);
-                    if (item instanceof String str && isResourceUrlKey(key)
-                            && !ResourceDomainWhitelist.isAllowed(str)) {
-                        errors.add(prefix + "." + key + "[" + i + "] references non-whitelisted domain: " + str);
-                    }
-                }
+    /**
+     * 递归校验任意深度的值：内联展示形态的 props 是嵌套结构
+     * （faq 的 entries 问答对、imageGallery 的 images 条目、rulePanel 的 rules 文本数组），
+     * 只查顶层会漏掉嵌套在对象/数组里的脚本标签与非白名单资源引用。
+     */
+    private void validateValue(String prefix, String key, Object value, List<String> errors) {
+        if (value instanceof String str) {
+            String lower = str.toLowerCase();
+            if (lower.contains("<script") || lower.contains("javascript:")) {
+                errors.add(prefix + " must not contain script");
+            }
+            if (lower.contains("<iframe") || lower.contains("<object") || lower.contains("<embed")) {
+                errors.add(prefix + " must not contain embedded HTML");
+            }
+            // 受控资源引用：URL 键仅允许白名单域（嵌套条目如 images[].src 同口径）
+            if (isResourceUrlKey(key) && !ResourceDomainWhitelist.isAllowed(str)) {
+                errors.add(prefix + " references non-whitelisted domain: " + str);
+            }
+        } else if (value instanceof java.util.List<?> list) {
+            for (int i = 0; i < list.size(); i++) {
+                validateValue(prefix + "[" + i + "]", key, list.get(i), errors);
+            }
+        } else if (value instanceof Map<?, ?> map) {
+            for (var entry : map.entrySet()) {
+                String childKey = String.valueOf(entry.getKey());
+                validateValue(prefix + "." + childKey, childKey, entry.getValue(), errors);
             }
         }
     }
