@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ProductListItem } from '@awn/api-client'
+import type { OrderView, PaymentView, ProductListItem } from '@awn/api-client'
 import {
   FULFILLMENT_STATUS_LABEL_ZH,
   MAX_TICKETS_PER_LINE,
@@ -7,7 +7,9 @@ import {
   PAYMENT_STATUS_LABEL_ZH,
   addToCart,
   canPay,
+  canRetryPayment,
   cartTotalQuantity,
+  formatCountdown,
   formatMinor,
   fulfillmentStatusLabel,
   isPaymentSettled,
@@ -16,6 +18,7 @@ import {
   newestPayment,
   orderStatusBadge,
   orderStatusLabel,
+  payCountdownSeconds,
   paymentChannelLabel,
   paymentInFlight,
   paymentStatusLabel,
@@ -174,8 +177,8 @@ describe('payment status labels', () => {
   })
 
   it('returns the newest payment and null when there is none', () => {
-    const first = { paymentNo: 'P-1', orderNo: 'O-1', channel: 'sandbox', channelTxnNo: null, status: 'FAILED', currency: 'CNY', amount: 1, paidAt: null }
-    const second = { ...first, paymentNo: 'P-2', status: 'SUCCEEDED' }
+    const first = { paymentNo: 'P-1', orderNo: 'O-1', channel: 'sandbox', channelTxnNo: null, status: 'FAILED', currency: 'CNY', amount: 1, paidAt: null, retryable: true }
+    const second = { ...first, paymentNo: 'P-2', status: 'SUCCEEDED', retryable: false }
     expect(newestPayment([first, second])?.paymentNo).toBe('P-2')
     expect(newestPayment([])).toBeNull()
   })
@@ -195,6 +198,7 @@ describe('payment status labels', () => {
       currency: 'CNY',
       amount: 336000,
       paidAt: null,
+      retryable: false,
     }
     expect(isPaymentSettled([])).toBe(false)
     expect(isPaymentSettled([base])).toBe(false)
@@ -203,6 +207,78 @@ describe('payment status labels', () => {
     )
     // 结果待核实不是成功，也不当失败展示
     expect(isPaymentSettled([{ ...base, status: 'UNKNOWN' }])).toBe(false)
+  })
+})
+
+describe('payment retry', () => {
+  const payment = (overrides: Partial<PaymentView> = {}): PaymentView => ({
+    paymentNo: 'PAY-1',
+    orderNo: 'AWN-1',
+    channel: 'sandbox',
+    channelTxnNo: null,
+    status: 'FAILED',
+    currency: 'CNY',
+    amount: 336000,
+    paidAt: null,
+    retryable: false,
+    ...overrides,
+  })
+
+  it('offers a retry only when the backend marks the failed payment retryable', () => {
+    expect(canRetryPayment(payment({ status: 'FAILED', retryable: true }))).toBe(true)
+    // 失败但订单已过截止期：后端置 false，前端不自行推断可重试
+    expect(canRetryPayment(payment({ status: 'FAILED', retryable: false }))).toBe(false)
+    expect(canRetryPayment(payment({ status: 'SUCCEEDED', retryable: true }))).toBe(false)
+    expect(canRetryPayment(payment({ status: 'PENDING', retryable: true }))).toBe(false)
+    expect(canRetryPayment(null)).toBe(false)
+  })
+})
+
+describe('pay countdown', () => {
+  const order = (overrides: Partial<OrderView> = {}): OrderView => ({
+    orderNo: 'AWN-1',
+    status: 'PENDING_PAYMENT',
+    currency: 'CNY',
+    totalAmount: 336000,
+    discountAmount: 0,
+    feeAmount: 0,
+    payAmount: 336000,
+    expiresAt: '2026-10-15T12:00:00Z',
+    items: [],
+    serverTime: '2026-10-15T11:50:00Z',
+    payExpiresInSeconds: 600,
+    ...overrides,
+  })
+
+  const at = (iso: string) => Date.parse(iso)
+
+  it('counts down from the server-time anchor, not the local clock', () => {
+    const o = order({ serverTime: '2026-10-15T11:50:00Z', payExpiresInSeconds: 600 })
+    expect(payCountdownSeconds(o, at('2026-10-15T11:50:00Z'))).toBe(600)
+    expect(payCountdownSeconds(o, at('2026-10-15T11:55:00Z'))).toBe(300)
+    expect(payCountdownSeconds(o, at('2026-10-15T11:59:30Z'))).toBe(30)
+  })
+
+  it('floors at zero and never counts down a non-payable order', () => {
+    const o = order({ serverTime: '2026-10-15T11:50:00Z', payExpiresInSeconds: 60 })
+    expect(payCountdownSeconds(o, at('2026-10-15T12:30:00Z'))).toBe(0)
+    // 非待支付状态恒为 0，不看前端算出的剩余时间
+    expect(payCountdownSeconds(order({ status: 'PAID' }), at('2026-10-15T11:50:00Z'))).toBe(0)
+    expect(
+      payCountdownSeconds(order({ status: 'EXPIRED', payExpiresInSeconds: 0 }), at('2026-10-15T11:50:00Z')),
+    ).toBe(0)
+  })
+
+  it('drops an unparseable server time instead of fabricating a countdown', () => {
+    expect(payCountdownSeconds(order({ serverTime: 'not-a-date' }), Date.now())).toBe(0)
+  })
+
+  it('formats mm:ss and adds an hour field past one hour', () => {
+    expect(formatCountdown(0)).toBe('00:00')
+    expect(formatCountdown(-5)).toBe('00:00')
+    expect(formatCountdown(59)).toBe('00:59')
+    expect(formatCountdown(600)).toBe('10:00')
+    expect(formatCountdown(3661)).toBe('01:01:01')
   })
 })
 

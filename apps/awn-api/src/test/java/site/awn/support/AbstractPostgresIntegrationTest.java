@@ -41,5 +41,11 @@ public abstract class AbstractPostgresIntegrationTest {
             registry.add("spring.datasource.username", POSTGRES::getUsername);
             registry.add("spring.datasource.password", POSTGRES::getPassword);
         }
+        // 所有测试上下文共享同一个 PostgreSQL 容器，而 Hikari 按 maximum-pool-size 预热连接：
+        // 主配置的 20 × 多个缓存上下文（@TestConfiguration / 不同探针配置各成一份）
+        // 会打满容器的 max_connections，报 PSQL FATAL: too many clients already。
+        // 测试为单线程顺序执行，6 个连接足够；收紧池上限而不是抬高容器连接数。
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "6");
+        registry.add("spring.datasource.hikari.minimum-idle", () -> "1");
     }
 }

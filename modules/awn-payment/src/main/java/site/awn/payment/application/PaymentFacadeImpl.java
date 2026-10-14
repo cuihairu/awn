@@ -38,7 +38,9 @@ import site.awn.shared.outbox.OutboxMessageRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -52,6 +54,12 @@ public class PaymentFacadeImpl implements PaymentFacade {
     private static final Logger log = LoggerFactory.getLogger(PaymentFacadeImpl.class);
 
     private static final String AGGREGATE_TYPE = "PAYMENT";
+
+    /** 在途或已成功的支付单状态：同订单存在即阻止新发起支付单（防重复扣款） */
+    private static final Set<PaymentStatus> BLOCKS_NEW_PAYMENT = EnumSet.of(
+            PaymentStatus.CREATED, PaymentStatus.PENDING, PaymentStatus.UNKNOWN,
+            PaymentStatus.SUCCEEDED, PaymentStatus.REFUNDING, PaymentStatus.PARTIALLY_REFUNDED,
+            PaymentStatus.REFUNDED);
 
     private final PaymentRepository payments;
     private final RefundRepository refunds;
@@ -104,6 +112,43 @@ public class PaymentFacadeImpl implements PaymentFacade {
             return fresh;
         });
         return toView(pending);
+    }
+
+    @Override
+    public List<String> channels() {
+        return router.channels();
+    }
+
+    /**
+     * 失败单重试（契约「支付失败重试与换渠道」）：守卫通过后与首笔支付同一创建路径，
+     * 原失败单保持 FAILED、历史不改写；新单金额/币种沿用源单（源自订单应付快照）。
+     */
+    @Override
+    public PaymentView retryPayment(String paymentNo, String requestedChannel) {
+        Payment source = payments.findByPaymentNo(paymentNo)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentNo));
+        if (source.getStatus() != PaymentStatus.FAILED) {
+            throw new PaymentConflictException(
+                    "retry only allowed from failed payment: " + source.getStatus());
+        }
+        site.awn.order.api.OrderView order = orders.orderOf(source.getOrderNo());
+        if (order.status() != site.awn.order.domain.OrderStatus.PENDING_PAYMENT
+                || (order.expiresAt() != null && !order.expiresAt().isAfter(Instant.now()))) {
+            throw new site.awn.order.domain.OrderConflictException(
+                    "order no longer payable: " + order.status());
+        }
+        // 同订单已有在途/成功支付单：不允许再发起新单，防重复扣款
+        if (payments.findByOrderNoOrderByCreatedAtAsc(source.getOrderNo()).stream()
+                .anyMatch(other -> !other.getPaymentNo().equals(source.getPaymentNo())
+                        && BLOCKS_NEW_PAYMENT.contains(other.getStatus()))) {
+            throw new PaymentConflictException(
+                    "another payment is in flight or already succeeded for order: "
+                            + source.getOrderNo());
+        }
+        String channel = requestedChannel == null || requestedChannel.isBlank()
+                ? source.getChannel() : requestedChannel;
+        return createPayment(new CreatePaymentCommand(source.getOrderNo(), channel,
+                source.getCurrency(), source.getAmount()));
     }
 
     @Override
@@ -430,13 +475,32 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     private PaymentView toView(Payment p) {
-        return new PaymentView(p.getPaymentNo(), p.getOrderNo(), p.getChannel(), p.getChannelTxnNo(),
-                p.getStatus().name(), p.getCurrency(), p.getAmount(), p.getPaidAt());
+        return view(p, p.getStatus());
     }
 
     private PaymentView viewWithStatus(Payment p, PaymentStatus status) {
+        return view(p, status);
+    }
+
+    private PaymentView view(Payment p, PaymentStatus status) {
         return new PaymentView(p.getPaymentNo(), p.getOrderNo(), p.getChannel(), p.getChannelTxnNo(),
-                status.name(), p.getCurrency(), p.getAmount(), p.getPaidAt());
+                status.name(), p.getCurrency(), p.getAmount(), p.getPaidAt(),
+                retryable(p, status));
+    }
+
+    /** 可重试判定（契约「支付失败重试与换渠道」）：失败态 + 订单可支付 + 同订单无在途/成功支付单 */
+    private boolean retryable(Payment p, PaymentStatus status) {
+        if (status != PaymentStatus.FAILED) {
+            return false;
+        }
+        site.awn.order.api.OrderView order = orders.orderOf(p.getOrderNo());
+        if (order.status() != site.awn.order.domain.OrderStatus.PENDING_PAYMENT
+                || (order.expiresAt() != null && !order.expiresAt().isAfter(Instant.now()))) {
+            return false;
+        }
+        return payments.findByOrderNoOrderByCreatedAtAsc(p.getOrderNo()).stream()
+                .noneMatch(other -> !other.getPaymentNo().equals(p.getPaymentNo())
+                        && BLOCKS_NEW_PAYMENT.contains(other.getStatus()));
     }
 
     private RefundView toView(Refund r) {

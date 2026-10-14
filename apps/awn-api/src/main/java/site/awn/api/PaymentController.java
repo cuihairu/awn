@@ -58,6 +58,27 @@ public class PaymentController {
         return payments.paymentsOfOrder(orderId);
     }
 
+    /** 可用支付渠道清单（由已注册网关决定）；未知渠道发起支付一律 409 */
+    @GetMapping("/api/v1/payments/channels")
+    public List<String> channels() {
+        return payments.channels();
+    }
+
+    /**
+     * 失败单重试（可换渠道）：请求体 {@code {"channel":"..."}}，channel 省略时沿用原支付单渠道。
+     * 守卫（契约「支付失败重试与换渠道」）：未知支付单 → 404；源单非失败态 / 订单不可支付 →
+     * 409；金额与币种仍取订单应付快照，客户端传值不参与计算。
+     */
+    @PostMapping("/api/v1/payments/{paymentNo}/retry")
+    public ResponseEntity<PaymentView> retryPayment(
+            @PathVariable String paymentNo,
+            @RequestBody(required = false) CreatePaymentRequest request) {
+        PaymentView payment = payments.retryPayment(paymentNo, request == null ? null : request.channel());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .location(java.net.URI.create("/api/v1/payments/" + payment.paymentNo()))
+                .body(payment);
+    }
+
     /**
      * 发起退款：幂等键缺失 → 400；支付单不属于该订单或不存在 → 404；
      * 支付未成功 / 超额退款 → 409（模块层状态机与额度守卫）。

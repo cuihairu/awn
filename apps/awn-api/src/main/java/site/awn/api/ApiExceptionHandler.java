@@ -30,6 +30,8 @@ import site.awn.payment.domain.RefundNotFoundException;
 import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderNotFoundException;
+import site.awn.order.domain.WaitlistConflictException;
+import site.awn.order.domain.WaitlistNotFoundException;
 import site.awn.shared.error.ErrorCode;
 import site.awn.star.domain.PersonNotFoundException;
 import site.awn.star.domain.StarConflictException;
@@ -84,6 +86,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(VenueNotFoundException.class)
     public ResponseEntity<ErrorResponse> venueNotFound(VenueNotFoundException e) {
         return envelope(ErrorCode.VENUE_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(WaitlistNotFoundException.class)
+    public ResponseEntity<ErrorResponse> waitlistNotFound(WaitlistNotFoundException e) {
+        return envelope(ErrorCode.WAITLIST_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(WaitlistConflictException.class)
+    public ResponseEntity<ErrorResponse> waitlistConflict(WaitlistConflictException e) {
+        return envelope(ErrorCode.WAITLIST_CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(EventConflictException.class)

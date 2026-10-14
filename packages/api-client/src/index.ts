@@ -101,6 +101,10 @@ export interface OrderView {
   payAmount: number
   expiresAt: string | null
   items: OrderItemView[]
+  /** 响应生成时的服务端时间：倒计时以此为锚点，客户端不用本机时钟判超时 */
+  serverTime: string
+  /** 剩余支付秒数；非待支付或已过期恒为 0 */
+  payExpiresInSeconds: number
 }
 
 export interface QuoteView {
@@ -120,6 +124,8 @@ export interface PaymentView {
   currency: string
   amount: number
   paidAt: string | null
+  /** 本单失败且订单仍可支付时为 true：据此显示「可重新支付 / 可换渠道」，不据此推断支付结果 */
+  retryable: boolean
 }
 
 export async function createOrder(
@@ -197,6 +203,35 @@ export async function listPayments(
   return fetch(`${API_BASE}/orders/${orderNo}/payments`, init).then((res) =>
     readJson<PaymentView[]>(res),
   )
+}
+
+/** 可用支付渠道编码（由后端已注册网关决定）；渠道编码不硬编码在各端，换渠道前先读本清单 */
+export async function listPaymentChannels(
+  init?: RequestInit,
+): Promise<string[]> {
+  return fetch(`${API_BASE}/payments/channels`, init).then((res) =>
+    readJson<string[]>(res),
+  )
+}
+
+/**
+ * 失败支付单重试：金额与币种仍取订单应付快照，客户端只选渠道。
+ * 原支付单保持 FAILED，历史不改写；未知支付单 404，源单非失败态或订单已过截止期 409。
+ */
+export async function retryPayment(
+  paymentNo: string,
+  channel?: string,
+  init?: RequestInit,
+): Promise<PaymentView> {
+  return fetch(`${API_BASE}/payments/${paymentNo}/retry`, {
+    ...init,
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify(channel ? { channel } : {}),
+  }).then((res) => readJson<PaymentView>(res))
 }
 
 /** 履约状态（独立于订单与支付状态机：支付成功只推进到 PENDING_SELLER） */
@@ -564,4 +599,93 @@ export async function renderCampaign(
   return fetch(`${API_BASE}/campaigns/${campaignCode}/render`, init).then((res) =>
     readJson<RenderedPageView>(res),
   )
+}
+
+/* ------------------------------------------------------------------ *
+ * 排队 / 候补（docs/api/contracts.md 排队 / 候补）
+ * 排队只登记意愿：不占库存、不预生成订单；递补由后端 Worker 按池 FIFO 驱动，
+ * 为队首原子预留并生成待支付订单（与普通下单同源）。
+ * ------------------------------------------------------------------ */
+
+export type WaitlistStatus = 'WAITING' | 'PROMOTED' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED'
+
+export interface WaitlistView {
+  waitlistNo: string
+  status: WaitlistStatus
+  userId: string
+  sessionId: string
+  poolCode: string
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  currency: string
+  /** 同池 WAITING 队列位次（从 1 起）；非排队状态为 null */
+  position: number | null
+  /** 递补生成的订单号；排队中为 null */
+  orderNo: string | null
+  /** 递补后订单的剩余支付秒数；未递补为 null */
+  payExpiresInSeconds: number | null
+  createdAt: string
+}
+
+export interface JoinWaitlistPayload {
+  sessionId: string
+  poolCode: string
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  currency: string
+  userId: number
+}
+
+/** 加入候补：同用户同池重复排队 → 409 WAITLIST_CONFLICT；未知库存池 → 404 POOL_NOT_FOUND */
+export async function joinWaitlist(
+  payload: JoinWaitlistPayload,
+  init?: RequestInit,
+): Promise<WaitlistView> {
+  return fetch(`${API_BASE}/waitlist`, {
+    ...init,
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify(payload),
+  }).then((res) => readJson<WaitlistView>(res))
+}
+
+/** 候补条目查询；未知条目 → 404 WAITLIST_NOT_FOUND */
+export async function getWaitlist(
+  waitlistNo: string,
+  init?: RequestInit,
+): Promise<WaitlistView> {
+  return fetch(`${API_BASE}/waitlist/${waitlistNo}`, init).then((res) =>
+    readJson<WaitlistView>(res),
+  )
+}
+
+/** 某用户的候补列表（加入时间倒序）；缺 userId → 400 VALIDATION_FAILED */
+export async function listMyWaitlist(
+  userId: string,
+  init?: RequestInit,
+): Promise<WaitlistView[]> {
+  return fetch(`${API_BASE}/waitlist?userId=${encodeURIComponent(userId)}`, init).then(
+    (res) => readJson<WaitlistView[]>(res),
+  )
+}
+
+/**
+ * 退出排队：重复取消幂等返回 canceled=false；已递补或已终态 → 409 WAITLIST_CONFLICT
+ * （已递补的席位走订单取消 POST /orders/{orderId}/cancel）。
+ */
+export async function cancelWaitlist(
+  waitlistNo: string,
+  init?: RequestInit,
+): Promise<{ canceled: boolean }> {
+  return fetch(`${API_BASE}/waitlist/${waitlistNo}/cancel`, {
+    ...init,
+    method: 'POST',
+  }).then((res) => readJson<{ canceled: boolean }>(res))
 }

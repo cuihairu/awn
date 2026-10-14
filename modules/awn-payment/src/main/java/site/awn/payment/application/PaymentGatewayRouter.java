@@ -27,4 +27,9 @@ public class PaymentGatewayRouter {
         }
         return gateway;
     }
+
+    /** 可用渠道编码（字母序）：由已注册网关决定，客户端不硬编码渠道名 */
+    public List<String> channels() {
+        return gateways.keySet().stream().sorted().toList();
+    }
 }

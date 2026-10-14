@@ -7,9 +7,12 @@ import site.awn.order.api.OrderView;
 import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderItem;
 import site.awn.order.domain.OrderNotFoundException;
+import site.awn.order.domain.OrderStatus;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -44,8 +47,15 @@ public class OrderReadService {
                         i.getQuantity(), i.getUnitPrice(), i.getDiscountAmount(), i.getFeeAmount(),
                         i.getLineTotal(), i.getReservationNo(), i.getListingNo(), i.getUnitNo()))
                 .toList();
+        Instant serverTime = Instant.now();
+        long payExpiresInSeconds = 0;
+        if (order.getStatus() == OrderStatus.PENDING_PAYMENT && order.getExpiresAt() != null) {
+            payExpiresInSeconds = Math.max(0,
+                    Duration.between(serverTime, order.getExpiresAt()).toSeconds());
+        }
         return new OrderView(order.getOrderNo(), order.getStatus(), order.getCurrency(),
                 order.getTotalAmount(), order.getDiscountAmount(), order.getFeeAmount(),
-                order.getPayAmount(), order.getExpiresAt(), itemViews);
+                order.getPayAmount(), order.getExpiresAt(), itemViews,
+                serverTime, payExpiresInSeconds);
     }
 }

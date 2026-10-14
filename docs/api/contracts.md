@@ -36,8 +36,10 @@
 | WORK_NOT_FOUND | 404 | 作品不存在或未发布（明星图鉴） |
 | ORDER_CONFLICT | 409 | 订单状态机冲突（非法迁移） |
 | IDEMPOTENCY_CONFLICT | 409 | 幂等键对应了不同的请求内容 |
+| WAITLIST_NOT_FOUND | 404 | 候补条目不存在 |
 | INSUFFICIENT_INVENTORY | 409 | 库存不足 |
 | INVENTORY_CONFLICT | 409 | 预留状态机冲突（如确认已释放的预留） |
+| WAITLIST_CONFLICT | 409 | 候补状态机冲突（重复排队、对已递补席位操作） |
 | PAYMENT_CONFLICT | 409 | 支付状态机冲突（如重复确认已成功的支付） |
 | REFUND_CONFLICT | 409 | 退款状态机冲突或超退 |
 | CONFLICT | 409 | 其他业务冲突（通用） |
@@ -81,6 +83,14 @@ POST /api/v1/orders/{orderId}/payments
 GET  /api/v1/orders/{orderId}/payments
 POST /api/v1/orders/{orderId}/refunds
 GET  /api/v1/orders/{orderId}/fulfillment
+
+GET  /api/v1/payments/channels
+POST /api/v1/payments/{paymentNo}/retry
+
+POST /api/v1/waitlist
+GET  /api/v1/waitlist/{waitlistNo}
+POST /api/v1/waitlist/{waitlistNo}/cancel
+GET  /api/v1/waitlist?userId=
 
 POST /api/v1/checkout/quote
 
@@ -135,6 +145,61 @@ GET /api/v1/works/{workId}
 
 支付回调（验签、去重、UNKNOWN 待核实）属渠道到后端的通道，**不在这组客户端端点内**，
 模块层语义见 `docs/architecture/payment-state-machine.md`。
+
+### 订单支付倒计时
+
+订单视图（`GET /api/v1/orders/{orderId}`、下单与取消响应）带 `expiresAt`（支付截止时刻）、
+`payExpiresInSeconds`（剩余支付秒数，已过期不再为负）与 `serverTime`（响应生成时的服务端时间）。
+
+倒计时由客户端以 `serverTime` 为锚点推算，**不得用本机时钟判断是否超时**：是否超时只认后端结论
+（`POST /orders/{orderId}/cancel` 与 Worker 超时任务后的 `status`）。非 `PENDING_PAYMENT` 状态
+的 `payExpiresInSeconds` 恒为 `0`——已取消 / 已超时 / 已支付的订单没有可支付的剩余时间。
+
+### 支付失败重试与换渠道
+
+支付单视图带 `retryable`：本单处于 `FAILED`、且所属订单仍是待支付且未过支付截止期时为 `true`。
+客户端据此显示「可重新支付 / 可换渠道」，**不据此推断支付结果**（支付成功只认渠道回调）。
+
+- `GET /api/v1/payments/channels`：可用渠道编码列表（由已注册网关决定）。渠道编码不硬编码在各端，
+  换渠道下单前先读本接口。
+- `POST /api/v1/payments/{paymentNo}/retry`：失败单重试，请求体 `{"channel":"..."}`，
+  `channel` 省略时沿用原支付单的渠道。**金额与币种仍取订单应付快照**，客户端传值不参与计算。
+  成功返回 201 与新支付单；原支付单保持 `FAILED`，历史不改写。
+- 守卫：未知支付单 → 404 `PAYMENT_NOT_FOUND`；源单不是失败态（含进行中与成功态）→ 409
+  `PAYMENT_CONFLICT`；订单非 `PENDING_PAYMENT` 或已过支付截止期 → 409 `ORDER_CONFLICT`；
+  渠道不支持 → 409 `PAYMENT_CONFLICT`。
+
+### 排队 / 候补（售罄后等待补票）
+
+候补用于场次售罄后的等待队列：库存释放后按加入顺序递补，为队首原子预留并生成待支付订单；
+未在支付截止期内支付则该席位过期，库存回到池中、顺延下一位。
+
+- `POST /api/v1/waitlist`：加入候补，请求体
+  `{"sessionId","poolCode","productId","productName","quantity","unitPrice","currency","userId"}`，
+  成功返回 201 与候补条目（`waitlistNo` 为对外稳定标识）。
+- `GET /api/v1/waitlist/{waitlistNo}`：候补条目。`position` 为同池 `WAITING` 条目中的位次（从 1 起），
+  非 `WAITING` 状态为 `null`；`orderNo` 与 `payExpiresInSeconds` 仅递补后有值。
+- `POST /api/v1/waitlist/{waitlistNo}/cancel`：退出排队。未知条目 → 404 `WAITLIST_NOT_FOUND`；
+  重复取消幂等返回 `false`（`canceled: false`）；已递补或已终态 → 409 `WAITLIST_CONFLICT`
+  （已递补的席位走订单取消 `POST /orders/{orderId}/cancel`）。
+- `GET /api/v1/waitlist?userId=`：某用户的候补列表（加入时间倒序）；缺 `userId` → 400
+  `VALIDATION_FAILED`。
+
+候补状态机：
+
+| 状态 | 含义 | 下一状态 |
+|------|------|----------|
+| WAITING | 排队中 | PROMOTED（递补成功）/ CANCELLED（主动退出） |
+| PROMOTED | 已递补：已原子预留并生成待支付订单 | CLAIMED（订单已支付）/ EXPIRED（订单超时或取消） |
+| CLAIMED | 席位已成单（订单已支付） | 终态 |
+| EXPIRED | 递补后未在支付截止期内支付，席位过期 | 终态 |
+| CANCELLED | 主动退出排队 | 终态 |
+
+递补由 Worker 任务执行（`awn.worker.tasks.waitlist-promotion`，默认关闭），按池 FIFO：队首预留
+成功才生成订单，预留失败（库存仍不足）保持排队等待下一轮；单条失败不影响其余条目。
+
+候补递补生成的订单与普通下单同源（同一库存预留与金额计算口径），金额按候补条目快照的
+`unitPrice` 重算。商品改价不回溯历史候补条目。
 
 ### 幂等键规则
 

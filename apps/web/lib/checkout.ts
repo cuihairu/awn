@@ -91,9 +91,39 @@ export function paymentInFlight(status: string): boolean {
   return status === 'CREATED' || status === 'PENDING' || status === 'UNKNOWN'
 }
 
+/**
+ * 失败单是否可重新支付 / 可换渠道：只认后端下发的 retryable
+ * （本单 FAILED 且所属订单仍待支付、未过支付截止期），前端不自行推断。
+ */
+export function canRetryPayment(payment: PaymentView | null): boolean {
+  return payment?.status === 'FAILED' && payment.retryable === true
+}
+
 /** 支付成功只认渠道回调结果；前端参数、跳转参数都不作为成功依据 */
 export function isPaymentSettled(payments: PaymentView[]): boolean {
   return payments.some((p) => p.status === 'SUCCEEDED')
+}
+
+/**
+ * 支付倒计时剩余秒数：以 serverTime 为锚点推算，**不得用本机时钟判断是否超时**
+ * （是否超时只认后端结论）。非待支付或已过期返回 0。
+ */
+export function payCountdownSeconds(order: OrderView | null, nowMs: number): number {
+  if (!order || !canPay(order.status)) return 0
+  const serverMs = Date.parse(order.serverTime)
+  if (Number.isNaN(serverMs)) return 0
+  const remaining = order.payExpiresInSeconds - (nowMs - serverMs) / 1000
+  return Math.max(0, Math.ceil(remaining))
+}
+
+/** 倒计时展示：mm:ss，超 1 小时补小时位；0 展示 00:00（不再往下走负数） */
+export function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return '00:00'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
 export const FULFILLMENT_STATUS_LABEL_ZH: Record<FulfillmentStatus, string> = {
@@ -251,6 +281,10 @@ export const PAYMENT_CHANNELS: { key: string; label: string; note: string }[] = 
   { key: 'sandbox', label: '沙箱支付', note: '渠道回调确认成功，网页端不凭参数确认支付' },
 ]
 
+/**
+ * 渠道展示名映射（仅标签，不是渠道清单）：可下单渠道编码由后端
+ * GET /payments/channels 下发，前端不硬编码渠道可用性。
+ */
 export function paymentChannelLabel(channel: string): string {
   return PAYMENT_CHANNELS.find((c) => c.key === channel)?.label ?? channel
 }

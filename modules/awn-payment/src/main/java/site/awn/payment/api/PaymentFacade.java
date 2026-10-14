@@ -13,6 +13,20 @@ public interface PaymentFacade {
     /** 创建支付单并向渠道发起受理 */
     PaymentView createPayment(CreatePaymentCommand command);
 
+    /** 可用支付渠道编码（由已注册网关决定）；换渠道前先读本清单 */
+    List<String> channels();
+
+    /**
+     * 失败单重试（契约「支付失败重试与换渠道」）：基于失败支付单发起一笔新支付单，
+     * 金额与币种仍取源支付单（源自订单应付快照），渠道缺省沿用源单、可显式更换。
+     *
+     * @throws PaymentNotFoundException 未知支付单
+     * @throws PaymentConflictException 源单不是失败态，或该订单已有在途/成功支付单，
+     *                                  或目标渠道不支持
+     * @throws site.awn.order.domain.OrderConflictException 订单非待支付或已过支付截止期
+     */
+    PaymentView retryPayment(String paymentNo, String requestedChannel);
+
     PaymentView payment(String paymentNo);
 
     /** 订单维度的支付历史（创建顺序）；未发起过支付返回空列表 */
