@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { getPerson, type PersonDetail } from '@awn/api-client'
+import { ApiError, getPerson, type PersonDetail } from '@awn/api-client'
 import { StarPhoto } from '../../../components/StarPhoto'
 import {
   PROFESSION_LABEL_ZH,
@@ -31,15 +31,15 @@ export default function PersonDetailPage() {
     setLoading(true)
     getPerson(personId)
       .then((data) => {
-        if (!alive) return
-        if ('person' in data) {
-          setDetail(data)
-        } else {
-          setNotFound(true)
-        }
+        if (alive) setDetail(data)
       })
-      .catch(() => {
-        if (alive) setFailed(true)
+      .catch((err) => {
+        if (!alive) return
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true)
+        } else {
+          setFailed(true)
+        }
       })
       .finally(() => {
         if (alive) setLoading(false)

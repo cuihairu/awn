@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { getWork, type WorkDetail } from '@awn/api-client'
+import { ApiError, getWork, type WorkDetail } from '@awn/api-client'
 import {
   WORK_TYPE_LABEL_ZH,
   formatYear,
@@ -29,15 +29,15 @@ export default function WorkDetailPage() {
     setLoading(true)
     getWork(workId)
       .then((data) => {
-        if (!alive) return
-        if ('work' in data) {
-          setDetail(data)
-        } else {
-          setNotFound(true)
-        }
+        if (alive) setDetail(data)
       })
-      .catch(() => {
-        if (alive) setFailed(true)
+      .catch((err) => {
+        if (!alive) return
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true)
+        } else {
+          setFailed(true)
+        }
       })
       .finally(() => {
         if (alive) setLoading(false)

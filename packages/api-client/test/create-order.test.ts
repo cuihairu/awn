@@ -12,7 +12,12 @@ const payload: OrderCreatePayload = {
 }
 
 function mockFetchOnce(body: unknown) {
-  const fn = vi.fn().mockResolvedValue({ json: () => Promise.resolve(body) })
+  const fn = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: () => Promise.resolve(body),
+  })
   vi.stubGlobal('fetch', fn)
   return fn
 }

@@ -8,6 +8,35 @@
 
 export const API_BASE = '/api/v1'
 
+/**
+ * 统一响应处理：非 2xx 抛 ApiError（携带 HTTP 状态与后端错误码）。
+ * 调用方据此区分「资源不存在」（404）与「链路 / 服务故障」（其余）——
+ * 不再把错误信封当成功体返回，避免列表页把 {code,message} 当数组渲染。
+ */
+export class ApiError extends Error {
+  readonly status: number
+  readonly code: string
+
+  constructor(status: number, code: string, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
+async function readJson<T>(res: Response): Promise<T> {
+  const body: unknown = await res.json().catch(() => null)
+  if (!res.ok) {
+    const envelope = body as { code?: unknown; message?: unknown } | null
+    const code = typeof envelope?.code === 'string' ? envelope.code : `HTTP_${res.status}`
+    const message =
+      typeof envelope?.message === 'string' ? envelope.message : res.statusText
+    throw new ApiError(res.status, code, message)
+  }
+  return body as T
+}
+
 export interface OrderCreatePayload {
   /** 客户端生成的幂等键 */
   idempotencyKey: string
@@ -42,7 +71,7 @@ export async function createOrder(
       ...(init?.headers ?? {}),
     },
     body: JSON.stringify(payload),
-  }).then((res) => res.json())
+  }).then((res) => readJson<unknown>(res))
 }
 
 /* ------------------------------------------------------------------ *
@@ -162,14 +191,15 @@ export async function listPersons(
       q: query.q,
     }),
     init,
-  ).then((res) => res.json())
+  ).then((res) => readJson<PersonView[]>(res))
 }
 
 export async function getPerson(
   personId: string,
   init?: RequestInit,
 ): Promise<PersonDetail> {
-  return fetch(`${API_BASE}/stars/${personId}`, init).then((res) => res.json())
+  return fetch(`${API_BASE}/stars/${personId}`, init)
+    .then((res) => readJson<PersonDetail>(res))
 }
 
 export async function listWorks(
@@ -179,12 +209,13 @@ export async function listWorks(
   return fetch(
     withQuery('/works', { type: query.type, q: query.q }),
     init,
-  ).then((res) => res.json())
+  ).then((res) => readJson<WorkView[]>(res))
 }
 
 export async function getWork(
   workId: string,
   init?: RequestInit,
 ): Promise<WorkDetail> {
-  return fetch(`${API_BASE}/works/${workId}`, init).then((res) => res.json())
+  return fetch(`${API_BASE}/works/${workId}`, init)
+    .then((res) => readJson<WorkDetail>(res))
 }
