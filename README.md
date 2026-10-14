@@ -10,8 +10,8 @@ Ticketing trading & intelligence platform
 
 [![ci](https://github.com/cuihairu/awn/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/awn/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-21-6db33f?logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-6db33f?logo=springboot&logoColor=white)
-![Spring Modulith](https://img.shields.io/badge/Spring%20Modulith-1.4.2-6db33f?logo=spring&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6db33f?logo=springboot&logoColor=white)
+![Spring Modulith](https://img.shields.io/badge/Spring%20Modulith-2.1.1-6db33f?logo=spring&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1?logo=postgresql&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-10-f9ad00?logo=pnpm&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-client-02569b?logo=flutter&logoColor=white)

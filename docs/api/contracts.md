@@ -162,9 +162,17 @@ POST /api/v1/admin/anomalies/{alertId}/acknowledge
 GET  /api/v1/admin/audit-logs
 
 POST /api/v1/admin/events/{eventCode}/publish
+
+POST /api/v1/admin/stars
+POST /api/v1/admin/stars/{personId}/publish
+POST /api/v1/admin/works
+POST /api/v1/admin/works/{workId}/publish
+POST /api/v1/admin/works/{workId}/cast
 ```
 
 专场管理写操作与运营接口同权（`X-Admin-Token`），公开读 GET 放行。
+
+图鉴运营写操作同权（`X-Admin-Token`）：建人物 / 作品草稿、发布（`DRAFT` → `PUBLISHED` 守卫，重复发布 → 409 `CONFLICT`）、给作品绑定人物身份（`roleType` / `roleName` / `billingOrder`，重复绑定 → 409）。绑定与发布校验未知资源 → 404 `PERSON_NOT_FOUND` / `WORK_NOT_FOUND`。
 
 库存调整必须通过专门接口，并要求**权限校验、操作原因、变更流水和审计记录**。
 
