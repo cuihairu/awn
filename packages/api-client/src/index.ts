@@ -486,6 +486,28 @@ export async function getProductAvailability(
     .then((res) => readJson<AvailabilityResponse>(res))
 }
 
+/** 逐座状态机（座位图 status 取值，与库存模块 SeatStatus 一致） */
+export type SeatStatus = 'IN_STOCK' | 'RESERVED' | 'SOLD' | 'DELIVERED' | 'INVALID'
+
+/** 座位图条目：只含编号与状态（占座订单号不进公开面） */
+export interface SeatMapItem {
+  seatNo: string
+  productCode: string
+  section: string
+  row: string
+  seat: string
+  status: SeatStatus
+}
+
+/** 场次座位图（公开只读）：可见性与场次详情同口径，父活动未公开 → 404 */
+export async function getSeatmap(
+  sessionId: string,
+  init?: RequestInit,
+): Promise<SeatMapItem[]> {
+  return fetch(`${API_BASE}/sessions/${sessionId}/seatmap`, init)
+    .then((res) => readJson<SeatMapItem[]>(res))
+}
+
 /* ------------------------------------------------------------------ *
  * 专场渲染（docs/architecture/campaign-rendering.md）
  * 只读已发布版本快照（不可变 revision），草稿变更不影响线上页面；

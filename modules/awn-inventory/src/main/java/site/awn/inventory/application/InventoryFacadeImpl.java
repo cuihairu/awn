@@ -111,6 +111,11 @@ public class InventoryFacadeImpl implements InventoryFacade {
     }
 
     @Override
+    public java.util.List<SeatView> seatsOfSession(String sessionCode) {
+        return seatService.seatsOfSession(sessionCode);
+    }
+
+    @Override
     public SeatView reserveSeat(String seatNo, String orderNo) {
         return seatService.reserveSeat(seatNo, orderNo);
     }

@@ -4,6 +4,7 @@ import {
   getEvent,
   getProduct,
   getProductAvailability,
+  getSeatmap,
   getSession,
   getSessionProducts,
   listEventSessions,
@@ -89,6 +90,35 @@ describe('events / sessions / products', () => {
       { ok: false, status: 404, statusText: 'Not Found' },
     )
     await expect(getSessionProducts('9')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+      code: 'SESSION_NOT_FOUND',
+    })
+  })
+
+  it('reads the session seatmap entries', async () => {
+    const fetchMock = mockFetchOnce([
+      {
+        seatNo: 'SEAT-1',
+        productCode: 'p-seat',
+        section: 'A区',
+        row: '1',
+        seat: '1',
+        status: 'IN_STOCK',
+      },
+    ])
+    const seats = await getSeatmap('9')
+    expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/sessions/9/seatmap`, undefined)
+    expect(seats).toHaveLength(1)
+    expect(seats[0]).toMatchObject({ productCode: 'p-seat', status: 'IN_STOCK' })
+  })
+
+  it('rejects seatmap read when the parent event is not public', async () => {
+    mockFetchOnce(
+      { code: 'SESSION_NOT_FOUND', message: 'session not found: 9' },
+      { ok: false, status: 404, statusText: 'Not Found' },
+    )
+    await expect(getSeatmap('9')).rejects.toMatchObject({
       name: 'ApiError',
       status: 404,
       code: 'SESSION_NOT_FOUND',

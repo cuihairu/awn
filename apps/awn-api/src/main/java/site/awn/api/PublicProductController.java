@@ -62,6 +62,17 @@ public class PublicProductController {
                 .toList();
     }
 
+    /**
+     * 场次座位图（公开只读）：场次不存在或父活动未公开 → 404（同场次可见性口径）。
+     * 座位是独立模型，图上「可选」仅表示数据标记，实际可售以下单时后端原子预留为准。
+     */
+    @GetMapping("/api/v1/sessions/{sessionId}/seatmap")
+    public List<SeatMapItem> seatmap(@PathVariable Long sessionId) {
+        return inventory.seatsOfSession(events.publicSession(sessionId).sessionCode()).stream()
+                .map(SeatMapItem::of)
+                .toList();
+    }
+
     /** 数量行下单所需的池编码；未建池为 null（客户端按未开售处理） */
     private String poolCodeOf(String productCode) {
         return inventory.balanceOfProduct(productCode)

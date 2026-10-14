@@ -14,9 +14,13 @@ export const SEAT_STATUSES = ['IN_STOCK', 'RESERVED', 'SOLD', 'DELIVERED', 'INVA
 
 export type SeatStatus = (typeof SEAT_STATUSES)[number]
 
-/** 后端 GET /sessions/{sessionId}/seatmap 计划载荷（对齐 inventory.api.SeatView 字段）。 */
+/**
+ * 后端 GET /sessions/{sessionId}/seatmap 载荷条目（对齐 api 座位图条目；
+ * productCode 供票档页把座位归到座位型商品，分组渲染不消费它）。
+ */
 export interface SeatInput {
   seatNo: string
+  productCode?: string
   section: string
   row: string
   seat: string
@@ -93,3 +97,18 @@ export const SEAT_LAYOUT = {
   sectionGap: 24,
   labelWidth: 30,
 } as const
+
+/**
+ * 座位型商品编码集合：后端没有显式「座位型」标记，以座位图载荷中出现过的
+ * 商品编码为准，不发明字段。空载荷 = 无座位型商品。
+ */
+export function seatProductCodes(seats: SeatInput[]): Set<string> {
+  return new Set(
+    seats.filter((s) => typeof s.productCode === 'string').map((s) => s.productCode as string),
+  )
+}
+
+/** 某座位型商品的座位（按载荷顺序，分组交给 groupSeatSections）。 */
+export function seatsOfProduct(seats: SeatInput[], productCode: string): SeatInput[] {
+  return seats.filter((s) => s.productCode === productCode)
+}

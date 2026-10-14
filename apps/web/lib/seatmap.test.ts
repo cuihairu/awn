@@ -5,6 +5,8 @@ import {
   groupSeatSections,
   isSeatSelectable,
   seatOccupied,
+  seatsOfProduct,
+  seatProductCodes,
   type SeatInput,
 } from './seatmap'
 
@@ -74,5 +76,29 @@ describe('groupSeatSections', () => {
 
   it('returns an empty list for empty input', () => {
     expect(groupSeatSections([])).toEqual([])
+  })
+})
+
+describe('seat products', () => {
+  it('derives seat-type product codes from the seatmap payload, deduplicated', () => {
+    const codes = seatProductCodes([
+      seat({ productCode: 'p-a' }),
+      seat({ productCode: 'p-a' }),
+      seat({ productCode: 'p-b' }),
+    ])
+    expect([...codes].sort()).toEqual(['p-a', 'p-b'])
+  })
+
+  it('treats an empty seatmap as no seat products', () => {
+    expect(seatProductCodes([]).size).toBe(0)
+  })
+
+  it('filters a product seatmap by product code', () => {
+    const seats: SeatInput[] = [
+      seat({ seatNo: 'S1', productCode: 'p-a' }),
+      seat({ seatNo: 'S2', productCode: 'p-b' }),
+      seat({ seatNo: 'S3', productCode: 'p-a' }),
+    ]
+    expect(seatsOfProduct(seats, 'p-a').map((s) => s.seatNo)).toEqual(['S1', 'S3'])
   })
 })

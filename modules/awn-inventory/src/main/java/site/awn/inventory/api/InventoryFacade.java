@@ -65,6 +65,9 @@ public interface InventoryFacade {
     /** 商品的全部座位（按创建顺序） */
     java.util.List<SeatView> seatsOfProduct(String productCode);
 
+    /** 场次的全部座位（按创建顺序）：公开座位图读路径 */
+    java.util.List<SeatView> seatsOfSession(String sessionCode);
+
     /** 预留座位（IN_STOCK → RESERVED 并登记订单号）：并发抢座守卫裁决，败者抛 InventoryConflictException */
     SeatView reserveSeat(String seatNo, String orderNo);
 
