@@ -118,7 +118,10 @@
 - [x] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — fb4abed；前端 108 例（新增 mp-request/mp-api/order-flow/sections 37 例）+ ProductApiTests 8 例 + taro weapp 构建全 6 页 0 错
   - 交付面：发现列表 / 活动页 / 票档页（数量加减）/ 下单确认（Idempotency-Key + 后端金额重算）/ 订单支付（sandbox 渠道 + 支付历史）/ 专场页（campaign render 子集渲染）
   - 已代决（2026-10-14 巡检授权）：① section 子集取文本优先 7 类（heroBanner/richText/noticeBar/rulePanel/faq/priceTrend/countdown），媒体与数据列表类跳过并 console.warn，不强造 View/Text 渲染不了的形态；② 公共商品接口透出 `poolCode`（详情/可售摘要/场次商品列表，未建池为 null 按未开售处理）——数量行下单硬依赖，契约已补；③ 无公开专场列表接口，campaign 页手动输专场码获取，不造假入口；④ 微信拉起支付需商户号与签名（沙箱无配置），支付页显式占位说明，不伪造支付成功；⑤ userId 为演示输入（无登录集成），实名字段后端未提供、不参与请求；⑥ 请求通道抽象为 Transport 注入（Taro.request 仅在 app 启动时 setTransport），lib 层单测不依赖 @tarojs
-- [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 工程上需先 `flutter create .` 生成平台工程；验收：只读活动/商品列表，原型过目已代决（2026-10-14 巡检授权）
+- [x] apps/client（Flutter）从契约生成模型并跑通只读链路 — 工程上需先 `flutter create .` 生成平台工程；验收：只读活动/商品列表，原型过目已代决（2026-10-14 巡检授权）
+  - 已代决（2026-10-14 巡检授权）并落地：`flutter create --platforms=android,ios`（pubspec 定位手机 App，桌面端不铺工程）；「从契约生成」以 docs/api/contracts.md + 后端记录为源手写模型、json_serializable 生成序列化（仓库无 OpenAPI 工件，contracts.md 明示）；Long 字段按 JSON 数字类型化（后端无 Long→String 序列化器，api-client 的 string 标注偏松）；API 域名 `--dart-define=AWN_API_HOST`（默认 http://localhost:8080），与小程序同名环境变量
+  - 交付面：发现页（活动列表 + 下拉刷新 + 错误重试）→ 活动页（场次列表）→ 票档页（名称 + ¥单价 + 可售状态），可售派生与 web/小程序同口径（null 未开售 / 0 售罄 / ≤20 余票紧张）；只读终点，下单支付待购买页全流程接入
+  - 测试：flutter analyze 0 issues；flutter test 16/16（模型解析 5 + 可售派生 4 + 客户端含错误信封 5 + 只读链路 widget 走查 2，传输层 StubHttpClientAdapter 不触网）
 
 ### 其他设计未落地
 - [x] 情报采集调度器（`collectAll` 入口 + worker 按 `intelligence-collection-ms` 周期执行，停用来源跳过，单源失败不中断整轮）— 44c6094；IntelligenceCollectionTaskTest 2 例
