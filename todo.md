@@ -144,10 +144,9 @@
   - 测试：新增 `apps/web/lib/checkout.test.ts`（购物车加减与上限、下单行映射、自检文案、订单/支付/履约状态文案与动作门槛、金额格式化）+ api-client 补 `getFulfillment` + 前端 146 例全绿 + `next build` 类型与 lint 通过 + 后端契约回归 CheckoutApiTests 6 / OrderApiTests 7 / PaymentApiTests 10
   - 余留（真实卡点）：排队/候补、支付失败重试与换渠道、订单超时倒计时为原型态——后端无对应字段与接口，不造假入口
 - [ ] 每场次地理位置（城市/地址/坐标 + 地图）— 原型过目已代决（2026-10-14 巡检授权）；后端模块已落地（8323788）：V19 迁移（venue 坐标列 + session venue_id 外键/索引 + session 直配 geo 列 + 城市索引）、Venue 坐标成对与范围守卫（单给坐标/越界一律拒）、EventFacade 场馆查询/全场次列表/sessionVenue/attach/detach 与继承解析（场次场馆覆盖 → 父活动场馆 → null 不造假坐标）、VENUE_NOT_FOUND 错误码接异常处理器并同步 contracts.md 错误码表；测试 VenueGeoModuleTests 8 例 + 后端全套 verify 227 例全绿；余项：运营后台场次配置 geo 视图 + web geo-row 展示与地图（样式已备，f348026）
-- [ ] 2D 座位图（P1）— 原型过目已代决（2026-10-14 巡检授权，seatmap-2d.html 与 Venue→Section→RowRange 模型对齐）；实现待续：SVG 分区组件 + 场次座位配置接入
-  - 前端已落地（b607772）：数据层（lib/seatmap.ts 分组/排序/可选性）+ SVG 组件（components/SeatMap.tsx，三态图例与原型一致：可选/已售置灰/本次选中，aria-label 区分五态，Enter/键盘可选）+ 11 例（分组排序 5 + 渲染交互 6）
+- [ ] 2D 座位图（P1）— 原型过目已代决（2026-10-14 巡检授权，seatmap-2d.html 与 Venue→Section→RowRange 模型对齐）；公开链路已落地（854a77b）：后端 GET /api/v1/sessions/{sessionId}/seatmap（复用 PlatformSeatService.seatsOfSession 经 InventoryFacade 透出，可见性与场次详情同口径：未知场次或父活动未公开一律 404 SESSION_NOT_FOUND；公开载荷剥去 orderNo/sessionCode，占座订单号不进公开面，productCode 保留供票档归位）+ contracts.md 条目 + api-client getSeatmap/SeatMapItem + /sessions/{id} 座位型商品选座区（座位型 = 座位图载荷中出现过的商品编码，不发明字段；SeatMap 分组渲染 + 选择收集；座位订单链路后端未开放，显式注明选座暂不参与下单，不造假入口）；测试 SeatmapApiTests 4 例（真实 PG）+ PlatformSeatModuleTests 9 例回归 + 前端 195 例全绿 + next build 通过；余项：铺座运营入口（管理面）与选座下单契约（订单行座位引用），后端均未落地，属后续条目
+  - 前端组件已落地（b607772）：数据层（lib/seatmap.ts 分组/排序/可选性）+ SVG 组件（components/SeatMap.tsx，三态图例与原型一致：可选/已售置灰/本次选中，aria-label 区分五态，Enter/键盘可选）+ 11 例（分组排序 5 + 渲染交互 6）
   - 已代决（2026-10-14 巡检授权）：platform_seats 只有分区/排/座编号无坐标 → 程序化网格排布，不臆造场馆几何（弧形/朝向需空间数据源，属挂起调研项）；舞台位置与朝向不声称正确，只标方向提示
-  - 后端待续（树被并行 geo 改动占用期间不可编译，未动）：公开只读端点 GET /api/v1/sessions/{sessionId}/seatmap（复用 PlatformSeatService.seatsOfSession，父活动未公开一律 404）+ api-client 类型与 contracts.md 条目 + /sessions/{id} 座位型商品的接入（票档卡 → 选座入口）
 
 ---
 
