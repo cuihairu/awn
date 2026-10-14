@@ -46,7 +46,7 @@
 | rebrowser/seatgeek-dataset | 未标注（rebrowser 商业/学术计划数据） | Parquet/CSV（12K+ 场馆容量+坐标；事件含 seat map availability 字段） | 无（北美为主） | 数据源可复用 | 数据源可复用 | 日更（仓库 push 2026-10-12；3 stars） | https://github.com/rebrowser/seatgeek-dataset |
 | OpenStreetMap / indoorequal | ODbL（OSM 数据）/ BSD-3-Clause（indoorequal 代码） | OSM tags（leisure=stadium 等） | 部分（有场馆轮廓/名称/地址，无座位级数据） | 间接 | 间接 | 活跃（indoor=stadium 全网 51,977 个对象，taginfo 2026-10-13 核验） | https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dstadium ；https://github.com/indoorequal/indoorequal |
 
-**未找到的方向**（如实记录）：`venuejs`（座位图库不存在；同名仓库是 O2O 场馆预订平台项目 AlecGiraffa/Venuejs）、`seatsmith`（GitHub 无相关结果）、`seatpick` 作为开源座位图库（搜索只返回无关练手 demo）、中国常见场馆（奥体中心/体育中心/体育馆）的开源座位数据集——**未找到任何公开数据集**，多轮中英文检索均无结果。
+**未找到的方向**：`venuejs`（座位图库不存在；同名仓库是 O2O 场馆预订平台项目 AlecGiraffa/Venuejs）、`seatsmith`（GitHub 无相关结果）、`seatpick` 作为开源座位图库（搜索只返回无关练手 demo）、中国常见场馆（奥体中心/体育中心/体育馆）的开源座位数据集——**未找到任何公开数据集**，多轮中英文检索均无结果。
 
 ---
 
@@ -54,7 +54,7 @@
 
 ### seatmap-canvas（最接近需求的 2D 引擎）
 - 是什么：TypeScript 写的 d3.js 座位图/选座框架，明确支持 stadium/theater/venue、多 block（分区/看台）布局，MIT。
-- 能给：成熟的 2D 选座交互（缩放/拖拽/点击/售罄置灰/分区色）、JSON seat model（`{id, title, x, y, salable}` 挂在 block 下）可作为我们 schema 的参照、React wrapper（`@alisaitteke/seatmap-canvas/react`，标注 Testing）。
+- 能给：完整的 2D 选座交互（缩放/拖拽/点击/售罄置灰/分区色）、JSON seat model（`{id, title, x, y, salable}` 挂在 block 下）可作为我们 schema 的参照、React wrapper（`@alisaitteke/seatmap-canvas/react`，标注 Testing）。
 - 不能：无 3D；无 Flutter 版；无真实场馆数据（assets 仅示例）；核心逻辑仍是「网格坐标式」座位图，对弧形看台/环形体育场（奥体/工体型）要靠 block 内 seat 的 x/y 硬摆。
 - 定位：2D 交互细节的最佳学习对象；若嫌自建成本高，可在 AWN 侧以「自己维护分支」方式用其 MIT 代码做二次开发（可行，MIT 允许），但 3D 和 Flutter 仍要自写。
 
@@ -62,7 +62,7 @@
 - 是什么：MIT、零素材（zero-asset）、纯 three.js 程序化生成的 3D 球场座位预览 demo。
 - 能给：验证了「程序化几何 + `THREE.InstancedMesh`（上千座位单次 draw call）+ `THREE.Raycaster`（instanceId 命中选座）+ GSAP 相机飞行/第一人称视角」这条技术路线完全可行，且声称可通过外部 JSON 接入真实 seat ID/票价/可售状态。
 - 不能：只有 demo 球场（合成数据），无真实场馆、无演出配置概念、无移动端、代码量小（3 commits），没有工程化。
-- 定位：3D 渲染器的事实上的技术验证样板；思路可整体吸收进 venue-seats，代码不建议直接引用（质量/测试不足，但 MIT 允许）。
+- 定位：3D 路线的可运行验证样板；思路可整体吸收进 venue-seats，代码不建议直接引用（无测试、仅 3 commits，但 MIT 允许）。
 
 ### pretix seating（数据 schema 的权威参照）
 - 是什么：AGPL-3.0 的售票系统，含完整 seating plan 功能：JSON Schema（zones/categories/rows/areas/seat，全局 UUID）、编辑器、presale SVG 渲染、API 文档。
@@ -136,7 +136,7 @@ Venue（场馆档案：名称/别名/城市/地址/经纬度/容量/来源）
 |---|---|---|---|
 | L1 | 场馆轮廓/看台/分区（形状、名称、相对位置） | 让用户理解场馆位置与区域；数据不全时也能合理展示 | 场馆档案页、列表页地图 |
 | L2 | 分区/排号/座位编号与相对位置 | 选区、选排、展示具体座位 | 选座 MVP 可达；「按区选购」类票档 |
-| L3 | 逐座精确几何 + 座位状态与实际库存映射 | 真正需要单座选择与占座的演出 | 对「买具体座位」的演出是硬要求：L3 座位身份 ↔ 库存映射必须精确，仅有一张漂亮的座位图远远不够 |
+| L3 | 逐座精确几何 + 座位状态与实际库存映射 | 真正需要单座选择与占座的演出 | 对「买具体座位」的演出是硬要求：L3 需座位 ID ↔ 库存单元一一对应，座位图数据本身不含可售状态 |
 
 ---
 
@@ -174,7 +174,7 @@ Venue（场馆档案：名称/别名/城市/地址/经纬度/容量/来源）
 
 1. **vendor vs 自建**：直接 fork/内嵌 seatmap-canvas（MIT，省 2D 交互，但受其模型限制）还是自建 venue-seats（推荐，模型自由）。
 2. **venue-seats 的开源许可**：建议 MIT 或 Apache-2.0（决定能否吸收 Zenghao0219 的 Apache 代码及三方依赖）。
-3. **首个验证批次（用户 2026-10-12 已定方向，先于立项执行）**：先验证三个问题——①能否找到 5 个目标场馆可用、来源明确的基础座位图；②能否把它们整理成统一的分区数据，并在 AWN 前端正确展示；③对同一个场馆的两场不同演出，能否复用基础布局、只修改舞台和开放区域配置。三个问题成立，再决定是否抽独立项目 venue-seats。最看重的不是第一批收集了多少张图，而是每张图能否稳定转成可复用、可校验、可版本化的数据。
+3. **首个验证批次（用户 2026-10-12 已定方向，先于立项执行）**：先验证三个问题——①能否找到 5 个目标场馆可用、来源明确的基础座位图；②能否把它们整理成统一的分区数据，并在 AWN 前端正确展示；③对同一个场馆的两场不同演出，能否复用基础布局、只修改舞台和开放区域配置。三个问题成立，再决定是否抽独立项目 venue-seats。验收口径：每张图须能转成可复用、可校验、可版本化的数据；首批收集到的图数量不作为验收项。
 4. **首批 20–50 个高频大型场馆试点名单**（用户 2026-10-12 已定规模；具体名单如 国家体育场/北京工人体育场/上海体育场/深圳湾体育中心 等，需用户定）。
 5. **MVP 精度目标：已拍板（用户 2026-10-12）**——L1/L2 起步，先实现选区、选排，不强求逐座精确；L3（逐座+库存映射）为后续等级。数据流水线深度按 L2 设计。
 6. **3D 是否进 MVP**：已定 P2——原型先出 2D，3D 给线框示意，等 2D 过目后再做 3D 原型；一期只做 2D + 数据模型。

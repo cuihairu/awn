@@ -1,6 +1,6 @@
 # 异步与 Outbox
 
-初期**无需**为了异步任务先引入 Kafka 或 RabbitMQ。推荐用 PostgreSQL Outbox 加独立 Worker 进程，先实现可靠、可重试的后台任务。
+异步任务用 PostgreSQL Outbox 加独立 Worker 进程实现，可靠投递与重试由数据库事务保证。不引入 Kafka / RabbitMQ（ADR-0003）。
 
 ## Outbox 事件
 
@@ -55,6 +55,6 @@ Worker 进程与 API 共享同一代码包，只启用后台任务：
 
 Spring Modulith 的事件发布注册表可以帮助记录事务事件的投递状态和失败恢复；如果采用该能力，需要明确选择与 Flyway 兼容的持久化配置，并避免与自建 Outbox 重复承担同一种责任。
 
-::: tip 建议
-**交易关键事件先使用明确的数据库 Outbox；Spring Modulith 负责模块边界、模块事件和架构验证。** 不要在第一版同时实现两套重复的可靠投递机制。
+::: warning 职责划分
+数据库 Outbox 负责交易关键事件的可靠投递；Spring Modulith 只负责模块边界与架构验证。两套机制不得重复承担同一职责。
 :::

@@ -4,7 +4,7 @@
 > [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)（`index.html` 为总览），
 > 设计体系见 [`ui-system.md`](ui-system.md)。本页保留为早期 SVG 原型存档。
 
-基于 `design-system/awn/MASTER.md` 设计规范产出的三端高保真原型。设计系统见 `design-system/awn/MASTER.md`，矢量原型（SVG）落库于 `docs/public/prototypes/`。
+以下为 2026-10-12 前的 SVG 版原型存档，当前原型见上方 [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)。设计令牌见 `design-system/awn/MASTER.md`。
 
 ## 消费端 Web（Next.js）· F1 专场页
 

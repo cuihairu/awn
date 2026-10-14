@@ -1,6 +1,6 @@
 # 部署结构
 
-部署采用 Docker Compose，保持小巧、易部署、易恢复：
+单机 Docker Compose 拓扑，8 个服务：
 
 ```text
 Docker Compose
@@ -38,20 +38,25 @@ Docker Compose
 
 ## 秘密管理
 
-生产环境应将数据库凭证、支付密钥和其他秘密信息放入受控的环境变量或秘密管理系统，**不要提交到 Git**。
+密钥只走 `deploy/.env`（`.gitignore` 已排除，不入库）。两处入库文件含占位密码，部署前必须替换为 `.env` 中的真实值：
+
+| 文件 | 占位值 |
+|---|---|
+| `config/postgres/init-intel.sql` | `change-me-intel-password` |
+| `db/migration/V12__trading_role.sql` | `change-me-trading-password` |
 
 ## 运维要求
 
-必须具备：
+| 项 | 机制 |
+|---|---|
+| 备份 | 每日 `pg_dump -Fc`，步骤见 [备份与恢复](./backup-restore) |
+| 迁移状态 | 按 `installed_rank` 校验 `flyway_schema_history`（`max(version)` 是文本比较，会把 `'9'` 判为最新） |
+| 健康检查 | `GET /actuator/health`；worker 无 HTTP 端口，看容器进程存活 |
+| 业务告警 | `alerts` 表三类，`category` 取值受 `V8__intelligence_audit_tables.sql` CHECK 约束限定为 `INVENTORY` / `PAYMENT` / `RECONCILIATION`；运营后台 acknowledge |
+| 审计 | `audit_logs` 表；日志字段脱敏由 `awn-shared` 的 masking 组件承担 |
+| 限流 | 管理面按资源组 100 次/60s，超限 429；组件故障 fail-open |
 
-- PostgreSQL 定期备份。
-- 定期恢复演练。
-- 数据库迁移回滚策略。
-- API 与 Worker 健康检查。
-- 库存异常、支付异常和对账差异告警。
-- 订单、支付、退款和库存操作的审计。
-- 应用日志脱敏。
-- 对高风险 API 的限流与访问控制。
+数据库迁移为前向-only，无自动回滚。破坏性变更（删列、改类型）上线前必须先做一次全库备份。
 
 ## 合规提示
 
