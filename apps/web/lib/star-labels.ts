@@ -13,6 +13,14 @@ import type {
   WorkType,
 } from '@awn/api-client'
 
+export type {
+  PersonView,
+  PersonWorkEntry,
+  ProfessionType,
+  RoleType,
+  WorkType,
+} from '@awn/api-client'
+
 export const PROFESSION_LABEL_ZH: Record<ProfessionType, string> = {
   actor: '演员',
   singer: '歌手',

@@ -17,6 +17,7 @@ import {
   type Group,
   type PersonView,
   type PersonWorkEntry,
+  type WorkType,
 } from './star-labels'
 
 /**
@@ -145,7 +146,7 @@ describe('groupWorksByType / groupCastByRole', () => {
 
   it('appends unknown work types at the end without losing data', () => {
     const groups = groupWorksByType([
-      entry({ workType: 'hologram' }),
+      entry({ workType: 'hologram' as WorkType }),
       entry({ workType: 'movie' }),
     ])
     expect(groups.map((g) => g.key)).toEqual(['movie', 'hologram'])
