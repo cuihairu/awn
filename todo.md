@@ -19,10 +19,10 @@
 - [x] Worker 入口与任务开关（`awn.worker.tasks.*`，迁移只由 API 执行）— 72de1a4；WorkerTasksTests 5 例
 - [x] Flyway 迁移骨架与约定（V1__baseline.sql，worker 禁用 flyway）— acaf107；AwnApiApplicationTests 1 例
 - [x] Testcontainers + Modulith 结构测试 — acaf107；ModularityTests 2 例
-- [x] CI 门禁三 job（backend / frontend / flutter analyze）— acaf107；三 job 全绿
+- [x] CI 门禁三 job（backend / frontend / flutter analyze）— acaf107、7c5f50f；三 job 全绿
 - [x] CI 前端 job 跑共享包测试 — 83c91e3；pnpm test 19 例
 - [x] 文档站 GitHub Pages 部署 — 2eef133；docs build 通过
-- [x] 统一异常体系与错误码（`ErrorCode` / `ErrorResponse` / `ApiExceptionHandler`）— 8789d10；ApiExceptionHandlerTests 5 例
+- [x] 统一异常体系与错误码（`ErrorCode` / `ErrorResponse` / `ApiExceptionHandler`）— 8789d10；ApiExceptionHandlerTests 4 例
 - [x] 请求追踪 TraceId 透传（TraceIdFilter + MDC）— f71e80b；TraceIdFilterTests 4 例
 - [x] 结构化 trace 记录落库 — f71e80b；TracesTests 3 例
 - [x] 日志字段脱敏 — f71e80b；MaskingTests 5 例
@@ -41,16 +41,16 @@
 - [x] 订单 + 明细快照 + 状态机（明细 DB 触发器不可变）— df1f467；OrderCoreTests 9 例
 - [x] 订单幂等键与数据库唯一约束 — df1f467；OrderCoreTests 9 例
 - [x] 订单创建同事务写预留记录与 Outbox — df1f467；OrderCoreTests 9 例
-- [x] 订单超时释放任务 — 72de1a4；OrderTimeoutServiceTests 5 例
+- [x] 订单超时释放任务 — 72de1a4；OrderTimeoutServiceTests 4 例
 - [x] 库存对账 Worker 任务 — 72de1a4；WorkerTasksTests 5 例
-- [x] Phase 03 验收（并发压测 + 一致性断言）— adc174e；InventoryStressTests 1 例
+- [x] Phase 03 验收（并发压测 + 一致性断言）— adc174e、60bf73d；InventoryStressTests 1 例
 
 ### Phase 04 · 支付、退款与可靠异步
-- [x] 支付渠道接口 + 沙箱测试适配器 — a54dca2；PaymentModuleTests 15 例
-- [x] 支付回调验签、去重、状态更新（幂等）— a54dca2；PaymentModuleTests 15 例
-- [x] 退款状态机 — a54dca2；PaymentModuleTests 15 例
-- [x] Outbox 分发 Worker + Inbox 消费 — a54dca2；PaymentModuleTests 15 例
-- [x] 支付/退款/库存对账任务 — a54dca2；PaymentModuleTests 15 例
+- [x] 支付渠道接口 + 沙箱测试适配器 — a54dca2；PaymentModuleTests 14 例
+- [x] 支付回调验签、去重、状态更新（幂等）— a54dca2；PaymentModuleTests 14 例
+- [x] 退款状态机 — a54dca2；PaymentModuleTests 14 例
+- [x] Outbox 分发 Worker + Inbox 消费 — a54dca2；PaymentModuleTests 14 例
+- [x] 支付/退款/库存对账任务 — a54dca2；PaymentModuleTests 14 例
 
 ### Phase 05 · 履约与卖家挂牌
 - [x] 卖家资料、供货审核、挂牌 — 3671c1b；MarketplaceModuleTests 8 例
@@ -91,8 +91,8 @@
 - [x] G1 createPool 经 catalog api 校验商品编码存在，未知编码不留残余池 — 08c0ae2；InventoryConcurrencyTests 5 例
 - [x] G2 挂牌/票品接入订单链路（凭证型订单行 1:1，双守卫迁移同事务，并发抢单只放行一单）— a418f39；VoucherOrderModuleTests 9 例
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 消耗审核额度，卖家自担不消耗）— dd4b9d7；MarketplaceModuleTests 8 例
-- [x] G5 支付/退款渠道调用移出事务（先落 CREATED，受理后 markPending，渠道故障交对账）— 1568962；PaymentModuleTests 15 例
-- [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务迁移 UNKNOWN，查实成功但订单终态则告警退款）— 708b1b8；PaymentModuleTests 15 例
+- [x] G5 支付/退款渠道调用移出事务（先落 CREATED，受理后 markPending，渠道故障交对账）— 1568962；PaymentModuleTests 14 例
+- [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务迁移 UNKNOWN，查实成功但订单终态则告警退款）— 708b1b8；PaymentModuleTests 14 例
 
 ### 公开 HTTP 端点缺口（contracts.md 已列）
 - [x] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 7c81622；PublicEventApiTests 13 例
@@ -104,7 +104,7 @@
 ### 异步与运维缺口
 - [x] 库存预留到期扫描（带 TTL 过期自动释放 + 幂等）— 9768f78；InventoryExpiryTests 3 例
 - [x] 交易角色最小权限化（V12 建 `awn_trading`，仅交易表读写、对 intelligence schema 零权限）— 9fbd92e；TradingRoleIsolationTests 1 例
-- [x] 资金类操作 SQL 原生化（支付/退款守卫更新与渠道受理、Outbox 插入均改原生 SQL，ADR-0007 偏差消除）— 0b122bc；PaymentModuleTests 15 例
+- [x] 资金类操作 SQL 原生化（支付/退款守卫更新与渠道受理、Outbox 插入均改原生 SQL，ADR-0007 偏差消除）— 0b122bc；PaymentModuleTests 14 例
 - [x] 订单 FULFILLING/FULFILLED 联动（履约事件驱动订单状态，守卫迁移 + 事件重放幂等）— 8997e33；FulfillmentModuleTests 7 例
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
