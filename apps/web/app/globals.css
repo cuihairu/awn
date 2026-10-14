@@ -468,6 +468,23 @@ li {
   margin-right: 2px;
 }
 
+/* 专场 hero 的标题层级（campaign-renderer 的 heroBanner） */
+.title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--awn-ink-2);
+  font-size: 16px;
+}
+
+.price-yuan {
+  font-size: 20px;
+}
+
 .event-card {
   display: flex;
   flex-direction: column;

@@ -108,7 +108,9 @@
 - [x] 订单 FULFILLING/FULFILLED 联动（履约事件驱动订单状态，守卫迁移 + 事件重放幂等）— 8997e33；FulfillmentModuleTests 7 例
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
-- [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 验收：组件测试（已有 19 例，83c91e3）+ 至少一端消费；已消费：ui（web + admin）、api-client（web 全部页面）、ticket-components（TierCard 票档卡，f348026）；campaign-renderer 余 web 专场页消费面待实现——小程序端按运行环境代决用自研 Taro 子集渲染（View/Text 语义与 DOM 包不通），不算作该包消费面
+- [x] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 验收：组件测试（已有 19 例，83c91e3）+ 至少一端消费；已消费：ui（web + admin）、api-client（web 全部页面 + 小程序请求层）、ticket-components（TierCard 票档卡，f348026）、campaign-renderer（web 专场页 /campaigns/{code}，56335dc）— 四包全部落地
+  - 已代决（2026-10-14 巡检授权）：小程序端按运行环境用自研 Taro 子集渲染（View/Text 语义与 DOM 包不通），不算作该包消费面；`@awn/campaign-renderer` 另导出纯常量 `CAMPAIGN_SECTION_TYPES`，web 适配层（apps/web/lib/campaign-config.ts）据此剔除白名单外类型，记录 skipped 并告警
+  - 新契约：api-client 补 `renderCampaign()` + `RenderedPageView`（campaign.test.ts 3 例）+ web 适配层 5 例；前端 116 例全绿，`next build` 两路由编译通过
 - [x] apps/web（Next.js）接真实 API 渲染统一商品列表 — 验收：专场页渲染真实商品与可售状态 — f348026；前端 78 例 + PublicEventApiTests 16 例（含新增场次列表端点 3 例）
   - 已代决（2026-10-14 巡检授权）：① 场次可见性 = 父活动可见性（`Event::isPublic`），不单独设场次发布流（SessionStatus 留潜态）；② 可售状态由 available 派生：null→未开售 / 0→已售罄 / ≤20→余票紧张，不发明后端没有的状态；③ 后端购买规则未落地前 TierCard 不渲染限购行；④ 新增 `GET /api/v1/events/{eventId}/sessions` 公开场次列表（父活动未公开→404，按开始时间升序）供活动页选场次
   - 交付面：/ 发现列表、/events/{id} 活动页（Hero + 场次列表）、/sessions/{id} 票档页（真实商品 + TierCard 可售状态）；封面用几何占位（素材红线）
