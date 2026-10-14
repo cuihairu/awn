@@ -67,3 +67,295 @@ code {
   padding: 2px 6px;
   font-size: 13px;
 }
+
+/* ── 头部与令牌 ─────────────────────────────────────────── */
+
+.content-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.content-head h1 {
+  margin: 0;
+}
+
+.token-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--awn-ink-2);
+}
+
+.token-field input {
+  width: 220px;
+  padding: 7px 10px;
+  border: 1px solid var(--awn-border);
+  border-radius: 8px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 13px;
+}
+
+.sidebar__note {
+  margin: 24px 20px 0;
+  font-size: 12px;
+  color: #78716c;
+  line-height: 1.6;
+}
+
+/* ── 状态文案 / 数字 ────────────────────────────────────── */
+
+.state {
+  padding: 16px 0;
+  color: var(--awn-ink-2);
+}
+
+.state--error {
+  color: #dc2626;
+}
+
+.state--error .btn {
+  margin-left: 12px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--awn-ink-2);
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--awn-ink-2);
+}
+
+/* ── 卡片与表格 ─────────────────────────────────────────── */
+
+.card {
+  background: var(--awn-card);
+  border: 1px solid var(--awn-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--awn-border);
+  vertical-align: middle;
+}
+
+.table th {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--awn-ink-2);
+  background: color-mix(in srgb, var(--awn-card) 92%, var(--awn-gold));
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── 状态标签（BEM：badge badge--xxx，与 web 端一致）──────── */
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  border: 1px solid var(--awn-border);
+  color: var(--awn-ink-2);
+  white-space: nowrap;
+}
+
+.badge--success {
+  border-color: transparent;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.badge--warning {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+.badge--danger {
+  border-color: transparent;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.badge--info {
+  border-color: transparent;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+/* ── 筛选标签 ───────────────────────────────────────────── */
+
+.toolbar {
+  margin-bottom: 14px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tab {
+  padding: 6px 14px;
+  border: 1px solid var(--awn-border);
+  border-radius: 999px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.tab--on {
+  background: var(--awn-gold);
+  border-color: var(--awn-gold);
+  color: #fff;
+}
+
+/* ── 按钮 / 表单 ────────────────────────────────────────── */
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid var(--awn-gold);
+  border-radius: 9px;
+  background: var(--awn-gold);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--awn-gold-deep);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  color: var(--awn-ink-2);
+}
+
+.input {
+  padding: 8px 12px;
+  border: 1px solid var(--awn-border);
+  border-radius: 8px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+textarea.input {
+  min-height: 72px;
+  resize: vertical;
+}
+
+/* ── 双栏布局与可用量条 ─────────────────────────────────── */
+
+.cols-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.form-card {
+  padding: 18px 20px;
+}
+
+.card-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+section > h2 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.balance-bar {
+  width: 140px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--awn-border);
+  overflow: hidden;
+}
+
+.balance-bar i {
+  display: block;
+  height: 100%;
+  background: #16a34a;
+}
+
+.balance-bar i.low {
+  background: #d97706;
+}

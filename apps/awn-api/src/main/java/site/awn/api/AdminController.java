@@ -54,6 +54,12 @@ public class AdminController {
         return orders.recentOrders();
     }
 
+    /** 活动视图：全状态活动列表（发布流入口，草稿可发布） */
+    @GetMapping("/events")
+    public List<EventView> events() {
+        return events.allEvents();
+    }
+
     /** 库存视图：全部池余额 */
     @GetMapping("/inventory")
     public List<site.awn.inventory.api.BalanceView> inventoryBalances() {

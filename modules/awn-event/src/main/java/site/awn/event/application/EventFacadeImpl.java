@@ -86,6 +86,14 @@ public class EventFacadeImpl implements EventFacade {
 
     @Override
     @Transactional(readOnly = true)
+    public List<EventView> allEvents() {
+        return events.findAllByOrderByIdAsc().stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public EventView eventById(Long eventId) {
         return events.findById(eventId)
                 .filter(Event::isPublic)

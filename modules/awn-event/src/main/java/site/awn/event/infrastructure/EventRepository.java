@@ -13,4 +13,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     /** 公开读：仅给定状态集合的活动，按开始时间倒序 */
     java.util.List<Event> findByStatusInOrderByStartTimeDesc(Collection<EventStatus> statuses);
+
+    /** 运营读：全状态活动，按 id 升序 */
+    java.util.List<Event> findAllByOrderByIdAsc();
 }

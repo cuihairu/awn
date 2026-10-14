@@ -132,6 +132,14 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/events/" + draft.eventCode() + "/publish"))
                 .andExpect(status().isUnauthorized());
 
+        // 活动视图：全状态列表能看到草稿（发布流入口）；无令牌同样 401
+        mockMvc.perform(get("/api/v1/admin/events"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/admin/events").header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.eventCode == '" + draft.eventCode() + "')].status")
+                        .value(hasItem("DRAFT")));
+
         // 草稿发布 → 200 PUBLISHED，公开列表立即可见
         mockMvc.perform(post("/api/v1/admin/events/" + draft.eventCode() + "/publish")
                         .header(TOKEN_HEADER, TOKEN))

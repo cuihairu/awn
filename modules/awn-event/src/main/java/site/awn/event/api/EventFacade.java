@@ -18,6 +18,9 @@ public interface EventFacade {
     /** 公开活动列表：仅已发布 / 已结束，按开始时间倒序 */
     List<EventView> events();
 
+    /** 运营活动列表：全状态（含 DRAFT），按 id 升序（运营台发布流用） */
+    List<EventView> allEvents();
+
     /** 公开活动详情：未知或非公开状态一律 404 */
     EventView eventById(Long eventId);
 
