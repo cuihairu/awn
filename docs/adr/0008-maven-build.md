@@ -5,7 +5,7 @@
 
 ## 背景
 
-后端为 16 个 Maven 模块（14 业务模块 + 2 可运行应用），继承 `spring-boot-starter-parent:3.5.6`，通过 BOM 管理 Spring Modulith 版本。备选方案是 Gradle（Kotlin DSL），其增量构建与并行能力更强。
+后端为 16 个 Maven 模块（14 业务模块 + 2 可运行应用），继承 `spring-boot-starter-parent`（决策时 3.5.6，2026-10-14 升级 4.1.1），通过 BOM 管理 Spring Modulith 版本。备选方案是 Gradle（Kotlin DSL），其增量构建与并行能力更强。
 
 ## 决策
 

@@ -12,7 +12,7 @@
 - [x] 架构与契约文档 8 篇 + ADR 0001–0008 — acaf107、70e0ae9；`pnpm -C docs build` 通过
 
 ### Phase 01 · 工程骨架与模块治理
-- [x] Maven 多模块（14 业务模块 + awn-api/awn-worker，Spring Boot 3.5.6 + Modulith 1.4.2）— acaf107
+- [x] Maven 多模块（14 业务模块 + awn-api/awn-worker，Spring Boot 3.5.6 + Modulith 1.4.2）— acaf107；2026-10-14 升级 Spring Boot 4.1.1 / Modulith 2.1.1 + Maven wrapper 3.10.0 — 4a700aa
 - [x] API 与 Worker 双入口（任务开关 `awn.worker.tasks.*`，迁移只由 API 执行）— acaf107
 - [x] Flyway 迁移骨架与约定（V1__baseline.sql；worker 禁用 flyway）— acaf107
 - [x] Testcontainers + Modulith 结构测试（ModularityTests 通过）— acaf107
