@@ -140,7 +140,7 @@
 - 座位图第一阶段范围与三问验证 — 待用户指定 5 个目标场馆与人力
 - Phase 07 全部 UI 条目的原型过目与拍板
 
-- [x] 文档去 AI 腔（来源：用户 2026-10-14）— 12 个文档（architecture 7 / implementation-plan / deployment / design 2 / research），42 增 43 删；docs build 通过
+- [x] 文档去 AI 腔（来源：用户 2026-10-14）— 12 个文档（architecture 7 / implementation-plan / deployment / design 2 / research），42 增 43 删；docs build 通过 — 23135f7
   - 改动口径：删元叙事与空洞总起句、合并首先/随后式过渡、结尾总结框改为可验证检查项、形容词换成命令与表名
 
 - [x] 新功能：明星图鉴（来源：用户 2026-10-14）— 设计稿 docs/design/star-catalog.md（已拍板），模块 awn-star + 迁移 V18 + 公开/运营接口 + web 图鉴页面，13 后端测 + 46 前端测全绿（e454980）
@@ -151,4 +151,9 @@
     3. **人物 ↔ 作品 的关系**：一个人参演多部作品、一部作品有多个人，是**多对多**；关系上还要能带角色名/身份（主演/配角/演唱主题曲等）
   - **素材红线（不可让步）**：**不得生成明星肖像**，也不得使用品牌 logo 代餐。照片只能来自**有授权的来源**或明确标注的占位图；**缺图就用占位，不要用生成的人脸顶替**
   - 验收：先出数据模型与页面结构（原型或设计文档），**经用户拍板后再实现**；不许直接开工写业务代码
+
+- [x] 图鉴编辑能力（已代决 巡检 R2）— 草稿可改（PUT）可删（DELETE）、已发布冻结、改动需先 unpublish，与专场「发布版本不可变 + 撤回」同构；关系行随外键级联清除 — 4a58ab7；StarModuleTests 7 + StarApiTests 5
+  - 理由：交付后发现草稿创建后无法修改或删除（只有 create/publish/bind），编辑能力设计稿 §4.3 已列为待补；属设计取舍且有明确推荐，故代决执行。分页暂不做（规模未到，且会改动刚交付的公开响应形状），仍列待拍板。
+- [x] 文档与契约卫生（已代决 巡检 R2）— README 徽章同步 Spring Boot 4.1.1 / Modulith 2.1.1、star 运营写接口补入 contracts.md、删除陈旧重复 README.zh-CN.md — cbea2d9；docs build 通过
+  - 理由：徽章与 pom 实际版本不符；star 运营接口交付时漏进契约；README.zh-CN.md 是 README.zh.md 的陈旧无引用子集（缺切换器与 awn-star 行），全局命名规则以 README.zh.md 为准。
 
