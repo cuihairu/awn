@@ -130,8 +130,10 @@
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
 - [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
-- [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；余多主题切换的组件化落地随各端实现推进；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据
-  - 已代决（2026-10-14 巡检授权）并落地（待提交）：web 多主题切换——`@awn/ui` 主题包（11 套主题数据取自 prototypes/theme.css，18 个 `--t-*` 语义令牌 + `--awn-*`→`--t-*` 桥接，既有组件零改名跟随主题；default 桥接值 ≡ 现行品牌令牌，测试断言）；layout 注入全量主题块并固定 `data-theme="default"`（移除原 inline 注入——inline 样式会压过 `[data-theme]` 块）；右下角悬浮切换器（原型 .theme-picker，11 按钮 aria-pressed + localStorage 记忆）；首帧默认主题、水合后按记忆切换（localStorage 仅客户端，闪变代决接受）；admin 复用同一包，切换器随 admin 实现接入
+- [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据
+  - 已代决（2026-10-14 巡检授权）并落地（5caad72）：web 多主题切换——`@awn/ui` 主题包（11 套主题数据取自 prototypes/theme.css，18 个 `--t-*` 语义令牌 + `--awn-*`→`--t-*` 桥接，既有组件零改名跟随主题；default 桥接值 ≡ 现行品牌令牌，测试断言）；layout 注入全量主题块并固定 `data-theme="default"`（移除原 inline 注入——inline 样式会压过 `[data-theme]` 块）；右下角悬浮切换器（原型 .theme-picker，11 按钮 aria-pressed + localStorage 记忆）；首帧默认主题、水合后按记忆切换（localStorage 仅客户端，闪变代决接受）
+  - 已代决（2026-10-14 巡检授权）并落地（待提交）：admin 同包接入——main.tsx 渲染前同步注入主题块并应用记忆主题（纯 CSR 无闪变）；顺带修复潜在缺陷：admin 此前从未注入 AWN_CSS_VARS，`--awn-*` 全部未定义（页面靠字面色值硬撑）；短标签下沉 `@awn/ui`（AWN_THEME_SHORT_LABELS）两端共用
+  - 已代决（2026-10-14 巡检授权）：移动两端不铺 11 套主题——小程序 WXSS 只有 page 级变量且品牌值固化在 app.css（运行时切换需注入整套变量 + 自建存储，节日主题在小程序场景价值低）；Flutter 无 CSS，主题化 = ThemeData 端口（现字面色值于 main.dart）；两端如需暗色另行单项推进，多主题体系（数据 + 切换器 + 桥接）以 web/admin 为交付面
 - [ ] 活动页模板 + 三套实例（F1 / 周杰伦 / 周传雄）— 原型过目已代决（2026-10-14 巡检授权）；模板区块①Hero + ③场次列表已接真实 API（f348026），区块②演出信息 / ④票档 / ⑤须知等后台可配置内容与三套实例待专场内容接入
   - 已代决（2026-10-14 巡检授权）并落地（c48bacf）：web 专场页补解析层——后端存的 props 是引用型（eventIds / eventId / ruleDocumentId / faqId / assetIds），`@awn/campaign-renderer` 读的是展示型（sessions / tiers / paragraphs / until / rules），此前直传导致真实已发布专场渲染成空白区块；现按引用查公开 API（场次 / 票档）组装展示数据，富文本取服务端 content 纯文本分段；无公开数据源的模块（rulePanel / faq / imageGallery / priceTrend / ticketComparison / channelComparison）显式标记「待接入」并写明原因，不渲染空白区块也不造假内容；引用不到（404 或模板占位 ID）按待接入处理，网络类异常照常抛出
   - 余留：三套实例需运营配置并发布专场（无公开专场列表接口，按专场码访问）；须知 / 常见问题 / 素材类内容需后端补内容接口
