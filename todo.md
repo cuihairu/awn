@@ -99,7 +99,7 @@
 - [x] 订单 `FULFILLING`/`FULFILLED` 联动（履约单创建发 `FULFILLMENT_STARTED` → 订单 FULFILLING；平台核验通过发 `FULFILLMENT_COMPLETED` → 订单 FULFILLED；守卫迁移 + 事件重放幂等）— 8997e33；FulfillmentModuleTests 7 例、PaymentModuleTests 14 例绿（全量 109 例仅并行会话在途的情报 2 例失败）
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
-- [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 各仅 1 个 stub 文件，零消费方零测试；验收：至少一端接入 + 组件测试
+- [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 组件测试已补齐（19 例，`pnpm test`，CI frontend job 已接入）；@awn/ui 品牌令牌已接入 apps/web + apps/admin（`:root` 单一来源，不再各自硬编码 hex）— 83c91e3；余下 campaign-renderer / ticket-components / api-client 仍零消费方，其消费面（专场页、票档卡、下单页）属 Phase 07 原型过目范围
 - [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 后端列表端点已落地（7a6bd76）：`GET /api/v1/sessions/{sessionId}/products`（仅已发布商品、按创建顺序、available 为库存展示口径、未知场次 `SESSION_NOT_FOUND` 404）；验收：专场页渲染真实商品 + 可售状态（前端待 Phase 07 原型过目后实现）
 - [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 6 例，7377898）；前端三视图待 Phase 07 原型过目后实现
 - [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 后端 Phase 02–04 已全部落地（专区渲染/商品/下单/支付链路）；前端待 Phase 07 原型过目后实现；验收：渲染契约子集 + 下单链路
