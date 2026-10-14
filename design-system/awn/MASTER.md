@@ -6,9 +6,8 @@
 
 ---
 
-**Project:** AWN
-**Generated:** 2026-10-11 14:10:05
-**Category:** Luxury/Premium Brand
+**Project:** AWN（麦芒网）
+**Category:** Premium black + gold brand palette
 
 ---
 
@@ -35,19 +34,12 @@
 | On Destructive | `#FFFFFF` | `--color-on-destructive` |
 | Ring | `#1C1917` | `--color-ring` |
 
-**Color Notes:** Premium black + gold accent [Accent adjusted from #CA8A04]
+**Color Notes:** 墨黑 + 金 accent（`#D59819` 系；初稿 accent #CA8A04 已按品牌金调整）
 
 ### Typography
 
-- **Heading Font:** Cormorant
-- **Body Font:** Montserrat
-- **Mood:** luxury, high-end, fashion, elegant, refined, premium
-- **Google Fonts:** [Cormorant + Montserrat](https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap)
-
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
-```
+- **Body Font:** Noto Sans SC / PingFang SC（CJK 优先；与 `packages/ui` 的 `AWN_FONT_STACK` 及 `docs/design/ui-system.md` §1.2 一致，生成器初稿的 Cormorant + Montserrat 未在任何端应用，已废弃）
+- **Display/Number:** `--font-display`、`--font-num`（数字等宽 tabular-nums，用于价格 / 坐标 / 排号，见 ui-system.md §1.2）
 
 ### Spacing Variables
 
@@ -164,37 +156,31 @@
 
 ## Style Guidelines
 
-**Style:** Liquid Glass
+**Style:** 墨黑 + 麦芒金，扁平表面；不使用玻璃拟态、模糊背景、视差滚动等装饰效果。
 
-**Keywords:** dynamic material, optical glass, translucency, lensing, refraction, fluid morphing, system navigation
+主题、组件与结构令牌的权威定义在 `docs/design/ui-system.md`（11 套主题 + 令牌体系）；本文件只保留全局色板与间距 / 阴影基准。
 
-**Best For:** Apple-platform navigation, controls, and system-aligned app chrome
+### Page Patterns（实际使用）
 
-**Key Effects:** Lensing and refraction, adaptive translucency, and fluid morph transitions aligned to Apple platform behavior
-
-### Page Pattern
-
-**Pattern Name:** Scroll-Triggered Storytelling
-
-- **Conversion Strategy:** Keep the narrative understandable without scroll-driven effects. Use progress indicator. Mobile: simplify animations. Keep DOM reading order complete; disable parallax and scroll-scrub under reduced motion. Pause scroll animation when offscreen or hidden and render each chapter in its final readable state under reduced motion.
-- **CTA Placement:** End of each chapter (mini) + Final climax CTA
-- **Section Order:** Intro hook > Chapter 1 (problem) > Chapter 2 (journey) > Chapter 3 (solution) > Climax CTA
+- 消费端：专场页 7 区块模板（`docs/design/ui-system.md` §5）+ 购买页流程：选场次 → 票档/座位 → 数量实名 → 下单 → 支付 → 出票。
+- 运营后台：数据密集 Dashboard，规范见 `pages/dashboard.md`（8–32px 密度刻度、行高 ≤ 44px、常驻筛选区）。
+- 高保真原型：`docs/design/prototypes/`（`index.html` 总览）。
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Cheap visuals
-- ❌ Fast animations
+- Cheap visuals
+- Fast animations
 
 ### Additional Forbidden Patterns
 
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
+- **Missing cursor:pointer** — All clickable elements must have cursor:pointer
+- **Layout-shifting hovers** — Avoid scale transforms that shift layout
+- **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
+- **Instant state changes** — Always use transitions (150-300ms)
+- **Invisible focus states** — Focus states must be visible for a11y
 
 ---
 
