@@ -156,4 +156,6 @@
   - 理由：交付后发现草稿创建后无法修改或删除（只有 create/publish/bind），编辑能力设计稿 §4.3 已列为待补；属设计取舍且有明确推荐，故代决执行。分页暂不做（规模未到，且会改动刚交付的公开响应形状），仍列待拍板。
 - [x] 文档与契约卫生（已代决 巡检 R2）— README 徽章同步 Spring Boot 4.1.1 / Modulith 2.1.1、star 运营写接口补入 contracts.md、删除陈旧重复 README.zh-CN.md — cbea2d9；docs build 通过
   - 理由：徽章与 pom 实际版本不符；star 运营接口交付时漏进契约；README.zh-CN.md 是 README.zh.md 的陈旧无引用子集（缺切换器与 awn-star 行），全局命名规则以 README.zh.md 为准。
+- [x] 图鉴前端错误处理（已代决 巡检 R2）— api-client 非 2xx 抛 ApiError（带 status + 后端错误码），列表页不再把错误信封当数组渲染（429 / 500 时会白屏崩溃）；详情页按 404 区分「不存在或未发布」与「加载失败」 — baeffac；前端 49 例
+  - 理由：交付后发现公开列表接口返回非 2xx 时，客户端把 `{code,message}` 当成功体 resolve，列表页 `persons.map` 抛 TypeError 白屏；属明确缺陷，故代决修复。
 
