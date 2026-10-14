@@ -32,6 +32,7 @@ awn/
 │   ├── awn-intelligence/
 │   ├── awn-notification/
 │   ├── awn-audit/
+│   ├── awn-star/
 │   └── awn-shared/
 ├── deploy/                      # 部署结构
 │   ├── docker-compose.yml
@@ -57,6 +58,7 @@ awn/
 | `intelligence` | 采集、标准化、价格历史和分析 | 写入交易库存、订单和支付表 |
 | `notification` | 站内信、邮件、短信适配（站内信已落地；邮件 / 短信通道未接入） | 让通知失败回滚已经成功的订单 |
 | `audit` | 操作审计、敏感业务操作记录 | 保存明文密钥和支付敏感信息 |
+| `star` | 明星图鉴：人物、作品、带身份的多对多关系（草稿 / 发布守卫；公开面仅暴露 PUBLISHED） | 触碰交易数据（活动 / 商品 / 订单 / 库存 / 支付） |
 
 ## 模块内部结构
 
