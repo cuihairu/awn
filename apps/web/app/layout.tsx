@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <nav className="topnav" aria-label="主导航">
           <Link href="/">发现</Link>
           <Link href="/stars">明星图鉴</Link>
+          <Link href="/campaigns">专场</Link>
         </nav>
         {children}
       </body>

@@ -333,3 +333,50 @@ export async function getProductAvailability(
   return fetch(`${API_BASE}/products/${productId}/availability`, init)
     .then((res) => readJson<AvailabilityResponse>(res))
 }
+
+/* ------------------------------------------------------------------ *
+ * 专场渲染（docs/architecture/campaign-rendering.md）
+ * 只读已发布版本快照（不可变 revision），草稿变更不影响线上页面；
+ * 模块类型是否落在白名单由 @awn/campaign-renderer 判定，未知类型拒绝渲染。
+ * ------------------------------------------------------------------ */
+
+/** 模块类型取值（服务端按 schemaVersion 1 白名单下发） */
+export type RenderedSectionType =
+  | 'heroBanner'
+  | 'richText'
+  | 'imageGallery'
+  | 'videoEmbed'
+  | 'eventList'
+  | 'ticketGrid'
+  | 'ticketComparison'
+  | 'priceTrend'
+  | 'channelComparison'
+  | 'countdown'
+  | 'rulePanel'
+  | 'faq'
+  | 'noticeBar'
+
+export interface RenderedSectionView {
+  id: string
+  type: string
+  props: Record<string, unknown>
+  /** 模块正文（富文本纯文本形态）；不存在时为 null */
+  content: string | null
+}
+
+export interface RenderedPageView {
+  schemaVersion: number
+  template: string
+  seoTitle: string
+  seoDescription: string
+  sections: RenderedSectionView[]
+}
+
+export async function renderCampaign(
+  campaignCode: string,
+  init?: RequestInit,
+): Promise<RenderedPageView> {
+  return fetch(`${API_BASE}/campaigns/${campaignCode}/render`, init).then((res) =>
+    readJson<RenderedPageView>(res),
+  )
+}
