@@ -9,6 +9,11 @@ import { formatEventDateTime } from './event-labels'
  * 渲染器要的是**展示型**（sessions / tiers / paragraphs / rules）——中间必须过一层解析：
  * 页面按引用查公开只读 API 组装展示数据，查不到就明确标记待接入，
  * 既不渲染空白区块，也不为后端没有的数据源造假内容。
+ *
+ * 须知 / 常见问题 / 图片三类没有公开数据源可查：只认内联展示型 props
+ * （rules 文本数组 / entries 问答对 / images 含 alt 条目，口径与 @awn/campaign-renderer
+ * 和小程序 sections 子集一致）；引用型 ID（ruleDocumentId / faqId / assetIds）没有
+ * 可查端点，统一待接入，等后端补内容形态后再切换。
  */
 
 export interface SectionResolution {
@@ -51,6 +56,59 @@ function paragraphsOf(section: CampaignSection): string[] {
     .split(/\n+/)
     .map((paragraph) => paragraph.trim())
     .filter((paragraph) => paragraph.length > 0)
+}
+
+/** 展示型条目：只保留对象并取字符串字段（渲染层另有兜底，此处只剔除无意义条目）。 */
+function itemsOf(props: Record<string, unknown>, key: string): Record<string, unknown>[] {
+  const value = props[key]
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+}
+
+/** 须知模块：后端尚未落地规则文档接口，只认内联的展示型 rules 文本数组。 */
+function resolveRulePanel(section: CampaignSection): SectionResolution {
+  const rules = textsOf(section.props, 'rules').filter((rule) => rule.length > 0)
+  if (rules.length > 0) {
+    return { ...section, status: 'ready', props: { ...section.props, rules } }
+  }
+  if (section.props['rules'] !== undefined) {
+    return pending(section, '须知条目格式不符（rules 需为非空文本数组）')
+  }
+  return pending(section, '须知内容未接入（规则文档接口未落地）')
+}
+
+/** 常见问题模块：条目为 {question, answer} 文本对，与 @awn/campaign-renderer 口径一致。 */
+function resolveFaq(section: CampaignSection): SectionResolution {
+  const entries = itemsOf(section.props, 'entries')
+    .map((entry) => ({
+      question: typeof entry['question'] === 'string' ? entry['question'] : '',
+      answer: typeof entry['answer'] === 'string' ? entry['answer'] : '',
+    }))
+    .filter((entry) => entry.question.length > 0 || entry.answer.length > 0)
+  if (entries.length > 0) {
+    return { ...section, status: 'ready', props: { ...section.props, entries } }
+  }
+  if (section.props['entries'] !== undefined) {
+    return pending(section, '常见问题条目格式不符（entries 需含 question / answer 文本）')
+  }
+  return pending(section, '常见问题内容未接入（FAQ 接口未落地）')
+}
+
+/** 图片模块：条目为 {src, alt}，src 缺失时渲染层按 alt 出占位块（素材红线）。 */
+function resolveImageGallery(section: CampaignSection): SectionResolution {
+  const images = itemsOf(section.props, 'images')
+    .map((image) => ({
+      src: typeof image['src'] === 'string' ? image['src'] : '',
+      alt: typeof image['alt'] === 'string' ? image['alt'] : '',
+    }))
+    .filter((image) => image.alt.length > 0)
+  if (images.length > 0) {
+    return { ...section, status: 'ready', props: { ...section.props, images } }
+  }
+  if (section.props['images'] !== undefined) {
+    return pending(section, '图片素材格式不符（images 需为非空数组且含 alt 文本）')
+  }
+  return pending(section, '图片素材未接入（素材公开接口未落地）')
 }
 
 /** eventList：按引用活动查场次，组装场次卡片数据。 */
@@ -132,11 +190,11 @@ async function resolveOne(
     case 'videoEmbed':
       return { ...section, status: 'ready', props: section.props }
     case 'rulePanel':
-      return pending(section, '须知内容未接入（规则文档接口未落地）')
+      return resolveRulePanel(section)
     case 'faq':
-      return pending(section, '常见问题内容未接入（FAQ 接口未落地）')
+      return resolveFaq(section)
     case 'imageGallery':
-      return pending(section, '图片素材未接入（素材公开接口未落地）')
+      return resolveImageGallery(section)
     case 'priceTrend':
       return pending(section, '价格趋势未接入（情报接口未接入专场）')
     case 'ticketComparison':

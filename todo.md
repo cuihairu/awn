@@ -136,6 +136,7 @@
   - 已代决（2026-10-14 巡检授权）：移动两端不铺 11 套主题——小程序 WXSS 只有 page 级变量且品牌值固化在 app.css（运行时切换需注入整套变量 + 自建存储，节日主题在小程序场景价值低）；Flutter 无 CSS，主题化 = ThemeData 端口（现字面色值于 main.dart）；两端如需暗色另行单项推进，多主题体系（数据 + 切换器 + 桥接）以 web/admin 为交付面
 - [ ] 活动页模板 + 三套实例（F1 / 周杰伦 / 周传雄）— 原型过目已代决（2026-10-14 巡检授权）；模板区块①Hero + ③场次列表已接真实 API（f348026），区块②演出信息 / ④票档 / ⑤须知等后台可配置内容与三套实例待专场内容接入
   - 已代决（2026-10-14 巡检授权）并落地（c48bacf）：web 专场页补解析层——后端存的 props 是引用型（eventIds / eventId / ruleDocumentId / faqId / assetIds），`@awn/campaign-renderer` 读的是展示型（sessions / tiers / paragraphs / until / rules），此前直传导致真实已发布专场渲染成空白区块；现按引用查公开 API（场次 / 票档）组装展示数据，富文本取服务端 content 纯文本分段；无公开数据源的模块（rulePanel / faq / imageGallery / priceTrend / ticketComparison / channelComparison）显式标记「待接入」并写明原因，不渲染空白区块也不造假内容；引用不到（404 或模板占位 ID）按待接入处理，网络类异常照常抛出
+  - 已代决（2026-10-15 巡检）并落地：须知 / 常见问题 / 图片三模块认内联展示型 props 双形态透传——rulePanel 认 `rules` 文本数组（引用型 ruleDocumentId 无可查端点，悬空引用继续待接入）、faq 认 `entries` 问答对（question / answer 口径，与渲染包一致）、imageGallery 认 `images` 含 alt 条目（src 缺失走占位块，素材红线）；键存在但形态不符标记「格式不符」待接入；小程序 faq 键 q/a 对齐为 question / answer（两端口径统一）；内联内容形态属后端契约改动，模板翻面（ruleDocumentId → rules 等）与校验器递归（嵌套对象不过滤脚本标签）待 awn-event 编译恢复后一并落地
   - 余留：三套实例需运营配置并发布专场（无公开专场列表接口，按专场码访问）；须知 / 常见问题 / 素材类内容需后端补内容接口
 - [x] 购买页全流程（选场次 到 票档/座位 到 数量实名 到 下单 到 支付 到 出票）— 原型过目已代决（2026-10-14 巡检授权）；三端购买流已接：web 结算 + 订单支付页（a0d8380）、小程序下单支付链（fb4abed）；余项：座位选区与观演人实名——后端契约尚无字段，页面不渲染无法提交的假表单；客户端（Flutter）按只读范围未含下单（21d1536）
   - 交付面（web）：/sessions/{id}「去选票」→ /checkout（票档数量加减 + 服务端报价 + 幂等键下单）→ /orders/{orderNo}（订单状态 + 支付发起 + 支付记录 + 取消订单 + 履约出票态）

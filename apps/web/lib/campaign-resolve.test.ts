@@ -113,6 +113,94 @@ describe('resolveSections', () => {
     }
   })
 
+  it('passes through rulePanel with inline display-ready rules', async () => {
+    const [resolved] = await resolveSections(
+      [section({ type: 'rulePanel', props: { rules: ['实名一票一证', '逾期不退'] } })],
+      fakeApi(),
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['rules']).toEqual(['实名一票一证', '逾期不退'])
+  })
+
+  it('prefers inline rules over a dangling ruleDocumentId', async () => {
+    const [resolved] = await resolveSections(
+      [section({ type: 'rulePanel', props: { ruleDocumentId: 'rules_001', rules: ['实名一票一证'] } })],
+      fakeApi(),
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['rules']).toEqual(['实名一票一证'])
+  })
+
+  it('keeps rulePanel pending when rules are empty or malformed', async () => {
+    const [empty, malformed] = await resolveSections(
+      [
+        section({ type: 'rulePanel', props: { rules: [] } }),
+        section({ type: 'rulePanel', props: { rules: '实名一票一证' } }),
+      ],
+      fakeApi(),
+    )
+    expect(empty.status).toBe('pending')
+    expect(empty.reason).toContain('格式不符')
+    expect(malformed.status).toBe('pending')
+    expect(malformed.reason).toContain('格式不符')
+  })
+
+  it('passes through faq with display-ready question/answer entries', async () => {
+    const [resolved] = await resolveSections(
+      [
+        section({
+          type: 'faq',
+          props: { entries: [{ question: '可以退票吗？', answer: '未出票可退。' }] },
+        }),
+      ],
+      fakeApi(),
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['entries']).toEqual([{ question: '可以退票吗？', answer: '未出票可退。' }])
+  })
+
+  it('keeps faq pending when entries lack question or answer text', async () => {
+    const [empty, missing] = await resolveSections(
+      [
+        section({ type: 'faq', props: { entries: [] } }),
+        section({ type: 'faq', props: { entries: [{ title: '不是问答' }] } }),
+      ],
+      fakeApi(),
+    )
+    expect(empty.status).toBe('pending')
+    expect(empty.reason).toContain('格式不符')
+    expect(missing.status).toBe('pending')
+    expect(missing.reason).toContain('格式不符')
+  })
+
+  it('passes through imageGallery with image entries and alt text', async () => {
+    const [resolved] = await resolveSections(
+      [
+        section({
+          type: 'imageGallery',
+          props: { images: [{ src: '', alt: '主舞台示意（几何占位）' }] },
+        }),
+      ],
+      fakeApi(),
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['images']).toEqual([{ src: '', alt: '主舞台示意（几何占位）' }])
+  })
+
+  it('keeps imageGallery pending when images are empty or not objects', async () => {
+    const [empty, malformed] = await resolveSections(
+      [
+        section({ type: 'imageGallery', props: { images: [] } }),
+        section({ type: 'imageGallery', props: { images: ['not-an-object'] } }),
+      ],
+      fakeApi(),
+    )
+    expect(empty.status).toBe('pending')
+    expect(empty.reason).toContain('格式不符')
+    expect(malformed.status).toBe('pending')
+    expect(malformed.reason).toContain('格式不符')
+  })
+
   it('marks eventList pending when the referenced event is not public', async () => {
     const api = fakeApi({
       listEventSessions: vi.fn(async () => {

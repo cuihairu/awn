@@ -34,7 +34,9 @@ describe('专场渲染子集（文本优先 7 类）', () => {
     expect(normalizeSection(section('priceTrend', { summary: '近 30 天均价下行' })))
       .toMatchObject({ title: '价格趋势', entries: [{ key: 'summary', value: '近 30 天均价下行' }] })
     expect(
-      normalizeSection(section('faq', { entries: [{ q: '能退吗', a: '看规则' }, { q: 1 }] })),
+      normalizeSection(section('faq', {
+        entries: [{ question: '能退吗', answer: '看规则' }, { q: '旧键', a: '不认' }],
+      })),
     ).toMatchObject({
       title: '常见问题',
       entries: [

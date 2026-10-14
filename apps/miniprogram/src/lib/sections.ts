@@ -95,8 +95,8 @@ export function normalizeSection(section: RenderedSection): NormalizedSection | 
         title: text(section.props, 'title') || '常见问题',
         paragraphs: [],
         entries: items(section.props, 'entries').map((item, index) => ({
-          key: typeof item.q === 'string' ? item.q : `问题 ${index + 1}`,
-          value: typeof item.a === 'string' ? item.a : '',
+          key: typeof item.question === 'string' ? item.question : `问题 ${index + 1}`,
+          value: typeof item.answer === 'string' ? item.answer : '',
         })),
       }
     case 'priceTrend':
