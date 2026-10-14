@@ -51,3 +51,6 @@ export function validateCampaignConfig(config: CampaignConfig): string[] {
   }
   return errors
 }
+
+export { CampaignRenderer } from './renderer'
+export type { CampaignRendererProps } from './renderer'

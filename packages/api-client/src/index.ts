@@ -219,3 +219,104 @@ export async function getWork(
   return fetch(`${API_BASE}/works/${workId}`, init)
     .then((res) => readJson<WorkDetail>(res))
 }
+
+/* ------------------------------------------------------------------ *
+ * 活动 / 场次 / 商品（docs/api/contracts.md 公开接口）
+ * 公开面只暴露已发布内容，未发布与不存在一律 404；
+ * 商品可售数量为缓存展示口径，下单时后端仍原子预留重校验。
+ * ------------------------------------------------------------------ */
+
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
+export type SessionStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED'
+export type ProductStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED'
+
+export interface EventView {
+  id: string
+  eventCode: string
+  name: string
+  status: EventStatus
+  startTime: string
+  endTime: string
+  venueId: string | null
+}
+
+export interface SessionView {
+  id: string
+  sessionCode: string
+  eventId: string
+  name: string
+  status: SessionStatus
+  startTime: string
+  endTime: string
+}
+
+export interface ProductResponse {
+  productCode: string
+  name: string
+  status: ProductStatus
+  unitPrice: number
+  categoryId: string | null
+  sessionId: string | null
+}
+
+export interface AvailabilityResponse {
+  productId: string
+  status: ProductStatus
+  sellable: boolean
+  total: number | null
+  available: number | null
+}
+
+export interface ProductListItem {
+  productCode: string
+  name: string
+  status: ProductStatus
+  unitPrice: number
+  categoryId: string | null
+  sessionId: string | null
+  available: number | null
+}
+
+export async function listEvents(init?: RequestInit): Promise<EventView[]> {
+  return fetch(`${API_BASE}/events`, init).then((res) => readJson<EventView[]>(res))
+}
+
+export async function getEvent(
+  eventId: string,
+  init?: RequestInit,
+): Promise<EventView> {
+  return fetch(`${API_BASE}/events/${eventId}`, init)
+    .then((res) => readJson<EventView>(res))
+}
+
+export async function getSession(
+  sessionId: string,
+  init?: RequestInit,
+): Promise<SessionView> {
+  return fetch(`${API_BASE}/sessions/${sessionId}`, init)
+    .then((res) => readJson<SessionView>(res))
+}
+
+export async function getSessionProducts(
+  sessionId: string,
+  init?: RequestInit,
+): Promise<ProductListItem[]> {
+  return fetch(`${API_BASE}/sessions/${sessionId}/products`, init)
+    .then((res) => readJson<ProductListItem[]>(res))
+}
+
+export async function getProduct(
+  productId: string,
+  init?: RequestInit,
+): Promise<ProductResponse> {
+  return fetch(`${API_BASE}/products/${productId}`, init)
+    .then((res) => readJson<ProductResponse>(res))
+}
+
+export async function getProductAvailability(
+  productId: string,
+  init?: RequestInit,
+): Promise<AvailabilityResponse> {
+  return fetch(`${API_BASE}/products/${productId}/availability`, init)
+    .then((res) => readJson<AvailabilityResponse>(res))
+}

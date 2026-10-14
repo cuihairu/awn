@@ -187,9 +187,29 @@ importers:
 
   packages/api-client: {}
 
-  packages/campaign-renderer: {}
+  packages/campaign-renderer:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.3.0
+      react:
+        specifier: ^19.1.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.3.0(react@19.3.0)
 
-  packages/ticket-components: {}
+  packages/ticket-components:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.3.0
+      react:
+        specifier: ^19.1.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.3.0(react@19.3.0)
 
   packages/ui: {}
 

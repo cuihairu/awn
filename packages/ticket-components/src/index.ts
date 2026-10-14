@@ -27,3 +27,6 @@ export const AVAILABILITY_LABEL_ZH: Record<AvailabilityLabel, string> = {
   Restocking: '补货中',
   SoldOut: '已售罄',
 }
+
+export { TierCard } from './tier-card'
+export type { TierCardProps } from './tier-card'
