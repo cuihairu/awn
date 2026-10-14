@@ -55,6 +55,9 @@ public class OrderItem {
     /** 挂牌的独立票品号（凭证型行；下单时 IN_STOCK → RESERVED） */
     private String unitNo;
 
+    /** 座位号（座位型行；下单时 platform_seats IN_STOCK → RESERVED） */
+    private String seatNo;
+
     /** 审计列：由数据库 DEFAULT 维护，实体只读 */
     @Column(insertable = false, updatable = false)
     private Instant createdAt;
@@ -173,6 +176,14 @@ public class OrderItem {
 
     public void setUnitNo(String unitNo) {
         this.unitNo = unitNo;
+    }
+
+    public String getSeatNo() {
+        return seatNo;
+    }
+
+    public void setSeatNo(String seatNo) {
+        this.seatNo = seatNo;
     }
 
     public Instant getCreatedAt() {

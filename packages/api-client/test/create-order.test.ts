@@ -20,6 +20,7 @@ import {
 const line = {
   poolCode: 'POOL-1',
   listingNo: null,
+  seatNo: null,
   productId: 'prod-001',
   productNameSnapshot: '内场 A 区',
   sessionId: 'sess-001',
@@ -113,6 +114,28 @@ describe('createOrder', () => {
     expect(headers['x-trace-id']).toBe('trace-1')
     expect(headers['idempotency-key']).toBe(payload.idempotencyKey)
     expect(init.cache).toBe('no-store')
+  })
+})
+
+describe('seat order lines', () => {
+  it('posts one seat line per seat with quantity 1 and no pool or listing', async () => {
+    const seatLines = [
+      { ...line, poolCode: null, seatNo: 'SEAT-A-1-05', quantity: 1 },
+      { ...line, poolCode: null, seatNo: 'SEAT-A-1-06', quantity: 1 },
+    ]
+    const fetchMock = mockFetchOnce({ orderNo: 'ORD-2' })
+
+    await createOrder({ ...payload, lines: seatLines })
+
+    const { body } = callOf(fetchMock)
+    expect(body.lines).toEqual(seatLines)
+    // 座位行只认 seatNo（服务端三路径互斥），不得携带 poolCode / listingNo
+    for (const l of body.lines) {
+      expect(l.seatNo).toMatch(/^SEAT-/)
+      expect(l.poolCode).toBeNull()
+      expect(l.listingNo).toBeNull()
+      expect(l.quantity).toBe(1)
+    }
   })
 })
 

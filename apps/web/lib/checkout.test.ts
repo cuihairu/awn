@@ -25,8 +25,13 @@ import {
   quoteTotals,
   setQuantity,
   toOrderLines,
+  toSeatOrderLines,
   validateCart,
+  validateCheckout,
+  validateSeatCart,
+  seatCartQuantity,
   type CartLine,
+  type SeatCartLine,
 } from './checkout'
 
 /**
@@ -83,6 +88,7 @@ describe('toOrderLines', () => {
       {
         poolCode: 'POOL-1',
         listingNo: null,
+        seatNo: null,
         productId: 'p-1',
         productNameSnapshot: '内场 A 区',
         sessionId: '9',
@@ -119,6 +125,48 @@ describe('validateCart', () => {
 
   it('passes a valid cart', () => {
     expect(validateCart(cartOf([{ product: product(), quantity: 2 }]))).toBeNull()
+  })
+})
+
+describe('seat cart', () => {
+  const seatProduct = (overrides: Partial<ProductListItem> = {}): ProductListItem =>
+    product({ productCode: 'p-seat', name: '池畔 A 区', poolCode: null, available: null, ...overrides })
+
+  it('turns each picked seat into its own quantity-1 order line', () => {
+    const lines = toSeatOrderLines([{ product: seatProduct(), seatNos: ['SEAT-1', 'SEAT-2'] }])
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toMatchObject({
+      seatNo: 'SEAT-1',
+      poolCode: null,
+      listingNo: null,
+      quantity: 1,
+      productId: 'p-seat',
+      unitPrice: 168000,
+    })
+    expect(lines[1].seatNo).toBe('SEAT-2')
+  })
+
+  it('does not require a pool code for seat lines', () => {
+    // 座位型不碰库存池：无池商品走座位行，不受「未开售（无库存池）」约束
+    expect(validateSeatCart([{ product: seatProduct(), seatNos: ['SEAT-1'] }])).toBeNull()
+  })
+
+  it('blocks checkout when both carts are empty', () => {
+    expect(validateCheckout([], [])).toBe('请先选择票档或座位')
+  })
+
+  it('passes when only the seat cart has seats', () => {
+    expect(validateCheckout([], [{ product: seatProduct(), seatNos: ['SEAT-1'] }])).toBeNull()
+  })
+
+  it('still enforces quantity-line rules together with seat lines', () => {
+    const cart = cartOf([{ product: product({ available: 0 }), quantity: 1 }])
+    const seatCart: SeatCartLine[] = [{ product: seatProduct(), seatNos: ['SEAT-1'] }]
+    expect(validateCheckout(cart, seatCart)).toBe('「内场 A 区」已售罄')
+  })
+
+  it('counts seat lines into the total ticket count', () => {
+    expect(seatCartQuantity([{ product: seatProduct(), seatNos: ['S1', 'S2'] }])).toBe(2)
   })
 })
 

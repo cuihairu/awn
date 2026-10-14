@@ -112,3 +112,62 @@ export function seatProductCodes(seats: SeatInput[]): Set<string> {
 export function seatsOfProduct(seats: SeatInput[], productCode: string): SeatInput[] {
   return seats.filter((s) => s.productCode === productCode)
 }
+
+/* ------------------------------------------------------------------ *
+ * 选区携带（/sessions/{id} 选座 → /checkout 下单）
+ * 后端契约没有座位购物车字段，也不引入登录态：sessionStorage 按场次暂存，
+ * 关页即失、不进 URL、跨场次隔离。读取一律容错——脏数据按「未选座」处理，
+ * 不让解析异常打断页面。
+ * ------------------------------------------------------------------ */
+
+const SEAT_SELECTION_KEY = 'awn-seat-selection'
+
+type SelectionStore = Record<string, SeatSelection>
+
+/** 某场次的选座结果：票档编码 → 已选座位号（一行一座） */
+export type SeatSelection = Record<string, string[]>
+
+function readStore(): SelectionStore {
+  try {
+    const raw = window.sessionStorage.getItem(SEAT_SELECTION_KEY)
+    if (!raw) return {}
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? (parsed as SelectionStore) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeStore(store: SelectionStore): void {
+  try {
+    window.sessionStorage.setItem(SEAT_SELECTION_KEY, JSON.stringify(store))
+  } catch {
+    // 存储不可用（隐私模式限额等）时静默降级：本次结算不带座位，下单走数量型
+  }
+}
+
+/** 记录某场次的选座结果（整体替换该场次，不累加）；SSR 环境为空操作 */
+export function saveSeatSelection(sessionId: string, selection: SeatSelection): void {
+  if (typeof window === 'undefined' || !sessionId) return
+  writeStore({ ...readStore(), [sessionId]: selection })
+}
+
+/** 读取某场次的选座结果；无记录 / 脏数据一律返回空对象 */
+export function loadSeatSelection(sessionId: string): SeatSelection {
+  if (typeof window === 'undefined' || !sessionId) return {}
+  const entry = readStore()[sessionId]
+  if (!entry || typeof entry !== 'object') return {}
+  const result: SeatSelection = {}
+  for (const [productCode, seatNos] of Object.entries(entry)) {
+    if (Array.isArray(seatNos)) result[productCode] = seatNos.filter((n) => typeof n === 'string')
+  }
+  return result
+}
+
+/** 结算完成后清掉本场次选区，避免下次进入该场次时读到旧选座 */
+export function clearSeatSelection(sessionId: string): void {
+  if (typeof window === 'undefined' || !sessionId) return
+  const store = readStore()
+  delete store[sessionId]
+  writeStore(store)
+}

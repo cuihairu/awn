@@ -82,19 +82,29 @@ public class OrderWriteService {
         long payAmount = amounts.payAmount();
 
         // 3) 逐行原子预留（orderRef 用订单号；预留与订单同事务提交）
-        //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）
+        //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）；
+        //    座位型行 → 平台座位预留（守卫迁移，并发抢座只放行一单）
         String orderNo = "ORD-" + UUID.randomUUID();
         List<String> reservationNos = new ArrayList<>(command.lines().size());
         List<String> unitNos = new ArrayList<>(command.lines().size());
+        List<String> seatNos = new ArrayList<>(command.lines().size());
         for (OrderLineCommand line : command.lines()) {
             if (line.voucherLine()) {
                 unitNos.add(marketplace.reserveUnitForOrder(line.listingNo()));
                 reservationNos.add(null);
+                seatNos.add(null);
+            } else if (line.seatLine()) {
+                // 商品一致性由库存侧裁决（行商品写错不得静默占座），未知座位 404
+                inventory.reserveSeatForOrder(line.seatNo(), orderNo, line.productId());
+                unitNos.add(null);
+                reservationNos.add(null);
+                seatNos.add(line.seatNo());
             } else {
                 ReservationView reservation = inventory.reserve(
                         new ReserveInventoryCommand(line.poolCode(), orderNo, line.quantity(), null));
                 reservationNos.add(reservation.reservationNo());
                 unitNos.add(null);
+                seatNos.add(null);
             }
         }
 
@@ -130,6 +140,7 @@ public class OrderWriteService {
             item.setReservationNo(reservationNos.get(i));
             item.setListingNo(line.listingNo());
             item.setUnitNo(unitNos.get(i));
+            item.setSeatNo(seatNos.get(i));
             items.save(item);
         }
 
@@ -271,18 +282,22 @@ public class OrderWriteService {
         throw new OrderConflictException("refund pending not allowed from status " + current);
     }
 
-    /** 逐行释放：数量型行走库存预留，凭证型行走挂牌票品 */
+    /** 逐行释放：座位型行释放座位，数量型行走库存预留，凭证型行走挂牌票品 */
     private void releaseLine(OrderItem item) {
-        if (item.getReservationNo() != null) {
+        if (item.getSeatNo() != null) {
+            inventory.releaseSeat(item.getSeatNo());
+        } else if (item.getReservationNo() != null) {
             inventory.release(item.getReservationNo());
         } else {
             marketplace.releaseUnitForOrder(item.getUnitNo());
         }
     }
 
-    /** 逐行确认：数量型行走库存预留，凭证型行走挂牌票品 */
+    /** 逐行确认：座位型行确认出票，数量型行走库存预留，凭证型行走挂牌票品 */
     private void confirmLine(OrderItem item) {
-        if (item.getReservationNo() != null) {
+        if (item.getSeatNo() != null) {
+            inventory.confirmSeat(item.getSeatNo());
+        } else if (item.getReservationNo() != null) {
             inventory.confirm(item.getReservationNo());
         } else {
             marketplace.confirmUnitForOrder(item.getUnitNo());
@@ -296,7 +311,7 @@ public class OrderWriteService {
                 .append(command.userId()).append('|').append(command.currency());
         command.lines().stream()
                 .map(l -> String.join(":",
-                        nvl(l.poolCode()), nvl(l.listingNo()), l.productId(),
+                        nvl(l.poolCode()), nvl(l.listingNo()), nvl(l.seatNo()), l.productId(),
                         nvl(l.sessionId()), nvl(l.ticketCategorySnapshot()), nvl(l.productNameSnapshot()),
                         String.valueOf(l.quantity()), String.valueOf(l.unitPrice()),
                         String.valueOf(l.discountAmount()), String.valueOf(l.feeAmount())))

@@ -121,6 +121,11 @@ public class InventoryFacadeImpl implements InventoryFacade {
     }
 
     @Override
+    public SeatView reserveSeatForOrder(String seatNo, String orderNo, String productCode) {
+        return seatService.reserveSeatForOrder(seatNo, orderNo, productCode);
+    }
+
+    @Override
     public SeatView confirmSeat(String seatNo) {
         return seatService.confirmSeat(seatNo);
     }

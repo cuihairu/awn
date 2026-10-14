@@ -3,12 +3,13 @@ import { AnomaliesView } from './views/AnomaliesView'
 import { EventsView } from './views/EventsView'
 import { InventoryView } from './views/InventoryView'
 import { OrdersView } from './views/OrdersView'
+import { SeatsView } from './views/SeatsView'
 import { SessionsView } from './views/SessionsView'
 import { ThemeSwitcher } from './components/ThemeSwitcher'
 
 /**
  * 运营台骨架：侧边导航（hash 路由）+ 令牌输入（X-Admin-Token，localStorage 记忆）。
- * 五视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
+ * 六视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
  * 令牌由 AdminAuthFilter 校验，默认值见 application.yml（AWN_ADMIN_TOKEN）。
  */
 
@@ -17,6 +18,7 @@ const VIEWS = [
   { key: 'inventory', label: '库存' },
   { key: 'events', label: '活动发布' },
   { key: 'sessions', label: '场次配置' },
+  { key: 'seats', label: '铺座' },
   { key: 'anomalies', label: '异常' },
 ] as const
 
@@ -60,6 +62,8 @@ export default function App() {
     <EventsView token={token} />
   ) : view === 'sessions' ? (
     <SessionsView token={token} />
+  ) : view === 'seats' ? (
+    <SeatsView token={token} />
   ) : (
     <AnomaliesView token={token} />
   )
@@ -83,7 +87,7 @@ export default function App() {
           ))}
         </nav>
         <p className="sidebar__note">
-          原型 docs/design/prototypes/admin；场次配置视图待后端地理字段落地后接入。
+          原型 docs/design/prototypes/admin；铺座为批次操作，整体成功或整体失败。
         </p>
       </aside>
       <section className="content">

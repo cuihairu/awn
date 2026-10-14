@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import site.awn.campaign.domain.CampaignNotFoundException;
+import site.awn.inventory.domain.SeatNotFoundException;
 import site.awn.catalog.domain.ProductNotFoundException;
 import site.awn.event.domain.EventConflictException;
 import site.awn.event.domain.EventNotFoundException;
@@ -103,6 +104,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DisputeNotFoundException.class)
     public ResponseEntity<ErrorResponse> disputeNotFound(DisputeNotFoundException e) {
         return envelope(ErrorCode.DISPUTE_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(SeatNotFoundException.class)
+    public ResponseEntity<ErrorResponse> seatNotFound(SeatNotFoundException e) {
+        return envelope(ErrorCode.SEAT_NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(OrderDisputeConflictException.class)

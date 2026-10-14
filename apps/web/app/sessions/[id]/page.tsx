@@ -16,7 +16,7 @@ import { TierCard, type TicketTier } from '@awn/ticket-components'
 import { SeatMap } from '../../../components/SeatMap'
 import { GeoRow } from '../../../components/GeoRow'
 import { formatEventDateTime, productToTier } from '../../../lib/event-labels'
-import { groupSeatSections, seatProductCodes, seatsOfProduct } from '../../../lib/seatmap'
+import { groupSeatSections, saveSeatSelection, seatProductCodes, seatsOfProduct } from '../../../lib/seatmap'
 
 /**
  * 场次票档页 /sessions/{id}（原型 web/session-*.html 票档区）。
@@ -24,8 +24,8 @@ import { groupSeatSections, seatProductCodes, seatsOfProduct } from '../../../li
  * available 为缓存展示口径，下单时后端原子重校验）；
  * 票档序号按价格降序（1 = 最高价档），与原型 tier-dot-1..5 一致。
  * 座位型商品（座位图载荷中出现过的商品编码）附座位图选座区
- * （GET /api/v1/sessions/{sessionId}/seatmap）；座位订单链路后端未开放，
- * 选座只收集不提交，不渲染假下单入口。
+ * （GET /api/v1/sessions/{sessionId}/seatmap）；选座结果随「去选票」带入
+ * 结算页（sessionStorage 按场次暂存），提交订单时每座一行由后端原子预留。
  * 数量选择在结算页选（/checkout?session={id}），本页只读展示。
  */
 export default function SessionProductsPage() {
@@ -116,12 +116,15 @@ export default function SessionProductsPage() {
   const toggleSeat = (productCode: string, seatNo: string) => {
     setSelected((prev) => {
       const current = prev[productCode] ?? []
-      return {
+      const next = {
         ...prev,
         [productCode]: current.includes(seatNo)
           ? current.filter((no) => no !== seatNo)
           : [...current, seatNo],
       }
+      // 整场次的选座结果落 sessionStorage：结算页按场次带回，下单成功即清除
+      saveSeatSelection(sessionId, next)
+      return next
     })
   }
 
@@ -190,7 +193,7 @@ export default function SessionProductsPage() {
           <p className="muted">
             已选 {(selected[product.productCode] ?? []).length} 座
             {selected[product.productCode]?.length ? `：${selected[product.productCode].join('、')}` : ''}。
-            座位图上「可选」仅为数据标记；座位订单链路后端未开放，选座暂不参与下单。
+            座位图上「可选」仅为数据标记，实际以下单时后端原子预留为准；选座结果随「去选票」带入结算页。
           </p>
         </section>
       ))}

@@ -191,6 +191,7 @@ export function toOrderLines(cart: CartLine[]): OrderLinePayload[] {
   return cart.map((line) => ({
     poolCode: line.product.poolCode ?? null,
     listingNo: null,
+    seatNo: null,
     productId: line.product.productCode,
     productNameSnapshot: line.product.name,
     sessionId: line.product.sessionId ?? '',
@@ -202,7 +203,10 @@ export function toOrderLines(cart: CartLine[]): OrderLinePayload[] {
   }))
 }
 
-/** 提交前的客户端自检；返回首条阻塞原因，无阻塞返回 null */
+/**
+ * 提交前的客户端自检（数量型）；返回首条阻塞原因，无阻塞返回 null。
+ * 空车提示是本页默认文案；同时有空座位车时由 validateCheckout 给出更准的提示。
+ */
 export function validateCart(cart: CartLine[]): string | null {
   if (cart.length === 0) return '请先选择票档'
   for (const line of cart) {
@@ -212,6 +216,75 @@ export function validateCart(cart: CartLine[]): string | null {
       return `「${line.product.name}」超出可购数量`
   }
   return null
+}
+
+/** 座位购物车行：票档 + 已选座位号（座位 1:1，每座一行） */
+export interface SeatCartLine {
+  product: ProductListItem
+  seatNos: string[]
+}
+
+/**
+ * 座位购物车 → 下单行（座位型）：每座独立成行且 quantity=1，
+ * 只给 seatNo，poolCode / listingNo 保持 null（服务端三路径互斥校验）。
+ * 去重与空串过滤：座位图选区可重复点选，重复提交同一座位会被判冲突。
+ */
+export function toSeatOrderLines(seatCart: SeatCartLine[]): OrderLinePayload[] {
+  const lines: OrderLinePayload[] = []
+  for (const { product, seatNos } of seatCart) {
+    const unique = [...new Set(seatNos)].filter((seatNo) => seatNo.trim() !== '')
+    for (const seatNo of unique) {
+      lines.push({
+        poolCode: null,
+        listingNo: null,
+        seatNo,
+        productId: product.productCode,
+        productNameSnapshot: product.name,
+        sessionId: product.sessionId ?? '',
+        ticketCategorySnapshot: null,
+        quantity: 1,
+        unitPrice: product.unitPrice,
+        discountAmount: 0,
+        feeAmount: 0,
+      })
+    }
+  }
+  return lines
+}
+
+/** 座位车自检：座位型不需要库存池，只检查每个票档真的选了有效座位号 */
+export function validateSeatCart(seatCart: SeatCartLine[]): string | null {
+  for (const line of seatCart) {
+    if (line.seatNos.length === 0) return `「${line.product.name}」未选择座位`
+    if (line.seatNos.some((seatNo) => seatNo.trim() === ''))
+      return `「${line.product.name}」存在无效座位号`
+  }
+  return null
+}
+
+/**
+ * 数量车 + 座位车合并自检：座位型商品没有库存池，不能被数量型规则误判为「未开售」。
+ * 两车都空时给出包含座位的提示（validateCart 只认识票档）。
+ */
+export function validateCheckout(cart: CartLine[], seatCart: SeatCartLine[]): string | null {
+  if (cart.length === 0 && seatCart.length === 0) return '请先选择票档或座位'
+  if (cart.length > 0) {
+    const blocker = validateCart(cart)
+    if (blocker) return blocker
+  }
+  if (seatCart.length > 0) {
+    const blocker = validateSeatCart(seatCart)
+    if (blocker) return blocker
+  }
+  return null
+}
+
+/** 座位车总座数：与数量车的 cartTotalQuantity 同口径（去重后计数） */
+export function seatCartQuantity(seatCart: SeatCartLine[]): number {
+  return seatCart.reduce(
+    (sum, line) => sum + [...new Set(line.seatNos)].filter((n) => n.trim() !== '').length,
+    0,
+  )
 }
 
 /**

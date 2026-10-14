@@ -104,6 +104,24 @@ export interface InventoryAdjustment {
   actor: string
 }
 
+/** 座位（运营视图）：orderNo 为占座订单（公开座位图剥去该字段） */
+export interface AdminSeat {
+  seatNo: string
+  productCode: string
+  sessionCode: string
+  section: string
+  row: string
+  seat: string
+  orderNo: string | null
+  status: 'IN_STOCK' | 'RESERVED' | 'SOLD' | 'DELIVERED' | 'INVALID'
+}
+
+/** 铺座批次：一次铺一个商品在同一场次下的座位（整体成功或整体失败） */
+export interface SeatCreatePayload {
+  productCode: string
+  positions: { section: string; row: string; seat: string }[]
+}
+
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -162,5 +180,14 @@ export const adminApi = {
   detachSessionVenue: (token: string, sessionCode: string) =>
     request<SessionVenueView | null>(`/sessions/${encodeURIComponent(sessionCode)}/venue`, token, {
       method: 'DELETE',
+    }),
+
+  sessionSeats: (token: string, sessionCode: string) =>
+    request<AdminSeat[]>(`/sessions/${encodeURIComponent(sessionCode)}/seats`, token),
+
+  createSeats: (token: string, sessionCode: string, payload: SeatCreatePayload) =>
+    request<AdminSeat[]>(`/sessions/${encodeURIComponent(sessionCode)}/seats`, token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 }

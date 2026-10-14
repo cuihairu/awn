@@ -213,12 +213,12 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
         assertThatThrownBy(() -> new OrderLineCommand("pool-x", "LST-x", "prod-x", "演出 X",
                 null, null, 1, 10000, 0, 0))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("exactly one of poolCode or listingNo");
+                .hasMessageContaining("exactly one of poolCode, listingNo or seatNo");
         // 两者都缺：拒绝
         assertThatThrownBy(() -> new OrderLineCommand(null, null, "prod-x", "演出 X",
                 null, null, 1, 10000, 0, 0))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("exactly one of poolCode or listingNo");
+                .hasMessageContaining("exactly one of poolCode, listingNo or seatNo");
         // 凭证型行一张挂牌只能买一张票（票品 1:1）
         assertThatThrownBy(() -> new OrderLineCommand(null, "LST-x", "prod-x", "演出 X",
                 null, null, 2, 10000, 0, 0))

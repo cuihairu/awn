@@ -88,4 +88,47 @@ describe('admin client', () => {
       code: 'UNAUTHORIZED',
     })
   })
+
+  it('lists session seats with the operational order column', async () => {
+    const fetchMock = mockFetchOnce([
+      {
+        seatNo: 'SEAT-1',
+        productCode: 'p-seat',
+        sessionCode: 's-1',
+        section: 'A',
+        row: '1',
+        seat: '1',
+        orderNo: 'ORD-1',
+        status: 'RESERVED',
+      },
+    ])
+    const seats = await adminApi.sessionSeats('t', 's 1')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/sessions/s%201/seats')
+    expect(init.headers['x-admin-token']).toBe('t')
+    expect(seats[0].orderNo).toBe('ORD-1')
+    expect(seats[0].status).toBe('RESERVED')
+  })
+
+  it('creates seats with the product code and position batch', async () => {
+    const fetchMock = mockFetchOnce([])
+    await adminApi.createSeats('t', 's-1', {
+      productCode: 'p-seat',
+      positions: [
+        { section: 'A', row: '1', seat: '1' },
+        { section: 'A', row: '1', seat: '2' },
+      ],
+    })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/sessions/s-1/seats')
+    expect(init.method).toBe('POST')
+    expect(init.headers['content-type']).toBe('application/json')
+    expect(JSON.parse(String(init.body))).toEqual({
+      productCode: 'p-seat',
+      positions: [
+        { section: 'A', row: '1', seat: '1' },
+        { section: 'A', row: '1', seat: '2' },
+      ],
+    })
+  })
 })

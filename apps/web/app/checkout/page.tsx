@@ -22,10 +22,18 @@ import {
   newIdempotencyKey,
   quoteTotals,
   setQuantity,
+  seatCartQuantity,
   toOrderLines,
-  validateCart,
+  toSeatOrderLines,
+  validateCheckout,
   type CartLine,
+  type SeatCartLine,
 } from '../../lib/checkout'
+import {
+  clearSeatSelection,
+  loadSeatSelection,
+  type SeatSelection,
+} from '../../lib/seatmap'
 
 /**
  * 购买页 /checkout（原型 web/purchase.html 步骤 ②③④）。
@@ -34,7 +42,8 @@ import {
  * 关键红线：
  * - 金额一律取服务端报价（POST /checkout/quote 不扣库存），下单时后端重算并原子预留；
  * - 幂等键在一次结算尝试内固定，改购物车后换新键，防重复下单又不误判冲突；
- * - 座位选区与实名信息后端契约里没有，不渲染假表单（见页面内说明）。
+ * - 座位选区在 /sessions/{id} 选出后随本页带入（sessionStorage 按场次暂存，
+ *   提交时每座一行由后端原子预留），观演人实名后端契约未提供，不渲染假表单。
  */
 
 const STEPS = ['选场次', '票档/数量', '报价', '下单', '支付', '出票'] as const
@@ -51,6 +60,7 @@ function CheckoutFlow() {
   const [session, setSession] = useState<SessionView | null>(null)
   const [products, setProducts] = useState<ProductListItem[]>([])
   const [cart, setCart] = useState<CartLine[]>([])
+  const [seatSelection, setSeatSelection] = useState<SeatSelection>({})
   const [quote, setQuote] = useState<QuoteView | null>(null)
   const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -58,7 +68,6 @@ function CheckoutFlow() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey())
-
   useEffect(() => {
     const saved = window.localStorage.getItem(DEMO_USER_KEY)
     if (saved) setUserId(saved)
@@ -79,6 +88,8 @@ function CheckoutFlow() {
         setProducts(productList)
         const picked = productList.find((p) => p.productCode === productCode)
         if (picked) setCart(addToCart([], picked))
+        // 带入 /sessions/{id} 的选座结果；无记录 / 脏数据按未选座处理
+        setSeatSelection(loadSeatSelection(sessionId))
       })
       .catch((err) => {
         if (!alive) return
@@ -92,15 +103,30 @@ function CheckoutFlow() {
     }
   }, [sessionId, productCode])
 
-  /** 购物车变化即重算服务端报价；报价失败不阻塞选择，只是不展示金额 */
+  /** 座位车：选区 ∩ 本场次票档（票档已下架则忽略其选座，不臆造行） */
+  const seatCart = useMemo<SeatCartLine[]>(() => {
+    const byCode = new Map(products.map((p) => [p.productCode, p]))
+    return Object.entries(seatSelection)
+      .filter(([productCode, seatNos]) => byCode.has(productCode) && seatNos.length > 0)
+      .map(([productCode, seatNos]) => ({ product: byCode.get(productCode)!, seatNos }))
+  }, [products, seatSelection])
+
+  /** 全部下单行：数量型 + 座位型（每座一行），报价与提交同源 */
+  const orderLines = useMemo(
+    () => [...toOrderLines(cart), ...toSeatOrderLines(seatCart)],
+    [cart, seatCart],
+  )
+  const totalTickets = cartTotalQuantity(cart) + seatCartQuantity(seatCart)
+
+  /** 购物车 / 座位车变化即重算服务端报价；报价失败不阻塞选择，只是不展示金额 */
   useEffect(() => {
-    const blocker = validateCart(cart)
-    if (blocker || cart.length === 0) {
+    const blocker = validateCheckout(cart, seatCart)
+    if (blocker || orderLines.length === 0) {
       setQuote(null)
       return
     }
     let alive = true
-    quoteCheckout({ currency: 'CNY', lines: toOrderLines(cart) })
+    quoteCheckout({ currency: 'CNY', lines: orderLines })
       .then((q) => {
         if (alive) setQuote(q)
       })
@@ -110,7 +136,7 @@ function CheckoutFlow() {
     return () => {
       alive = false
     }
-  }, [cart])
+  }, [cart, seatCart, orderLines])
 
   /** 改购物车即换幂等键：同键不同内容后端会判冲突 */
   const mutateCart = (next: CartLine[]) => {
@@ -120,8 +146,13 @@ function CheckoutFlow() {
   }
 
   const totals = useMemo(() => quoteTotals(quote), [quote])
-  const blocker = validateCart(cart)
+  const blocker = validateCheckout(cart, seatCart)
   const userIdOk = userId.trim().length > 0
+  /** 已带入选座的票档编码：这些票档不渲染数量步进器（座位 1:1，不按数量买） */
+  const seatProductCodes = useMemo(
+    () => new Set(seatCart.map((l) => l.product.productCode)),
+    [seatCart],
+  )
 
   const submit = async () => {
     if (!userIdOk || blocker || !quote || submitting) return
@@ -133,19 +164,24 @@ function CheckoutFlow() {
         idempotencyKey,
         userId: userId.trim(),
         currency: 'CNY',
-        lines: toOrderLines(cart),
+        lines: orderLines,
       })
+      clearSeatSelection(sessionId)
       router.push(`/orders/${order.orderNo}`)
     } catch (err) {
       setSubmitting(false)
       if (err instanceof ApiError) {
-        // 库存是缓存展示口径，下单时后端原子重校验 —— 冲突按服务端结论告知
+        // 库存/座位是缓存展示口径，下单时后端原子重校验 —— 冲突按服务端结论告知
         setSubmitError(
           err.code === 'INSUFFICIENT_INVENTORY'
             ? '库存不足，请调整数量后重试'
-            : err.code === 'IDEMPOTENCY_CONFLICT'
-              ? '提交内容已变更，请重新提交'
-              : `下单失败（${err.code}），请稍后重试`,
+            : err.code === 'INVENTORY_CONFLICT'
+              ? '座位已被抢占或与所选票档不符，请返回座位图重新选座'
+              : err.code === 'SEAT_NOT_FOUND'
+                ? '所选座位已失效，请返回座位图重新选座'
+                : err.code === 'IDEMPOTENCY_CONFLICT'
+                  ? '提交内容已变更，请重新提交'
+                  : `下单失败（${err.code}），请稍后重试`,
         )
       } else {
         setSubmitError('下单失败，请稍后重试')
@@ -210,7 +246,9 @@ function CheckoutFlow() {
           <h2>票档与数量</h2>
           {products.length === 0 && <p className="muted">该场次暂未开放票档。</p>}
           <div className="tier-list">
-            {products.map((product) => {
+            {products
+              .filter((product) => !seatProductCodes.has(product.productCode))
+              .map((product) => {
               const line = cart.find((l) => l.product.productCode === product.productCode)
               const cap =
                 product.available == null
@@ -265,6 +303,31 @@ function CheckoutFlow() {
               )
             })}
           </div>
+          <div className="tier-list">
+            {seatCart.map((line) => (
+              <div key={line.product.productCode} className="tier-row">
+                <div className="row" style={{ gap: 12 }}>
+                  <div>
+                    <strong>{line.product.name}</strong>
+                    <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
+                      选座票 · 一座一票
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <span className="price price-yuan num">{formatMinor(line.product.unitPrice)}</span>
+                  <span className="num">{line.seatNos.length} 座</span>
+                  <Link
+                    className="btn btn-sm btn-ghost"
+                    href={`/sessions/${encodeURIComponent(sessionId)}#seats-${line.product.productCode}`}
+                  >
+                    重新选座
+                  </Link>
+                </div>
+                <p className="hint num" style={{ margin: 0 }}>{line.seatNos.join('、')}</p>
+              </div>
+            ))}
+          </div>
 
           <div className="field field--grow" style={{ marginTop: 16 }}>
             <label htmlFor="userId">下单身份 userId</label>
@@ -280,27 +343,41 @@ function CheckoutFlow() {
           </div>
 
           <div className="sunken" style={{ marginTop: 16, textAlign: 'left' }}>
-            <strong>座位选区与实名信息</strong>
+            <strong>座位与实名</strong>
             <p className="hint">
-              选区/选排（座位图 2D，见 todo 126）与观演人实名后端契约暂未提供，
-              本页不渲染无法提交的表单；数量型票档按后端库存池规则售卖。
+              {seatCart.length > 0
+                ? `已带入 ${seatCartQuantity(seatCart)} 个选座（场次页暂存，提交订单时后端原子预留，下单成功自动清除）。`
+                : '座位票请先在场次页座位图选座，选区会带入本页随订单提交。'}
+              观演人实名后端契约暂未提供，本页不渲染无法提交的表单。
             </p>
           </div>
         </section>
 
         <aside className="cart-summary">
           <h2>结算摘要</h2>
-          {cart.length === 0 ? (
-            <p className="hint">未选择票档。</p>
+          {orderLines.length === 0 ? (
+            <p className="hint">未选择票档或座位。</p>
           ) : (
-            cart.map((line) => (
-              <div key={line.product.productCode} className="row-between" style={{ margin: '12px 0' }}>
-                <span className="muted">
-                  {line.product.name} × {line.quantity}
-                </span>
-                <span className="price num">{formatMinor(line.product.unitPrice * line.quantity)}</span>
-              </div>
-            ))
+            <>
+              {cart.map((line) => (
+                <div key={line.product.productCode} className="row-between" style={{ margin: '12px 0' }}>
+                  <span className="muted">
+                    {line.product.name} × {line.quantity}
+                  </span>
+                  <span className="price num">{formatMinor(line.product.unitPrice * line.quantity)}</span>
+                </div>
+              ))}
+              {seatCart.map((line) => (
+                <div
+                  key={line.product.productCode}
+                  className="row-between"
+                  style={{ margin: '12px 0' }}
+                >
+                  <span className="muted">{line.product.name}（选座）× {line.seatNos.length}</span>
+                  <span className="price num">{formatMinor(line.product.unitPrice * line.seatNos.length)}</span>
+                </div>
+              ))}
+            </>
           )}
 
           <hr className="divider" />
@@ -332,7 +409,7 @@ function CheckoutFlow() {
             disabled={Boolean(blocker) || !quote || !userIdOk || submitting}
             onClick={submit}
           >
-            {submitting ? '提交中…' : `提交订单（共 ${cartTotalQuantity(cart)} 张）`}
+            {submitting ? '提交中…' : `提交订单（共 ${totalTickets} 张）`}
           </button>
           <p className="hint">金额以服务端报价为准；提交后进入待支付，超时自动关单释放库存。</p>
         </aside>

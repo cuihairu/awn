@@ -53,9 +53,10 @@ public class OrderController {
 
     private CreateOrderCommand toCommand(String idempotencyKey, CreateOrderRequest request) {
         List<OrderLineCommand> lines = request.lines().stream()
-                .map(l -> new OrderLineCommand(l.poolCode(), l.listingNo(), l.productId(),
-                        l.productNameSnapshot(), l.sessionId(), l.ticketCategorySnapshot(),
-                        l.quantity(), l.unitPrice(), l.discountAmount(), l.feeAmount()))
+                .map(l -> new OrderLineCommand(l.poolCode(), l.listingNo(), l.seatNo(),
+                        l.productId(), l.productNameSnapshot(), l.sessionId(),
+                        l.ticketCategorySnapshot(), l.quantity(), l.unitPrice(),
+                        l.discountAmount(), l.feeAmount()))
                 .toList();
         return new CreateOrderCommand(idempotencyKey, request.userId(), request.currency(), lines);
     }

@@ -87,6 +87,22 @@ public class PlatformSeatService {
         return requireMoved(moved, seatNo, SeatStatus.RESERVED);
     }
 
+    /**
+     * 为订单预留座位（选座下单链路）：商品一致性在此裁决——
+     * 座位是独立模型，行商品写错时不得静默占座（买 A 商品的价占 B 商品的座）。
+     * 位置属性创建后不变，只读校验与守卫预留之间无竞态（状态竞态由守卫迁移裁决）。
+     */
+    @Transactional
+    public SeatView reserveSeatForOrder(String seatNo, String orderNo, String productCode) {
+        SeatView seat = seat(seatNo);
+        if (!seat.productCode().equals(productCode)) {
+            throw new InventoryConflictException(
+                    "seat " + seatNo + " belongs to product " + seat.productCode()
+                            + ", not " + productCode);
+        }
+        return reserveSeat(seatNo, orderNo);
+    }
+
     /** 确认出票（RESERVED → SOLD）：订单号保持，供对账与交付追溯 */
     @Transactional
     public SeatView confirmSeat(String seatNo) {

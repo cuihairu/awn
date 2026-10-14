@@ -71,6 +71,13 @@ public interface InventoryFacade {
     /** 预留座位（IN_STOCK → RESERVED 并登记订单号）：并发抢座守卫裁决，败者抛 InventoryConflictException */
     SeatView reserveSeat(String seatNo, String orderNo);
 
+    /**
+     * 为订单预留座位（选座下单链路，与 reserveUnitForOrder 同构）：
+     * 商品一致性在库存侧裁决——座位不属于 productCode 即抛冲突（订单侧不重复判断），
+     * 并发抢座守卫裁决，败者抛 InventoryConflictException；未知座位抛 SeatNotFoundException。
+     */
+    SeatView reserveSeatForOrder(String seatNo, String orderNo, String productCode);
+
     /** 确认出票（RESERVED → SOLD，订单号保留供对账） */
     SeatView confirmSeat(String seatNo);
 

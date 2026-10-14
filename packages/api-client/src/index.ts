@@ -43,10 +43,11 @@ async function readJson<T>(res: Response): Promise<T> {
  * 支付创建只传渠道，金额/币种取订单快照（任何端不得凭前端参数确认支付成功）。
  */
 
-/** 订单行来源二选一：数量型走 poolCode，凭证型走 listingNo */
+/** 订单行来源三选一：数量型走 poolCode，凭证型走 listingNo，座位型走 seatNo */
 export interface OrderLinePayload {
   poolCode: string | null
   listingNo: string | null
+  seatNo: string | null
   productId: string
   productNameSnapshot: string
   sessionId: string
@@ -89,6 +90,7 @@ export interface OrderItemView {
   reservationNo: string | null
   listingNo: string | null
   unitNo: string | null
+  seatNo: string | null
 }
 
 export interface OrderView {

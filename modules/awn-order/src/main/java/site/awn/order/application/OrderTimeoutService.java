@@ -87,8 +87,10 @@ public class OrderTimeoutService {
         }
         Order fresh = orders.findByOrderNo(orderNo).orElseThrow();
         items.findByOrderId(fresh.getId()).forEach(item -> {
-            // 数量型行走库存预留；凭证型行走挂牌票品
-            if (item.getReservationNo() != null) {
+            // 座位型行释放座位；数量型行走库存预留；凭证型行走挂牌票品
+            if (item.getSeatNo() != null) {
+                inventory.releaseSeat(item.getSeatNo());
+            } else if (item.getReservationNo() != null) {
                 inventory.release(item.getReservationNo());
             } else {
                 marketplace.releaseUnitForOrder(item.getUnitNo());

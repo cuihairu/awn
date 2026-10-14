@@ -15,6 +15,7 @@ public record CreateOrderRequest(
     public record Line(
             String poolCode,
             String listingNo,
+            String seatNo,
             String productId,
             String productNameSnapshot,
             String sessionId,

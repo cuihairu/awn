@@ -45,7 +45,8 @@ public class OrderReadService {
                         i.getPoolCode(), i.getProductId(), i.getProductNameSnapshot(),
                         i.getSessionId(), i.getTicketCategorySnapshot(),
                         i.getQuantity(), i.getUnitPrice(), i.getDiscountAmount(), i.getFeeAmount(),
-                        i.getLineTotal(), i.getReservationNo(), i.getListingNo(), i.getUnitNo()))
+                        i.getLineTotal(), i.getReservationNo(), i.getListingNo(), i.getUnitNo(),
+                        i.getSeatNo()))
                 .toList();
         Instant serverTime = Instant.now();
         long payExpiresInSeconds = 0;
