@@ -9,6 +9,7 @@ import {
   formatYear,
   workTypeLabel,
 } from '../../lib/star-labels'
+import { useDebouncedValue } from '../../lib/use-debounced-value'
 
 /**
  * 作品列表 /works（docs/design/star-catalog.md §2.1）。
@@ -21,11 +22,12 @@ export default function WorksPage() {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
+  const debouncedKeyword = useDebouncedValue(keyword)
 
   useEffect(() => {
     let alive = true
     setLoading(true)
-    listWorks({ type: type || undefined, q: keyword || undefined })
+    listWorks({ type: type || undefined, q: debouncedKeyword || undefined })
       .then((data) => {
         if (!alive) return
         setWorks(data)
@@ -40,7 +42,7 @@ export default function WorksPage() {
     return () => {
       alive = false
     }
-  }, [type, keyword])
+  }, [type, debouncedKeyword])
 
   return (
     <main className="page">

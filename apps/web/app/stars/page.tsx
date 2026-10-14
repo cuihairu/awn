@@ -8,6 +8,7 @@ import {
   type ProfessionType,
 } from '@awn/api-client'
 import { StarPhoto } from '../../components/StarPhoto'
+import { useDebouncedValue } from '../../lib/use-debounced-value'
 import {
   PROFESSION_LABEL_ZH,
   PROFESSION_ORDER,
@@ -26,6 +27,7 @@ export default function StarsPage() {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
+  const debouncedKeyword = useDebouncedValue(keyword)
 
   useEffect(() => {
     let alive = true
@@ -33,7 +35,7 @@ export default function StarsPage() {
     listPersons({
       profession: profession || undefined,
       nationality: nationality || undefined,
-      q: keyword || undefined,
+      q: debouncedKeyword || undefined,
     })
       .then((data) => {
         if (!alive) return
@@ -49,7 +51,7 @@ export default function StarsPage() {
     return () => {
       alive = false
     }
-  }, [profession, nationality, keyword])
+  }, [profession, nationality, debouncedKeyword])
 
   // 国籍下拉只列当前结果里出现过的国籍，避免给出空选项
   const nationalities = useMemo(
