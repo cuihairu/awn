@@ -4,6 +4,8 @@
 
 # AWN · 麦芒网
 
+> **English** | [中文](README.zh.md)
+
 Ticketing trading & intelligence platform
 
 [![ci](https://github.com/cuihairu/awn/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/awn/actions/workflows/ci.yml)
@@ -14,8 +16,6 @@ Ticketing trading & intelligence platform
 ![pnpm](https://img.shields.io/badge/pnpm-10-f9ad00?logo=pnpm&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-client-02569b?logo=flutter&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache--2.0-2563eb)
-
-[English](README.md) | [简体中文](README.zh-CN.md)
 
 </div>
 
