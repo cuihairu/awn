@@ -189,8 +189,8 @@ POST   /api/v1/admin/works/{workId}/cast
 | 端 | 接入方式 |
 |--------|--------|
 | 网页端 `apps/web` | Next.js 服务端 + `packages/api-client` |
-| 小程序 `apps/miniprogram` | Taro 请求封装（当前未依赖 `packages/api-client`，待接入） |
-| 客户端 `apps/client` | Flutter 工程骨架（仅 `lib/main.dart`，Dio 客户端与生成模型待建） |
+| 小程序 `apps/miniprogram` | Taro 请求封装 + 自研 section 子集渲染（运行环境不含 DOM，未依赖 `packages/campaign-renderer`） |
+| 客户端 `apps/client` | Flutter + Dio，模型按本文档契约用 json_serializable 生成（只读活动/场次/商品链路） |
 | 运营后台 `apps/admin` | `packages/api-client`（管理接口作用域） |
 
 支付相关接口仅由后端与支付渠道交互，任何端**不得**仅凭前端参数确认支付成功。
