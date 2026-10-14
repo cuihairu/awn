@@ -46,6 +46,7 @@ export default withMermaid(
           items: [
             { text: '界面原型图', link: '/design/prototypes' },
             { text: 'UI 设计系统', link: '/design/ui-system' },
+            { text: '3D 座位图方案', link: '/design/seatmap-3d-plan' },
             { text: 'Logo 候选方案', link: '/design/logo-candidates' },
           ],
         },

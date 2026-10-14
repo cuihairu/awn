@@ -155,6 +155,7 @@
 
 - [x] 平台座位型票品模型（独立 `platform_seats`，逐座状态机，守卫条件 UPDATE 并发抢座只放行一单）— c7ea49c；PlatformSeatModuleTests 9 例（含并发抢座）
 - [ ] 3D 座位图（P2）— 无设计无实现；验收：2D 过目后给出 3D 方案（2D 过目已代决 2026-10-14 巡检授权，3D 维持 P2，不阻塞 2D 实现）
+  - 3D 方案已交（docs/design/seatmap-3d-plan.md，2026-10-15）：定位 2D 的视觉增强层（交互/无障碍仍走 2D 路径）；分四阶段——S1 视角增强（无坐标无新依赖，CSS 3D 变换现有 SVG 网格）、S2 坐标可选化契约（SeatView 可选 x/y，null 回退网格）、S3 真 3D 原型（three.js 程序化，参考 Fi-Stadium InstancedMesh+Raycaster 思路，吸收思想不引代码）、S4 L1/L2 选区选排（依三问验证）；几何线框占位不违反素材红线；按 todo 口径设计文档不记为已完成，实现未动
 
 ---
 
