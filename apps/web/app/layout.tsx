@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import type { CSSProperties } from 'react'
+import { allThemesCss } from '@awn/ui'
 import Link from 'next/link'
-import { AWN_CSS_VARS } from '@awn/ui'
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -9,20 +9,19 @@ export const metadata: Metadata = {
   description: '演唱会、音乐节、体育赛事票务与票务情报',
 }
 
-const awnVars = Object.fromEntries(
-  Object.entries(AWN_CSS_VARS).map(([name, value]) => [name, value]),
-) as CSSProperties
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" style={awnVars}>
+    <html lang="zh-CN" data-theme="default">
       <body>
+        {/* 主题令牌（含 --awn-* 桥接）全量注入；切换只改 data-theme 属性 */}
+        <style dangerouslySetInnerHTML={{ __html: allThemesCss() }} />
         <nav className="topnav" aria-label="主导航">
           <Link href="/">发现</Link>
           <Link href="/stars">明星图鉴</Link>
           <Link href="/campaigns">专场</Link>
         </nav>
         {children}
+        <ThemeSwitcher />
       </body>
     </html>
   )
