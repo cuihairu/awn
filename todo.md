@@ -73,7 +73,7 @@
 - [x] 商品/票档/票品/库存池/卖家/供货/挂牌关系澄清 + 全链时序图 + 不变量到测试清单 — 5c25520；docs build 通过
 - [x] 情报隔离表述与账号权限核对 — 4378dff；docs build 通过
 - [x] `campaign_assets` 表收录进 domain-model.md 总表 — 5c25520；docs build 通过
-- [x] `inbox_messages` 去重职责补入 async-outbox.md — 44db34c；docs build 通过
+- [x] `inbox_messages` 去重职责补入 async-outbox.md — 8f95761；docs build 通过
 - [x] 库存对账覆盖 total 与 ADJUST 流水累计 — fc5b776；InventoryReconciliationTests 2 例
 
 ---
