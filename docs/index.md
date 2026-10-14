@@ -37,7 +37,7 @@ features:
 
 ## 界面原型
 
-基于 [AWN 设计规范](/design/prototypes)（`ui-ux-pro-max` 生成）产出的消费端 Web / 运营管理后台 / 移动客户端三端高保真原型（小程序端原型见原型目录），点击查看完整说明。
+基于 [AWN 设计规范](/design/prototypes) 产出的消费端 Web / 运营管理后台 / 移动客户端三端高保真原型（小程序端原型见原型目录），点击查看完整说明。
 
 <div class="prototype-gallery">
   <figure class="prototype-card">

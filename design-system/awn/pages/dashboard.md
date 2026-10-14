@@ -1,6 +1,6 @@
 # AWN Admin Dashboard 设计规范（页面级覆盖）
 
-> 依据 ui-ux-pro-max 生成结果（Style: Data-Dense Dashboard, Density 8/10）调整为本品牌。
+> 依据设计系统 Master 的数据密集型后台样式（Density 8/10）调整为本品牌。
 
 ## 定位
 

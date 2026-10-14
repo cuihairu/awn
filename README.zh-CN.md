@@ -51,9 +51,9 @@
 │  └─ client              移动客户端（Flutter 骨架，需先 `flutter create .` 生成平台工程）
 ├─ packages/              前端共享包（@awn/ui、@awn/campaign-renderer、
 │                           @awn/ticket-components、@awn/api-client）
-├─ design-system/awn/     设计系统 Master + 页面级覆盖（ui-ux-pro-max 产出）
+├─ design-system/awn/     设计系统 Master + 页面级覆盖
 ├─ deploy/                docker compose 编排 + Caddy 配置 + Dockerfile
-└─ pom.xml                Maven 父 POM（Spring Boot 3.5.6 / Modulith 1.4.2 / Java 21）
+└─ pom.xml                Maven 父 POM（Spring Boot 4.1.1 / Modulith 2.1.1 / Java 21）
 ```
 
 ## 快速开始
@@ -61,7 +61,7 @@
 | 端 | 命令 | 说明 |
 |---|---|---|
 | 文档站 | `pnpm install && pnpm docs:dev` | http://localhost:5173 |
-| API | `mvn -pl apps/awn-api spring-boot:run`（需本地 PostgreSQL + Redis） | http://localhost:8080/actuator/health |
+| API | `./mvnw -pl apps/awn-api spring-boot:run`（需本地 PostgreSQL + Redis） | http://localhost:8080/actuator/health |
 | 网页端 | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | 管理后台 | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | 小程序 | `pnpm --filter @awn/miniprogram dev:weapp` | 微信开发者工具导入 `apps/miniprogram` |
@@ -69,6 +69,18 @@
 | 一键部署 | `cd deploy && cp .env.example .env && docker compose up -d --build` | 见 `deploy/README.md` |
 | 一条命令构建 | `scripts/build.sh` | 后端 fat jar + `apps/web/.next/` + `apps/admin/dist/` + 文档站；失败非零退出 |
 | 一键验证 | `docker compose -f deploy/docker-compose.yml up -d --build` 后 `curl -s http://127.0.0.1:18080/actuator/health` 返回 UP | 冒烟与细节见 `deploy/README.md` |
+
+## 本地测试口径
+
+CI 与本地开发按改动面三路分流——改一行文档不该全量编译。Maven 版本经 wrapper 钉定（`./mvnw`，3.10.0，首次运行自动下载），本地与 CI 一致。
+
+1. **文档改动**（`*.md`、`docs/**`、图片）：不编译。主 CI workflow 的
+   `paths-ignore` 已跳过这些路径。
+2. **代码改动**：只跑改动子集，不全量。
+   - `./mvnw -pl <改动模块> -am test`
+   - `pnpm --filter @awn/<包> test`
+3. **全量**（`./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`）：仅以下情形触发——pom.xml / pnpm-lock.yaml / package.json、
+   `.github/**`、Docker/Compose 配置、发布前。
 
 ## 实施节奏
 

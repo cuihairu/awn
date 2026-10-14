@@ -51,9 +51,9 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 │  └─ client              Mobile client (Flutter skeleton; needs `flutter create .` for platform projects)
 ├─ packages/              Shared frontend packages (@awn/ui, @awn/campaign-renderer,
 │                           @awn/ticket-components, @awn/api-client)
-├─ design-system/awn/     Design system master + page overrides (ui-ux-pro-max output)
+├─ design-system/awn/     Design system master + page overrides
 ├─ deploy/                docker compose stack + Caddy config + Dockerfiles
-└─ pom.xml                Maven parent (Spring Boot 3.5.6 / Modulith 1.4.2 / Java 21)
+└─ pom.xml                Maven parent (Spring Boot 4.1.1 / Modulith 2.1.1 / Java 21)
 ```
 
 ## Quick start
