@@ -3,6 +3,7 @@ import { AnomaliesView } from './views/AnomaliesView'
 import { EventsView } from './views/EventsView'
 import { InventoryView } from './views/InventoryView'
 import { OrdersView } from './views/OrdersView'
+import { ThemeSwitcher } from './components/ThemeSwitcher'
 
 /**
  * 运营台骨架：侧边导航（hash 路由）+ 令牌输入（X-Admin-Token，localStorage 记忆）。
@@ -97,6 +98,7 @@ export default function App() {
         </div>
         {body}
       </section>
+      <ThemeSwitcher />
     </main>
   )
 }

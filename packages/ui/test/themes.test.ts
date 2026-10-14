@@ -6,6 +6,7 @@ import {
   AWN_THEMES,
   AWN_THEME_LABELS,
   AWN_THEME_NAMES,
+  AWN_THEME_SHORT_LABELS,
   AWN_THEME_TOKENS,
   allThemesCss,
   applyTheme,
@@ -43,6 +44,13 @@ describe('AWN_THEME_NAMES', () => {
     for (const name of AWN_THEME_NAMES) {
       expect(AWN_THEME_LABELS[name]).toBeTruthy()
     }
+  })
+
+  it('gives every theme a switcher short label', () => {
+    for (const name of AWN_THEME_NAMES) {
+      expect(AWN_THEME_SHORT_LABELS[name]).toBeTruthy()
+    }
+    expect(AWN_THEME_SHORT_LABELS['season-autumn']).toBe('秋')
   })
 })
 

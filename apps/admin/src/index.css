@@ -1,5 +1,5 @@
 /* AWN Admin 基础样式 —— 页面级规范见 design-system/awn/pages/dashboard.md */
-/* :root 令牌由 packages/ui 的 AWN_CSS_VARS 注入（单一来源） */
+/* 颜色令牌由 packages/ui 的主题块（main.tsx 注入，含 --awn-* 桥接）提供 */
 
 * {
   box-sizing: border-box;
@@ -358,4 +358,51 @@ section > h2 {
 
 .balance-bar i.low {
   background: #d97706;
+}
+
+
+/* ── 主题切换器（原型 components.css .theme-picker）───────────────── */
+
+.theme-picker {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: color-mix(in srgb, var(--awn-card) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--awn-border);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 6px 24px rgb(28 25 23 / 10%);
+}
+
+.theme-picker__head {
+  font-size: 10px;
+  color: var(--awn-ink-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theme-picker button {
+  font-size: 11px;
+  text-align: left;
+  border: 1px solid var(--awn-border);
+  background: var(--awn-bg);
+  color: var(--awn-ink);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.theme-picker button:hover {
+  color: var(--awn-gold-deep);
+}
+
+.theme-picker button[aria-pressed="true"] {
+  border-color: var(--awn-gold);
+  color: var(--awn-gold-deep);
+  font-weight: 700;
 }

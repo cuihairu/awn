@@ -4,26 +4,12 @@ import { useEffect, useState } from 'react'
 import {
   AWN_THEME_LABELS,
   AWN_THEME_NAMES,
+  AWN_THEME_SHORT_LABELS,
   applyTheme,
   readStoredTheme,
   storeTheme,
   type AWNThemeName,
 } from '@awn/ui'
-
-/** 原型 theme.js 的短标签（完整场景说明在 AWN_THEME_LABELS）。 */
-const SHORT_LABELS: Record<AWNThemeName, string> = {
-  default: '默认·品牌金',
-  dark: '暗色',
-  'cn-spring-festival': '春节',
-  'cn-lantern': '元宵',
-  'cn-dragon-boat': '端午',
-  'cn-mid-autumn': '中秋',
-  'cn-national-day': '国庆',
-  'season-spring': '春',
-  'season-summer': '夏',
-  'season-autumn': '秋',
-  'season-winter': '冬',
-}
 
 /**
  * 主题切换器（原型 components.css .theme-picker：右下角悬浮按钮面板）。
@@ -57,7 +43,7 @@ export function ThemeSwitcher() {
             setTheme(name)
           }}
         >
-          {SHORT_LABELS[name]}
+          {AWN_THEME_SHORT_LABELS[name]}
         </button>
       ))}
     </div>

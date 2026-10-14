@@ -69,6 +69,21 @@ export const AWN_THEME_LABELS: Record<AWNThemeName, string> = {
   'season-winter': '跨年演出 / 冬季档',
 }
 
+/** 主题 → 切换器短标签（prototypes/theme.js；完整场景说明见 AWN_THEME_LABELS）。 */
+export const AWN_THEME_SHORT_LABELS: Record<AWNThemeName, string> = {
+  default: '默认·品牌金',
+  dark: '暗色',
+  'cn-spring-festival': '春节',
+  'cn-lantern': '元宵',
+  'cn-dragon-boat': '端午',
+  'cn-mid-autumn': '中秋',
+  'cn-national-day': '国庆',
+  'season-spring': '春',
+  'season-summer': '夏',
+  'season-autumn': '秋',
+  'season-winter': '冬',
+}
+
 export const AWN_THEMES: Record<AWNThemeName, AWNThemeVars> = {
   default: {
     '--t-bg': '#fafaf9',
