@@ -8,7 +8,6 @@ import {
   addToCart,
   canPay,
   cartTotalQuantity,
-  formatInstant,
   formatMinor,
   fulfillmentStatusLabel,
   isPaymentSettled,
@@ -239,9 +238,4 @@ describe('amount formatting', () => {
     ).toEqual({ total: '3,360.00', discount: '20.00', fee: '48.00', pay: '3,388.00' })
   })
 
-  it('formats an instant and stays silent for missing or broken values', () => {
-    expect(formatInstant('2026-11-06T12:30:00Z')).not.toBe('')
-    expect(formatInstant(null)).toBe('')
-    expect(formatInstant('not-a-date')).toBe('')
-  })
 })

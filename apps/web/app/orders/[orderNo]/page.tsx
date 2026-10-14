@@ -17,7 +17,7 @@ import {
 import {
   PAYMENT_CHANNELS,
   canPay,
-  formatInstant,
+  formatOrderExpiry,
   formatMinor,
   fulfillmentStatusLabel,
   isPaymentSettled,
@@ -157,7 +157,7 @@ export default function OrderDetailPage() {
             {orderStatusLabel(order.status)}
           </span>
           {order.expiresAt && canPay(order.status) && (
-            <span className="num"> · 支付截止 {formatInstant(order.expiresAt)}</span>
+            <span className="num"> · 支付截止 {formatOrderExpiry(order.expiresAt)}</span>
           )}
         </p>
       </header>

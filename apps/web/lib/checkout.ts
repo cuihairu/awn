@@ -197,17 +197,13 @@ export function formatMinor(minor: number | null | undefined): string {
 }
 
 /** 支付截止等时间戳展示；缺失或不可解析时返回空串（不展示「Invalid Date」） */
-export function formatInstant(iso: string | null | undefined): string {
+export function formatOrderExpiry(iso: string | null | undefined): string {
   if (!iso) return ''
   const at = new Date(iso)
   if (Number.isNaN(at.getTime())) return ''
-  return at.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+  // 手写格式化而不是 toLocaleString：输出与宿主 locale / ICU 版本无关
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}`
 }
 
 /** 报价区行：票档 × 数量与服务端算出的行合计 */

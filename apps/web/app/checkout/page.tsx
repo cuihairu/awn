@@ -15,6 +15,7 @@ import {
 } from '@awn/api-client'
 import { formatEventDateTime } from '../../lib/event-labels'
 import {
+  MAX_TICKETS_PER_LINE,
   addToCart,
   cartTotalQuantity,
   formatMinor,
@@ -211,7 +212,10 @@ function CheckoutFlow() {
           <div className="tier-list">
             {products.map((product) => {
               const line = cart.find((l) => l.product.productCode === product.productCode)
-              const cap = product.available == null ? 0 : Math.min(4, product.available)
+              const cap =
+                product.available == null
+                  ? 0
+                  : Math.min(MAX_TICKETS_PER_LINE, product.available)
               const blocked = cap <= 0
               return (
                 <div key={product.productCode} className="tier-row" aria-disabled={blocked}>
