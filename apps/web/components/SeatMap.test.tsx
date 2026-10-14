@@ -109,4 +109,31 @@ describe('SeatMap', () => {
     expect(legend?.textContent).toContain('本次选中')
     expect(node.querySelector('.hint')?.textContent).toContain('显示可选 ≠ 后台有库存')
   })
+
+  it('defaults to the flat top view with the perspective toggle unpressed', () => {
+    const node = renderMap()
+    expect(node.querySelector('.seatmap-viewport')?.className).not.toContain('--tilted')
+    const buttons = [...node.querySelectorAll('.seatmap-view button')]
+    expect(buttons.map((button) => button.textContent)).toEqual(['俯视', '透视'])
+    expect(buttons[0].getAttribute('aria-pressed')).toBe('true')
+    expect(buttons[1].getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('switches to the tilted view and keeps seat interaction unchanged', () => {
+    const onToggleSeat = vi.fn()
+    const node = renderMap([], onToggleSeat)
+    const tilted = [...node.querySelectorAll('.seatmap-view button')].find(
+      (button) => button.textContent === '透视',
+    ) as HTMLButtonElement
+    act(() => {
+      tilted.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(node.querySelector('.seatmap-viewport')?.className).toContain('seatmap-viewport--tilted')
+    expect(tilted.getAttribute('aria-pressed')).toBe('true')
+    const seat = node.querySelector('[role="button"]') as Element
+    act(() => {
+      seat.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onToggleSeat).toHaveBeenCalledWith('SEAT-A')
+  })
 })

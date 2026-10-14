@@ -974,3 +974,53 @@ li {
   color: var(--awn-gold-deep);
   font-weight: 700;
 }
+
+
+/* ── 3D 视角增强（docs/design/seatmap-3d-plan.md S1）───────────────── */
+
+.seatmap-view {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.seatmap-view button {
+  font-size: 12px;
+  border: 1px solid var(--awn-border);
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.seatmap-view button:hover {
+  color: var(--awn-gold-deep);
+}
+
+.seatmap-view button[aria-pressed="true"] {
+  border-color: var(--awn-gold);
+  color: var(--awn-gold-deep);
+  font-weight: 700;
+}
+
+/* 透视 = 纯 CSS 变换：不改节点数与交互层，俯视（默认）与原 2D 完全一致 */
+.seatmap-viewport {
+  perspective: 1100px;
+}
+
+.seatmap-viewport--tilted .seatmap-svg {
+  transform: rotateX(38deg) scale(0.92);
+  transform-origin: 50% 0%;
+}
+
+.seatmap-svg {
+  transition: transform 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seatmap-svg {
+    transition: none;
+  }
+}
