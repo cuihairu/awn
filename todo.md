@@ -112,14 +112,16 @@
 - [x] apps/web（Next.js）接真实 API 渲染统一商品列表 — 验收：专场页渲染真实商品与可售状态 — f348026；前端 78 例 + PublicEventApiTests 16 例（含新增场次列表端点 3 例）
   - 已代决（2026-10-14 巡检授权）：① 场次可见性 = 父活动可见性（`Event::isPublic`），不单独设场次发布流（SessionStatus 留潜态）；② 可售状态由 available 派生：null→未开售 / 0→已售罄 / ≤20→余票紧张，不发明后端没有的状态；③ 后端购买规则未落地前 TierCard 不渲染限购行；④ 新增 `GET /api/v1/events/{eventId}/sessions` 公开场次列表（父活动未公开→404，按开始时间升序）供活动页选场次
   - 交付面：/ 发现列表、/events/{id} 活动页（Hero + 场次列表）、/sessions/{id} 票档页（真实商品 + TierCard 可售状态）；封面用几何占位（素材红线）
-- [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 7 例，7377898）；验收：三视图编辑发布流，原型过目已代决（2026-10-14 巡检授权），按 admin 原型实现中
+- [x] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 验收：三视图编辑发布流 — 3cf8dda；前端 90 例 + AdminApiTests 7 例（含全状态活动列表断言）
+  - 交付面：订单视图（GET /admin/orders + 状态筛选）、库存中心（池余额 + 可用量占比预警条 + 调整表单 POST /inventory/adjustments + 审计记录）、活动发布流（GET /admin/events 全状态列表，草稿可发布，重复发布 409 提示）、异常视图（未确认告警 + 确认）；令牌 X-Admin-Token 输入并 localStorage 记忆
+  - 已代决（2026-10-14 巡检授权）：① 新增 `GET /api/v1/admin/events`（EventFacade.allEvents，全状态按 id 升序）作为发布流入口；② 原型的「场次配置」视图暂缓——地理/座位分区后端字段未落地（todo 125），先接的后端就接（订单/库存/发布/异常四视图），不为无后端的表单造假；表单展示列（商品名/场次名）后端未下发的不渲染
 - [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 后端 Phase 02 到 04 已全部落地；验收：渲染契约子集 + 下单链路，原型过目已代决（2026-10-14 巡检授权）
 - [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 工程上需先 `flutter create .` 生成平台工程；验收：只读活动/商品列表，原型过目已代决（2026-10-14 巡检授权）
 
 ### 其他设计未落地
 - [x] 情报采集调度器（`collectAll` 入口 + worker 按 `intelligence-collection-ms` 周期执行，停用来源跳过，单源失败不中断整轮）— 44c6094；IntelligenceCollectionTaskTest 2 例
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
-- [ ] 运营后台前端三视图 — 待 Phase 07 原型（同 apps/admin 条目）
+- [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
 - [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；余多主题切换的组件化落地随各端实现推进；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据
 - [ ] 活动页模板 + 三套实例（F1 / 周杰伦 / 周传雄）— 原型过目已代决（2026-10-14 巡检授权）；模板区块①Hero + ③场次列表已接真实 API（f348026），区块②演出信息 / ④票档 / ⑤须知等后台可配置内容与三套实例待专场内容接入
