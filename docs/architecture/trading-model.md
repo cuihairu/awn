@@ -50,6 +50,7 @@ flowchart TD
     PRODUCT ==>|"数量型订单行 poolCode+productId"| POOL
     ORDER["orders 订单"]
     LISTING ==>|"凭证型订单行 listingNo+unitNo"| ORDER
+    SEAT ==>|"座位型订单行 seatNo"| ORDER
 ```
 
 实线 = 数据库外键硬约束；虚线 = 字符串松耦合（无外键，靠约定一致）。
@@ -63,9 +64,9 @@ flowchart TD
    - **平台座位型票品（已实现）**：`platform_seats`（V17）挂场次与商品编码（字符串松耦合，与库存池同口径），逐座状态机 `IN_STOCK → RESERVED → SOLD → DELIVERED`，`INVALID` 为作废终态；`SOLD` 必经 `RESERVED`（卖出走预留，占座订单号有落点）；迁移走守卫条件 UPDATE，并发抢座只放行一单。**不复用**挂牌的 `ticket_units`（其外键挂在 `listings` 上，语义是"卖家的票"）。
    旧版领域模型把 `ticket_units` 表述为"座位型商品的数量余额替代"，与实现冲突，已修正。
 4. **供货审核是资质，不是库存**：`supply_reviews` APPROVED 只给 `listings.platform_guaranteed = true` 的资格（`Listing.create` 领域工厂强制），**不向任何库存池注入数量**；挂牌也不校验审核 `quantity` 是否已被耗尽（缺口 G4）。
-5. **挂牌与订单链路已接通（G2）**：`OrderLineCommand` 支持两种互斥形态——数量型行（`poolCode` + `quantity`）与凭证型行（`listingNo`，`quantity` 必须为 1，`poolCode` 为 null）。凭证型行下单时把挂牌 `LISTED → RESERVED`、票品 `IN_STOCK → RESERVED`（两条守卫条件 UPDATE，与订单同事务）；支付确认转 SOLD，取消 / 超时释放回 LISTED / IN_STOCK。并发抢单由守卫迁移裁决，只放行一单。订单行须落库 `listing_no` / `unit_no`，数据库 `CHECK ck_order_item_source` 兜底「一行恰有一条库存路径」。
+5. **挂牌与订单链路已接通（G2）**：`OrderLineCommand` 支持三种互斥形态——数量型行（`poolCode` + `quantity`）、凭证型行（`listingNo`，`quantity` 必须为 1，`poolCode` 为 null）与座位型行（`seatNo`，`quantity` 必须为 1，V23 落列）。凭证型行下单时把挂牌 `LISTED → RESERVED`、票品 `IN_STOCK → RESERVED`（两条守卫条件 UPDATE，与订单同事务）；支付确认转 SOLD，取消 / 超时释放回 LISTED / IN_STOCK。座位型行同口径走 `platform_seats` 状态机（下单 `reserveSeatForOrder` 含商品归属校验，商品不符 409；支付确认 SOLD，取消 / 超时释放回 IN_STOCK）。并发抢单 / 抢座由守卫迁移裁决，只放行一单。订单行须落库 `listing_no` / `unit_no` 或 `seat_no`，数据库 `CHECK ck_order_item_source` 兜底「一行恰有一条库存路径（三选一）」。
    附带收紧：卖家**不得下架有待支付订单在途的挂牌**（`RESERVED → DELISTED` 被领域工厂拒绝），否则买家下单成功而卖家撤单。
-6. **跨模块引用是字符串松耦合**：`inventory_pool.product_id` 存的是 `product_code` 形态的字符串（非 `product.id`，无外键，建池校验见 G1）；`listings.product_code` / `session_code` 同理。订单与库存之间靠 `order_items.pool_code` / `reservation_no` 字符串互指，订单与挂牌之间靠 `order_items.listing_no` / `unit_no` 互指，均无外键。这是模块化单体的**有意取舍**（模块间不摸表），但因此：编码写错只能在下单链路暴露，跨模块一致性由应用层校验与对账兜底。
+6. **跨模块引用是字符串松耦合**：`inventory_pool.product_id` 存的是 `product_code` 形态的字符串（非 `product.id`，无外键，建池校验见 G1）；`listings.product_code` / `session_code` 同理。订单与库存之间靠 `order_items.pool_code` / `reservation_no` 字符串互指，订单与挂牌之间靠 `order_items.listing_no` / `unit_no` 互指，订单与平台座位之间靠 `order_items.seat_no` 互指，均无外键。这是模块化单体的**有意取舍**（模块间不摸表），但因此：编码写错只能在下单链路暴露，跨模块一致性由应用层校验与对账兜底。
 7. **专场永远只引用商品**（`campaign_products` FK→`product`），不能复制商品、不能虚构库存；同一商品跨专场共用同一个池是结构保证，不是巧合。
 
 ## 全链时序与事务边界
