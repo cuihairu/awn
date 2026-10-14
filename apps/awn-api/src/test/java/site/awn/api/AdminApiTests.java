@@ -9,9 +9,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import site.awn.audit.api.AuditFacade;
 import site.awn.event.api.CreateEventCommand;
+import site.awn.event.api.CreateSessionCommand;
 import site.awn.event.api.CreateVenueCommand;
 import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
+import site.awn.event.api.SessionView;
 import site.awn.event.api.VenueView;
 import site.awn.inventory.api.BalanceView;
 import site.awn.inventory.api.CreatePoolCommand;
@@ -35,6 +37,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -238,6 +241,77 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
         } finally {
             jdbc.update("UPDATE inventory_balance SET reserved_quantity = ? " + poolWhere, original, poolCode);
         }
+    }
+
+    @Test
+    void sessionVenueManagementFlowForTheOpsConsole() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-geo-" + suffix, "上海体育馆", "上海", "徐汇区零陵路", 31.1885, 121.4380));
+        Instant start = Instant.now().plusSeconds(3600);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-geo-" + suffix, "巡回赛", null, start, start.plusSeconds(7200), null));
+        SessionView session = events.createSession(new CreateSessionCommand(
+                "s-geo-" + suffix, event.id(), "上海站", start, start.plusSeconds(7200)));
+
+        // 无令牌 → 401（AdminAuthFilter 覆盖 /api/v1/admin/**）
+        mockMvc.perform(get("/api/v1/admin/venues"))
+                .andExpect(status().isUnauthorized());
+
+        // 场馆列表（运营下拉数据源）
+        mockMvc.perform(get("/api/v1/admin/venues").header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.venueCode == '" + venue.venueCode() + "')].city")
+                        .value(hasItem("上海")));
+
+        // 场次列表：未挂场馆时 geo 为 null
+        mockMvc.perform(get("/api/v1/admin/events/" + event.eventCode() + "/sessions")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sessionCode == '" + session.sessionCode() + "')].geo")
+                        .value(hasItem(org.hamcrest.Matchers.nullValue())));
+
+        // 未知场次挂场馆 → 404 SESSION_NOT_FOUND
+        mockMvc.perform(post("/api/v1/admin/sessions/s-nope/venue").header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"venueCode\":\"" + venue.venueCode() + "\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
+
+        // 挂场馆 → 200 返回解析后的 geo；场次列表 geo 同步；未知场馆 → 404 VENUE_NOT_FOUND
+        mockMvc.perform(post("/api/v1/admin/sessions/" + session.sessionCode() + "/venue")
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"venueCode\":\"" + venue.venueCode() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.venueCode").value(venue.venueCode()))
+                .andExpect(jsonPath("$.city").value("上海"));
+
+        mockMvc.perform(get("/api/v1/admin/events/" + event.eventCode() + "/sessions")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(jsonPath("$[?(@.sessionCode == '" + session.sessionCode() + "')].geo.venueCode")
+                        .value(hasItem(venue.venueCode())));
+
+        mockMvc.perform(post("/api/v1/admin/sessions/" + session.sessionCode() + "/venue")
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"venueCode\":\"v-nope\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("VENUE_NOT_FOUND"));
+
+        // 摘场馆 → 回退继承（本活动无场馆，geo 为 null）；未知场次 → 404
+        mockMvc.perform(delete("/api/v1/admin/sessions/" + session.sessionCode() + "/venue")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/events/" + event.eventCode() + "/sessions")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(jsonPath("$[?(@.sessionCode == '" + session.sessionCode() + "')].geo")
+                        .value(hasItem(org.hamcrest.Matchers.nullValue())));
+
+        mockMvc.perform(delete("/api/v1/admin/sessions/s-nope/venue").header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
     }
 
     // ------------------------------------------------------------------

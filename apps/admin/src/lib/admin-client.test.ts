@@ -49,6 +49,34 @@ describe('admin client', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/admin/events/E%201/publish')
   })
 
+  it('lists venues and event sessions for the session config view', async () => {
+    const venuesMock = mockFetchOnce([])
+    await adminApi.venues('t')
+    expect(venuesMock.mock.calls[0][0]).toBe('/api/v1/admin/venues')
+    expect(venuesMock.mock.calls[0][1].headers['x-admin-token']).toBe('t')
+
+    const sessionsMock = mockFetchOnce([])
+    await adminApi.eventSessions('t', 'e-1')
+    expect(sessionsMock.mock.calls[0][0]).toBe('/api/v1/admin/events/e-1/sessions')
+  })
+
+  it('attaches a session venue with a json body and encodes the session code', async () => {
+    const fetchMock = mockFetchOnce({ venueCode: 'v-1', city: '上海' })
+    await adminApi.attachSessionVenue('t', 's 1', 'v-1')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/sessions/s%201/venue')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe('{"venueCode":"v-1"}')
+  })
+
+  it('detaches a session venue and tolerates an empty fallback body', async () => {
+    const fetchMock = mockFetchOnce(null)
+    const geo = await adminApi.detachSessionVenue('t', 's-1')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/admin/sessions/s-1/venue')
+    expect(fetchMock.mock.calls[0][1].method).toBe('DELETE')
+    expect(geo).toBeNull()
+  })
+
   it('rejects with ApiError carrying backend code on failure', async () => {
     mockFetchOnce(
       { code: 'UNAUTHORIZED', message: 'admin token required' },

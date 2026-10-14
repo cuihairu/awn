@@ -1,5 +1,6 @@
 package site.awn.api;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,9 @@ import site.awn.audit.api.AuditFacade;
 import site.awn.audit.api.RecordAuditCommand;
 import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
+import site.awn.event.api.SessionVenueView;
+import site.awn.event.api.SessionView;
+import site.awn.event.api.VenueView;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderView;
@@ -109,6 +113,36 @@ public class AdminController {
         return events.publishEvent(eventCode);
     }
 
+    /** 场馆视图：全部场馆（场次配置下拉与场馆列表） */
+    @GetMapping("/venues")
+    public List<VenueView> venues() {
+        return events.venues();
+    }
+
+    /** 场次视图：活动下全部场次（全状态，按开始时间升序），geo 为解析结果（覆盖 → 继承 → null） */
+    @GetMapping("/events/{eventCode}/sessions")
+    public List<SessionView> sessions(@PathVariable String eventCode) {
+        return events.allSessions(eventCode);
+    }
+
+    /** 场次挂场馆（运营操作，如巡回赛逐场换城市）：未知场次/场馆 404，响应为解析后的 geo */
+    @PostMapping("/sessions/{sessionCode}/venue")
+    public SessionVenueView attachVenue(@PathVariable String sessionCode,
+                                        @RequestBody AttachVenueRequest request) {
+        if (request.venueCode() == null || request.venueCode().isBlank()) {
+            throw new IllegalArgumentException("venueCode is required");
+        }
+        events.attachSessionVenue(sessionCode, request.venueCode());
+        return events.sessionVenue(sessionCode);
+    }
+
+    /** 场次摘场馆：回退继承父活动场馆；无可继承时 geo 为空响应体 */
+    @DeleteMapping("/sessions/{sessionCode}/venue")
+    public SessionVenueView detachVenue(@PathVariable String sessionCode) {
+        events.detachSessionVenue(sessionCode);
+        return events.sessionVenue(sessionCode);
+    }
+
     /** 告警确认 */
     @PostMapping("/anomalies/{id}/acknowledge")
     public Map<String, Object> acknowledgeAlert(@org.springframework.web.bind.annotation.PathVariable long id) {
@@ -124,6 +158,9 @@ public class AdminController {
     }
 
     public record AdjustInventoryRequest(String poolCode, int delta, String reason, String actor) {
+    }
+
+    public record AttachVenueRequest(String venueCode) {
     }
 
     public record AlertView(Long id, String category, String severity, String message,

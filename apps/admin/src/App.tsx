@@ -3,11 +3,12 @@ import { AnomaliesView } from './views/AnomaliesView'
 import { EventsView } from './views/EventsView'
 import { InventoryView } from './views/InventoryView'
 import { OrdersView } from './views/OrdersView'
+import { SessionsView } from './views/SessionsView'
 import { ThemeSwitcher } from './components/ThemeSwitcher'
 
 /**
  * 运营台骨架：侧边导航（hash 路由）+ 令牌输入（X-Admin-Token，localStorage 记忆）。
- * 四视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
+ * 五视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
  * 令牌由 AdminAuthFilter 校验，默认值见 application.yml（AWN_ADMIN_TOKEN）。
  */
 
@@ -15,6 +16,7 @@ const VIEWS = [
   { key: 'orders', label: '订单' },
   { key: 'inventory', label: '库存' },
   { key: 'events', label: '活动发布' },
+  { key: 'sessions', label: '场次配置' },
   { key: 'anomalies', label: '异常' },
 ] as const
 
@@ -56,6 +58,8 @@ export default function App() {
     <InventoryView token={token} />
   ) : view === 'events' ? (
     <EventsView token={token} />
+  ) : view === 'sessions' ? (
+    <SessionsView token={token} />
   ) : (
     <AnomaliesView token={token} />
   )

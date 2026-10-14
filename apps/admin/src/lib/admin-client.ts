@@ -1,4 +1,4 @@
-import { ApiError } from '@awn/api-client'
+import { ApiError, type SessionVenueView } from '@awn/api-client'
 
 /**
  * 运营接口客户端（契约 docs/api/contracts.md「运营接口」）。
@@ -54,6 +54,28 @@ export interface AdminEventRow {
   startTime: string | null
   endTime: string | null
   venueId: string | null
+}
+
+export interface AdminVenue {
+  id: string
+  venueCode: string
+  name: string
+  city: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+/** geo 为解析结果（场次场馆覆盖 → 父活动场馆 → null），null 表示当前无任何场馆 */
+export interface AdminSessionRow {
+  id: string
+  sessionCode: string
+  eventId: string
+  name: string
+  status: string
+  startTime: string | null
+  endTime: string | null
+  geo: SessionVenueView | null
 }
 
 export interface AdminAlert {
@@ -124,5 +146,21 @@ export const adminApi = {
   acknowledgeAlert: (token: string, alertId: number) =>
     request<{ acknowledged: boolean }>(`/anomalies/${alertId}/acknowledge`, token, {
       method: 'POST',
+    }),
+
+  venues: (token: string) => request<AdminVenue[]>('/venues', token),
+
+  eventSessions: (token: string, eventCode: string) =>
+    request<AdminSessionRow[]>(`/events/${encodeURIComponent(eventCode)}/sessions`, token),
+
+  attachSessionVenue: (token: string, sessionCode: string, venueCode: string) =>
+    request<SessionVenueView | null>(`/sessions/${encodeURIComponent(sessionCode)}/venue`, token, {
+      method: 'POST',
+      body: JSON.stringify({ venueCode }),
+    }),
+
+  detachSessionVenue: (token: string, sessionCode: string) =>
+    request<SessionVenueView | null>(`/sessions/${encodeURIComponent(sessionCode)}/venue`, token, {
+      method: 'DELETE',
     }),
 }

@@ -183,7 +183,7 @@ public class EventFacadeImpl implements EventFacade {
         return sessions.findByEventId(event.getId()).stream()
                 .sorted(Comparator.comparing(Session::getStartTime,
                         Comparator.nullsLast(Comparator.naturalOrder())))
-                .map(this::toView)
+                .map(s -> toView(s).withGeo(sessionGeo(s)))
                 .toList();
     }
 

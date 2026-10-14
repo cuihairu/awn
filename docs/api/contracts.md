@@ -167,6 +167,11 @@ GET  /api/v1/admin/audit-logs
 
 POST /api/v1/admin/events/{eventCode}/publish
 
+GET    /api/v1/admin/venues
+GET    /api/v1/admin/events/{eventCode}/sessions
+POST   /api/v1/admin/sessions/{sessionCode}/venue
+DELETE /api/v1/admin/sessions/{sessionCode}/venue
+
 POST   /api/v1/admin/stars
 PUT    /api/v1/admin/stars/{personId}
 POST   /api/v1/admin/stars/{personId}/publish
@@ -183,6 +188,8 @@ POST   /api/v1/admin/works/{workId}/cast
 专场管理写操作与运营接口同权（`X-Admin-Token`），公开读 GET 放行。
 
 图鉴运营写操作同权（`X-Admin-Token`）：建人物 / 作品草稿、发布（`DRAFT` → `PUBLISHED` 守卫，重复发布 → 409 `CONFLICT`）、给作品绑定人物身份（`roleType` / `roleName` / `billingOrder`，重复绑定 → 409）。绑定与发布校验未知资源 → 404 `PERSON_NOT_FOUND` / `WORK_NOT_FOUND`。
+
+场次场馆配置（巡回赛逐场换城市）经 `X-Admin-Token`：`GET /admin/venues` 列全部场馆；`GET /admin/events/{eventCode}/sessions` 列活动下全状态场次（响应 `geo` 为解析结果：场次场馆覆盖 → 父活动场馆 → `null`）；`POST /admin/sessions/{sessionCode}/venue`（体 `{"venueCode":...}`）挂场馆、`DELETE` 摘场馆回退继承，响应为操作后的解析 geo（无场馆时空体）。未知场次 / 场馆 → 404 `SESSION_NOT_FOUND` / `VENUE_NOT_FOUND`。
 
 图鉴草稿可编辑（`PUT`，校验口径同创建）与删除（`DELETE`，关系行随外键级联清除）；已发布内容冻结，改动需先 `unpublish`（`PUBLISHED` → `DRAFT`，未发布再撤 → 409），否则 `PUT` / `DELETE` 一律 409 `CONFLICT`。删除 `DELETE` 成功返回 200 空体。
 
