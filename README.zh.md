@@ -41,7 +41,8 @@
 │  ├─ awn-promotion         优惠券：模板、配额发放、核销（与订单金额联动待裁决）
 │  ├─ awn-intelligence      情报：独立 schema，禁止写交易表
 │  ├─ awn-notification      站内信已落地（邮件 / 短信通道待接入）
-│  └─ awn-audit             操作审计、敏感业务操作记录
+│  ├─ awn-audit             操作审计、敏感业务操作记录
+│  └─ awn-star              明星图鉴：人物、作品、带身份的关系
 ├─ apps/
 │  ├─ awn-api             模块化单体 API（:8080）
 │  ├─ awn-worker          Worker：订单超时、库存/支付对账、Outbox 分发（actuator :8081）

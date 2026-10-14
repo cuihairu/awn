@@ -77,3 +77,333 @@ p {
 li {
   line-height: 1.8;
 }
+
+/* ── 主导航 ─────────────────────────────────────────────── */
+
+.topnav {
+  display: flex;
+  gap: 24px;
+  padding: 14px 24px;
+  background: var(--awn-card);
+  border-bottom: 1px solid var(--awn-border);
+}
+
+.topnav a {
+  color: var(--awn-ink);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.topnav a:hover {
+  color: var(--awn-gold-deep);
+}
+
+/* ── 面包屑 ─────────────────────────────────────────────── */
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--awn-ink-2);
+  margin-bottom: 24px;
+}
+
+.crumbs a {
+  color: var(--awn-gold-deep);
+  text-decoration: none;
+}
+
+/* ── 标题区 ─────────────────────────────────────────────── */
+
+.section-head {
+  margin-bottom: 24px;
+}
+
+.section-head h1 {
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: var(--awn-ink-2);
+}
+
+/* ── 筛选区 ─────────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 14px;
+  border: 1px solid var(--awn-border);
+  border-radius: 999px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chip--on {
+  background: var(--awn-gold);
+  border-color: var(--awn-gold);
+  color: #fff;
+}
+
+.filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--awn-ink-2);
+}
+
+.field--grow {
+  flex: 1;
+  min-width: 200px;
+}
+
+.field input,
+.field select {
+  padding: 8px 12px;
+  border: 1px solid var(--awn-border);
+  border-radius: 8px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 14px;
+}
+
+/* ── 状态文案 ───────────────────────────────────────────── */
+
+.state {
+  padding: 16px 0;
+  color: var(--awn-ink-2);
+}
+
+.state--error {
+  color: #dc2626;
+}
+
+.state--error a {
+  color: var(--awn-gold-deep);
+}
+
+/* ── 分组与计数 ─────────────────────────────────────────── */
+
+.group {
+  margin-bottom: 32px;
+}
+
+.group h2,
+.group h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 20px;
+}
+
+.group h3 {
+  font-size: 16px;
+  color: var(--awn-ink-2);
+}
+
+.count {
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--awn-ink-2);
+  background: var(--awn-gold-soft);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+
+/* ── 人物卡片 ───────────────────────────────────────────── */
+
+.card-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.person-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--awn-card);
+  border: 1px solid var(--awn-border);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--awn-ink);
+}
+
+.person-card:hover {
+  border-color: var(--awn-gold);
+}
+
+.person-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+
+.person-card__body span {
+  font-size: 13px;
+}
+
+/* ── 标签 ───────────────────────────────────────────────── */
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--awn-gold-soft);
+  color: var(--awn-gold-deep);
+}
+
+.tag--quiet {
+  background: transparent;
+  border: 1px solid var(--awn-border);
+  color: var(--awn-ink-2);
+}
+
+/* ── 照片位（素材红线：占位优先，绝不生成人脸）────────────── */
+
+.star-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--awn-gold-soft);
+}
+
+.star-photo--hero {
+  width: 220px;
+  min-width: 220px;
+  border-radius: 16px;
+  aspect-ratio: 1 / 1;
+}
+
+.star-photo--placeholder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--awn-ink-2);
+}
+
+.star-photo--placeholder svg {
+  width: 64px;
+  height: 64px;
+  stroke: var(--awn-gold);
+  stroke-width: 2;
+  fill: none;
+}
+
+.star-photo__reason {
+  font-size: 13px;
+}
+
+.star-photo__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--awn-card);
+  border: 1px solid var(--awn-border);
+  color: var(--awn-ink-2);
+}
+
+/* ── 详情页 ─────────────────────────────────────────────── */
+
+.detail-head {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.detail-head__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-head__body h1 {
+  margin: 0;
+}
+
+.detail-section {
+  margin-bottom: 32px;
+}
+
+.detail-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 20px;
+}
+
+/* ── 条目行（作品 / 人员）──────────────────────────────── */
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--awn-border);
+  text-decoration: none;
+  color: var(--awn-ink);
+}
+
+.entry:hover .entry__title {
+  color: var(--awn-gold-deep);
+}
+
+.entry__title {
+  font-size: 15px;
+}
+
+.entry__meta {
+  font-size: 13px;
+  color: var(--awn-ink-2);
+  white-space: nowrap;
+}

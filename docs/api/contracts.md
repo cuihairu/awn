@@ -31,6 +31,8 @@
 | CAMPAIGN_NOT_FOUND | 404 | 专场不存在 |
 | PAYMENT_NOT_FOUND | 404 | 支付单不存在 |
 | REFUND_NOT_FOUND | 404 | 退款单不存在 |
+| PERSON_NOT_FOUND | 404 | 人物不存在或未发布（明星图鉴） |
+| WORK_NOT_FOUND | 404 | 作品不存在或未发布（明星图鉴） |
 | ORDER_CONFLICT | 409 | 订单状态机冲突（非法迁移） |
 | IDEMPOTENCY_CONFLICT | 409 | 幂等键对应了不同的请求内容 |
 | INSUFFICIENT_INVENTORY | 409 | 库存不足 |
@@ -84,7 +86,16 @@ GET /api/v1/events
 GET /api/v1/events/{eventId}
 GET /api/v1/sessions/{sessionId}
 GET /api/v1/intelligence/events/{eventId}/prices
+
+GET /api/v1/stars
+GET /api/v1/stars/{personId}
+GET /api/v1/works
+GET /api/v1/works/{workId}
 ```
+
+明星图鉴（`/stars`、`/works`）是独立入口，不嵌在活动与购票链路里：只暴露 `PUBLISHED` 内容，未发布与不存在一律 404（`PERSON_NOT_FOUND` / `WORK_NOT_FOUND`），草稿不泄露。检索为基础匹配——`/stars` 的 `q` 命中姓名、原名、别名（大小写不敏感包含），另可按 `profession`、`nationality` 过滤；`/works` 的 `q` 命中标题，可按 `type` 过滤。不做全文与拼音模糊。
+
+人物与作品是多对多：`/stars/{personId}` 的 `works[]` 与 `/works/{workId}` 的 `cast[]` 是同一份关系结构（`roleType` / `roleName` / `billingOrder`），两端据此互跳。`photoUrl` 仅在有授权来源时透出，为 `null` 时前端渲染占位图。
 
 活动与场次为公开只读，但只暴露对公众可见的内容：
 

@@ -41,7 +41,8 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 │  ├─ awn-promotion         Coupons: templates, quota-guarded issuance, redemption
 │  ├─ awn-intelligence      Intelligence: separate schema, never writes trading tables
 │  ├─ awn-notification      In-app messages delivered (email / SMS channel pending)
-│  └─ awn-audit             Operation audit, sensitive action records
+│  ├─ awn-audit             Operation audit, sensitive action records
+│  └─ awn-star              Star catalog: persons, works, role-carrying relations
 ├─ apps/
 │  ├─ awn-api             Modular monolith API (:8080)
 │  ├─ awn-worker          Worker: order timeout, inventory/payment reconciliation, outbox dispatch (actuator :8081)

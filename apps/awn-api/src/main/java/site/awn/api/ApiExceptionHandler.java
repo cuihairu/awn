@@ -30,6 +30,9 @@ import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderNotFoundException;
 import site.awn.shared.error.ErrorCode;
+import site.awn.star.domain.PersonNotFoundException;
+import site.awn.star.domain.StarConflictException;
+import site.awn.star.domain.WorkNotFoundException;
 import site.awn.shared.error.ErrorResponse;
 import site.awn.shared.trace.TraceId;
 
@@ -119,6 +122,21 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MarketplaceConflictException.class)
     public ResponseEntity<ErrorResponse> marketplaceConflict(MarketplaceConflictException e) {
+        return envelope(ErrorCode.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(PersonNotFoundException.class)
+    public ResponseEntity<ErrorResponse> personNotFound(PersonNotFoundException e) {
+        return envelope(ErrorCode.PERSON_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(WorkNotFoundException.class)
+    public ResponseEntity<ErrorResponse> workNotFound(WorkNotFoundException e) {
+        return envelope(ErrorCode.WORK_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(StarConflictException.class)
+    public ResponseEntity<ErrorResponse> starConflict(StarConflictException e) {
         return envelope(ErrorCode.CONFLICT, e.getMessage());
     }
 

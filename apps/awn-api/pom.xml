@@ -30,6 +30,7 @@
     <dependency><groupId>site.awn</groupId><artifactId>awn-intelligence</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>site.awn</groupId><artifactId>awn-notification</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>site.awn</groupId><artifactId>awn-audit</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>site.awn</groupId><artifactId>awn-star</artifactId><version>${project.version}</version></dependency>
 
     <!-- Spring Boot -->
     <dependency>
@@ -54,6 +55,12 @@
     </dependency>
 
     <!-- 持久化 -->
+    <!-- Spring Boot 4 把 Flyway 自动配置拆到独立模块，缺它则 spring.flyway.* 全部失效、
+         启动不跑迁移（空库启动后业务表一张都没有）。本模块是唯一的迁移执行者。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-flyway</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>

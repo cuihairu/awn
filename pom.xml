@@ -39,6 +39,7 @@
     <module>modules/awn-intelligence</module>
     <module>modules/awn-notification</module>
     <module>modules/awn-audit</module>
+    <module>modules/awn-star</module>
     <!-- 可运行应用 -->
     <module>apps/awn-api</module>
     <module>apps/awn-worker</module>
