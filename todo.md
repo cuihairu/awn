@@ -108,29 +108,31 @@
 - [x] 订单 FULFILLING/FULFILLED 联动（履约事件驱动订单状态，守卫迁移 + 事件重放幂等）— 8997e33；FulfillmentModuleTests 7 例
 
 ### 前端与共享包（依赖 Phase 07 原型过目 / 后端端点）
-- [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 验收：组件测试（已有 19 例，83c91e3）+ 至少一端消费（已接入 @awn/ui 至 apps/web 与 apps/admin）；余三包消费面为专场页、票档卡、下单页，待 Phase 07 原型过目后实现
-- [ ] apps/web（Next.js）接真实 API 渲染统一商品列表 — 后端已落地 `GET /api/v1/sessions/{sessionId}/products`（7a6bd76）；验收：专场页渲染真实商品与可售状态，前端待 Phase 07 原型过目后实现
-- [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 7 例，7377898）；验收：三视图编辑发布流，待 Phase 07 原型过目后实现
-- [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 后端 Phase 02 到 04 已全部落地；验收：渲染契约子集 + 下单链路，待 Phase 07 原型过目后实现
-- [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 工程上需先 `flutter create .` 生成平台工程；验收：只读活动/商品列表，待 Phase 07 原型过目后实现
+- [ ] 四个共享包（ui / campaign-renderer / ticket-components / api-client）— 验收：组件测试（已有 19 例，83c91e3）+ 至少一端消费；已消费：ui（web + admin）、api-client（web 全部页面）、ticket-components（TierCard 票档卡，f348026）；余 campaign-renderer 专场页消费面，待专场页实现
+- [x] apps/web（Next.js）接真实 API 渲染统一商品列表 — 验收：专场页渲染真实商品与可售状态 — f348026；前端 78 例 + PublicEventApiTests 16 例（含新增场次列表端点 3 例）
+  - 已代决（2026-10-14 巡检授权）：① 场次可见性 = 父活动可见性（`Event::isPublic`），不单独设场次发布流（SessionStatus 留潜态）；② 可售状态由 available 派生：null→未开售 / 0→已售罄 / ≤20→余票紧张，不发明后端没有的状态；③ 后端购买规则未落地前 TierCard 不渲染限购行；④ 新增 `GET /api/v1/events/{eventId}/sessions` 公开场次列表（父活动未公开→404，按开始时间升序）供活动页选场次
+  - 交付面：/ 发现列表、/events/{id} 活动页（Hero + 场次列表）、/sessions/{id} 票档页（真实商品 + TierCard 可售状态）；封面用几何占位（素材红线）
+- [ ] apps/admin（Vite+React）最小活动/专场编辑 + 发布流 — 后端已落地（AdminApiTests 7 例，7377898）；验收：三视图编辑发布流，原型过目已代决（2026-10-14 巡检授权），按 admin 原型实现中
+- [ ] apps/miniprogram（Taro）白名单 section 子集渲染 + 下单链路 — 后端 Phase 02 到 04 已全部落地；验收：渲染契约子集 + 下单链路，原型过目已代决（2026-10-14 巡检授权）
+- [ ] apps/client（Flutter）从契约生成模型并跑通只读链路 — 工程上需先 `flutter create .` 生成平台工程；验收：只读活动/商品列表，原型过目已代决（2026-10-14 巡检授权）
 
 ### 其他设计未落地
 - [x] 情报采集调度器（`collectAll` 入口 + worker 按 `intelligence-collection-ms` 周期执行，停用来源跳过，单源失败不中断整轮）— 44c6094；IntelligenceCollectionTaskTest 2 例
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
 - [ ] 运营后台前端三视图 — 待 Phase 07 原型（同 apps/admin 条目）
-- [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 暂缓，待多端接入后裁决
-- [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 原型已产出（`docs/design/prototypes/` + `docs/design/ui-system.md`），待用户过目；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据
-- [ ] 活动页模板 + 三套实例（F1 / 周杰伦 / 周传雄）— 原型已产出，待用户过目
-- [ ] 购买页全流程（选场次 到 票档/座位 到 数量实名 到 下单 到 支付 到 出票）— 原型已产出，待用户过目
-- [ ] 每场次地理位置（城市/地址/坐标 + 地图）— 原型已产出，待用户过目
-- [ ] 2D 座位图（P1）— 原型已产出，待用户过目
+- [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
+- [ ] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；余多主题切换的组件化落地随各端实现推进；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据
+- [ ] 活动页模板 + 三套实例（F1 / 周杰伦 / 周传雄）— 原型过目已代决（2026-10-14 巡检授权）；模板区块①Hero + ③场次列表已接真实 API（f348026），区块②演出信息 / ④票档 / ⑤须知等后台可配置内容与三套实例待专场内容接入
+- [ ] 购买页全流程（选场次 到 票档/座位 到 数量实名 到 下单 到 支付 到 出票）— 原型过目已代决（2026-10-14 巡检授权），覆盖 web/miniprogram/client 三端购买流与座位图场景，无阻塞缺陷；实现待续（web 端票档页已就绪 /sessions/{id}，下单链路后续接入）
+- [ ] 每场次地理位置（城市/地址/坐标 + 地图）— 原型过目已代决（2026-10-14 巡检授权）；实现待续：需后端场馆/地理字段迁移 + 运营配置 + 前端 geo-row 展示（样式已备，f348026）
+- [ ] 2D 座位图（P1）— 原型过目已代决（2026-10-14 巡检授权，seatmap-2d.html 与 Venue→Section→RowRange 模型对齐）；实现待续：SVG 分区组件 + 场次座位配置接入
 
 ---
 
 ## 三、完全没有（无设计无实现）
 
 - [x] 平台座位型票品模型（独立 `platform_seats`，逐座状态机，守卫条件 UPDATE 并发抢座只放行一单）— c7ea49c；PlatformSeatModuleTests 9 例（含并发抢座）
-- [ ] 3D 座位图（P2）— 无设计无实现；验收：2D 过目后给出 3D 方案
+- [ ] 3D 座位图（P2）— 无设计无实现；验收：2D 过目后给出 3D 方案（2D 过目已代决 2026-10-14 巡检授权，3D 维持 P2，不阻塞 2D 实现）
 
 ---
 
@@ -138,7 +140,7 @@
 
 - 座位图数据来源调研到立项决策 — 调研已交（dde227b），待用户拍板后才动实现
 - 座位图第一阶段范围与三问验证 — 待用户指定 5 个目标场馆与人力
-- Phase 07 全部 UI 条目的原型过目与拍板
+- ~~Phase 07 全部 UI 条目的原型过目与拍板~~ — 已代决（2026-10-14 巡检授权）：原型走查完成，13 项待办验收口径全覆盖，无阻塞缺陷；用户可事后核对推翻，推翻时按 todo 各条「已代决」注记回溯
 
 - [x] 文档去 AI 腔（来源：用户 2026-10-14）— 12 个文档（architecture 7 / implementation-plan / deployment / design 2 / research），42 增 43 删；docs build 通过 — 23135f7
   - 改动口径：删元叙事与空洞总起句、合并首先/随后式过渡、结尾总结框改为可验证检查项、形容词换成命令与表名
