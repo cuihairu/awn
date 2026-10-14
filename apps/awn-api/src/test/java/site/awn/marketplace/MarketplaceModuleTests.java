@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * - 未审核供货不能被标为「平台保证可交付」；已拒绝供货不得挂牌；
  * - 供货凭证仅白名单存储域；
  * - 票品状态与挂牌解耦：挂牌下架 / 票品作废互不隐式改变对方状态。
+ * - 卖家取消挂牌守卫：预留中（在途订单）与已成交不可撤，撤下后不可再被凭证行下单。
  */
 @SpringBootTest
 class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
@@ -153,6 +154,45 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
         ListingView delisted = marketplace.delist(listing.listingNo());
         assertThat(delisted.status()).isEqualTo("DELISTED");
         assertThat(marketplace.unitOfListing(listing.listingNo()).status()).isEqualTo("IN_STOCK");
+    }
+
+    @Test
+    void sellerDelistGuards() {
+        String seller = registerSeller();
+        SupplyReviewView review = submitReview(seller, null);
+        marketplace.approveSupplyReview(review.reviewNo(), "审核员-1");
+
+        // 撤下后不可再被凭证行下单：预留守卫只放行 LISTED
+        ListingView open = marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
+        assertThat(marketplace.delist(open.listingNo()).status()).isEqualTo("DELISTED");
+        assertThatThrownBy(() -> marketplace.reserveUnitForOrder(open.listingNo()))
+                .isInstanceOf(MarketplaceConflictException.class)
+                .hasMessageContaining("listing cannot be reserved");
+
+        // 预留中（在途订单）不可撤：撤的是交易安全，不是卖家意愿
+        ListingView reserved = marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
+        String reservedUnit = marketplace.reserveUnitForOrder(reserved.listingNo());
+        assertThatThrownBy(() -> marketplace.delist(reserved.listingNo()))
+                .isInstanceOf(MarketplaceConflictException.class)
+                .hasMessageContaining("reserved listing cannot be delisted");
+        // 订单取消释放回 LISTED 后方可撤
+        assertThat(marketplace.releaseUnitForOrder(reservedUnit)).isTrue();
+        assertThat(marketplace.delist(reserved.listingNo()).status()).isEqualTo("DELISTED");
+
+        // 已成交不可撤
+        ListingView sold = marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
+        String soldUnit = marketplace.reserveUnitForOrder(sold.listingNo());
+        marketplace.confirmUnitForOrder(soldUnit);
+        assertThatThrownBy(() -> marketplace.delist(sold.listingNo()))
+                .isInstanceOf(MarketplaceConflictException.class)
+                .hasMessageContaining("sold listing cannot be delisted");
+
+        // 未知挂牌 → NotFound
+        assertThatThrownBy(() -> marketplace.delist("LST-none"))
+                .isInstanceOf(MarketplaceNotFoundException.class);
     }
 
     @Test

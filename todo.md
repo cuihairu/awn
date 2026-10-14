@@ -93,7 +93,8 @@
 - [x] G4 供货审核额度消耗校验（platform_guaranteed 消耗审核额度，卖家自担不消耗）— dd4b9d7；MarketplaceModuleTests 8 例
 - [x] G5 支付/退款渠道调用移出事务（先落 CREATED，受理后 markPending，渠道故障交对账）— 1568962；PaymentModuleTests 14 例
 - [x] G6 PAYMENT_UNKNOWN 消费者落地（Worker 核实任务迁移 UNKNOWN，查实成功但订单终态则告警退款）— 708b1b8；PaymentModuleTests 14 例
-- [ ] P05 卖家取消挂牌（LISTED → CANCELLED；RESERVED/SOLD 不可撤，撤下后凭证行不可再下单）— 验收：MarketplaceModuleTests 守卫用例（无预留可撤、有预留拒绝、撤后下单被拒）全绿 — 期次 Phase 05（2026-10-15 建账挂起，implementation-plan:94；无独立设计，按 trading-model 挂牌生命周期延伸）
+- [x] P05 卖家取消挂牌（LISTED → DELISTED；RESERVED/SOLD 不可撤，撤下后凭证行不可再下单）— a418f39（delist 域守卫 + facade）；守卫测试 `sellerDelistGuards`（撤后下单被拒 / 预留中拒绝 / 成交后拒绝 / 拒绝后无残余 / 未知挂牌 NotFound）随本提交补
+  - 余项：`delist` 无卖家归属校验（调用方只传 listingNo），随 HTTP 卖家端点落地时补 sellerNo 归属守卫
 - [ ] P05 争议处理（买卖双方争议受理与裁决）— 验收：先立设计（争议单模型/状态机/裁决权限，ADR 或 architecture 文档），再实现并补测试 — 期次 Phase 05（2026-10-15 建账挂起，implementation-plan:94；目前仅计划一行，无设计无代码）
 
 ### 公开 HTTP 端点缺口（contracts.md 已列）
