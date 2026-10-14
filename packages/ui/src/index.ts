@@ -26,3 +26,15 @@ export const AWN_STATUS_COLORS = {
 
 export const AWN_FONT_STACK =
   "'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',system-ui,sans-serif"
+
+/** 品牌令牌 → CSS 自定义属性：网页端与管理后台在 :root 注入同一份映射 */
+export const AWN_CSS_VARS: Record<string, string> = {
+  '--awn-ink': AWN_COLORS.ink,
+  '--awn-ink-2': AWN_COLORS.ink2,
+  '--awn-gold': AWN_COLORS.gold,
+  '--awn-gold-deep': AWN_COLORS.goldDeep,
+  '--awn-gold-soft': AWN_COLORS.goldSoft,
+  '--awn-bg': AWN_COLORS.bg,
+  '--awn-card': AWN_COLORS.card,
+  '--awn-border': AWN_COLORS.border,
+}

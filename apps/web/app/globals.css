@@ -1,14 +1,5 @@
 /* AWN 网页端基础样式 —— 完整设计令牌见 design-system/awn/MASTER.md */
-:root {
-  --awn-ink: #1c1917;
-  --awn-ink-2: #57534e;
-  --awn-gold: #d59819;
-  --awn-gold-deep: #a16207;
-  --awn-gold-soft: rgba(213, 152, 25, 0.14);
-  --awn-bg: #fafaf9;
-  --awn-card: #ffffff;
-  --awn-border: #e7e5e4;
-}
+/* :root 令牌由 packages/ui 的 AWN_CSS_VARS 在 <html> 上注入（单一来源） */
 
 * {
   box-sizing: border-box;
@@ -18,13 +9,6 @@ body {
   margin: 0;
   background: var(--awn-bg);
   color: var(--awn-ink);
-  font-family:
-    'PingFang SC',
-    'Hiragino Sans GB',
-    'Microsoft YaHei',
-    'Noto Sans SC',
-    system-ui,
-    sans-serif;
 }
 
 .page {

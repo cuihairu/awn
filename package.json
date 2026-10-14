@@ -5,7 +5,8 @@
   "scripts": {
     "docs:dev": "pnpm -C docs dev",
     "docs:build": "pnpm -C docs build",
-    "docs:preview": "pnpm -C docs preview"
+    "docs:preview": "pnpm -C docs preview",
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=20"
@@ -31,5 +32,8 @@
       "webpack-dev-server": "5.2.6",
       "vitepress>vite": "6.4.3"
     }
+  },
+  "devDependencies": {
+    "vitest": "^5.0.4"
   }
 }

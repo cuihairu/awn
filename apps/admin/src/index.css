@@ -1,13 +1,5 @@
 /* AWN Admin 基础样式 —— 页面级规范见 design-system/awn/pages/dashboard.md */
-:root {
-  --awn-ink: #1c1917;
-  --awn-ink-2: #57534e;
-  --awn-gold: #d59819;
-  --awn-gold-deep: #a16207;
-  --awn-bg: #f8fafc;
-  --awn-card: #ffffff;
-  --awn-border: #e7e5e4;
-}
+/* :root 令牌由 packages/ui 的 AWN_CSS_VARS 注入（单一来源） */
 
 * {
   box-sizing: border-box;
@@ -15,12 +7,6 @@
 
 body {
   margin: 0;
-  font-family:
-    'PingFang SC',
-    'Microsoft YaHei',
-    'Noto Sans SC',
-    system-ui,
-    sans-serif;
   background: var(--awn-bg);
   color: var(--awn-ink);
 }
