@@ -32,6 +32,17 @@ public class Session {
     @Enumerated(EnumType.STRING)
     private SessionStatus status = SessionStatus.DRAFT;
 
+    /** 场次级场馆覆盖（attach/detach）；null = 继承父活动场馆 */
+    private Long venueId;
+
+    private String city;
+
+    private String address;
+
+    private Double latitude;
+
+    private Double longitude;
+
     @Column(insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -100,6 +111,54 @@ public class Session {
 
     public void setStatus(SessionStatus status) {
         this.status = status;
+    }
+
+    public Long getVenueId() {
+        return venueId;
+    }
+
+    public void setVenueId(Long venueId) {
+        this.venueId = venueId;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    /**
+     * 写入场次地理位置（docs/design/ui-system.md §6.1）。
+     *
+     * 坐标成对出现：只给一个经纬度视为非法——半截坐标在地图上必然指错位置，
+     * 比没有坐标更糟；范围越界同理。城市与地址可单独缺失（前端按未定位降级）。
+     */
+    public void applyGeo(String city, String address, Double latitude, Double longitude) {
+        boolean hasLat = latitude != null;
+        boolean hasLng = longitude != null;
+        if (hasLat != hasLng) {
+            throw new IllegalArgumentException("latitude and longitude must be provided together");
+        }
+        if (hasLat && (latitude < -90 || latitude > 90)) {
+            throw new IllegalArgumentException("latitude must be between -90 and 90: " + latitude);
+        }
+        if (hasLng && (longitude < -180 || longitude > 180)) {
+            throw new IllegalArgumentException("longitude must be between -180 and 180: " + longitude);
+        }
+        this.city = city;
+        this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public Instant getCreatedAt() {

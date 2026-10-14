@@ -25,6 +25,10 @@ public class Venue {
 
     private String address;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @Column(insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -35,10 +39,32 @@ public class Venue {
     }
 
     public Venue(String venueCode, String name, String city, String address) {
+        this(venueCode, name, city, address, null, null);
+    }
+
+    /**
+     * 场馆地理（V19）：城市与地址可单独缺失（资料未录全是正常态），
+     * 坐标必须成对出现且在合法范围——半截坐标在地图上必然指错位置，比没有更糟。
+     */
+    public Venue(String venueCode, String name, String city, String address,
+                 Double latitude, Double longitude) {
+        boolean hasLat = latitude != null;
+        boolean hasLng = longitude != null;
+        if (hasLat != hasLng) {
+            throw new IllegalArgumentException("latitude and longitude must be provided together");
+        }
+        if (hasLat && (latitude < -90 || latitude > 90)) {
+            throw new IllegalArgumentException("latitude must be between -90 and 90: " + latitude);
+        }
+        if (hasLng && (longitude < -180 || longitude > 180)) {
+            throw new IllegalArgumentException("longitude must be between -180 and 180: " + longitude);
+        }
         this.venueCode = venueCode;
         this.name = name;
         this.city = city;
         this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public Long getId() {
@@ -75,6 +101,14 @@ public class Venue {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
     }
 
     public Instant getCreatedAt() {

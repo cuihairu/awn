@@ -11,6 +11,9 @@ public interface EventFacade {
 
     VenueView venue(String venueCode);
 
+    /** 运营场馆列表（按 id 升序）：场次配置按场馆挑选 */
+    List<VenueView> venues();
+
     EventView createEvent(CreateEventCommand command);
 
     EventView event(String eventCode);
@@ -38,4 +41,19 @@ public interface EventFacade {
     List<SessionView> publicSessions(Long eventId);
 
     List<SessionView> sessions(Long eventId);
+
+    /** 运营场次列表：父活动不存在 → EventNotFoundException；按开始时间升序 */
+    List<SessionView> allSessions(String eventCode);
+
+    /**
+     * 场次地理位置（docs/design/ui-system.md §6.1）：场次指定场馆优先，
+     * 未指定时继承父活动场馆；两者都没有则为空（场馆信息不全是正常态）。
+     */
+    SessionVenueView sessionVenue(String sessionCode);
+
+    /** 给场次指定场馆（巡回赛每场换城市）；场次或场馆未知一律 404 */
+    SessionVenueView attachSessionVenue(String sessionCode, String venueCode);
+
+    /** 解除场次场馆覆盖，回到继承父活动场馆 */
+    SessionVenueView detachSessionVenue(String sessionCode);
 }

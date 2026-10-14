@@ -8,4 +8,8 @@ public class SessionNotFoundException extends RuntimeException {
     public SessionNotFoundException(Long sessionId) {
         super("session not found: " + sessionId);
     }
+
+    public SessionNotFoundException(String sessionCode) {
+        super("session not found: " + sessionCode);
+    }
 }

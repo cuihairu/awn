@@ -7,6 +7,7 @@ import site.awn.event.api.CreateSessionCommand;
 import site.awn.event.api.CreateVenueCommand;
 import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
+import site.awn.event.api.SessionVenueView;
 import site.awn.event.api.SessionView;
 import site.awn.event.api.VenueView;
 import site.awn.event.domain.Event;
@@ -16,12 +17,15 @@ import site.awn.event.domain.Session;
 import site.awn.event.domain.SessionNotFoundException;
 import site.awn.event.domain.SessionStatus;
 import site.awn.event.domain.Venue;
+import site.awn.event.domain.VenueNotFoundException;
 import site.awn.event.infrastructure.EventRepository;
 import site.awn.event.infrastructure.SessionRepository;
 import site.awn.event.infrastructure.VenueRepository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class EventFacadeImpl implements EventFacade {
@@ -46,7 +50,7 @@ public class EventFacadeImpl implements EventFacade {
     @Transactional
     public VenueView createVenue(CreateVenueCommand command) {
         Venue venue = new Venue(command.venueCode(), command.name(),
-                command.city(), command.address());
+                command.city(), command.address(), command.latitude(), command.longitude());
         return toView(venues.save(venue));
     }
 
@@ -55,7 +59,15 @@ public class EventFacadeImpl implements EventFacade {
     public VenueView venue(String venueCode) {
         return venues.findByVenueCode(venueCode)
                 .map(this::toView)
-                .orElseThrow(() -> new IllegalStateException("venue not found: " + venueCode));
+                .orElseThrow(() -> new VenueNotFoundException(venueCode));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VenueView> venues() {
+        return venues.findAllByOrderByIdAsc().stream()
+                .map(this::toView)
+                .toList();
     }
 
     @Override
@@ -163,6 +175,60 @@ public class EventFacadeImpl implements EventFacade {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<SessionView> allSessions(String eventCode) {
+        Event event = events.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+        return sessions.findByEventId(event.getId()).stream()
+                .sorted(Comparator.comparing(Session::getStartTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SessionVenueView sessionVenue(String sessionCode) {
+        Session session = sessions.findBySessionCode(sessionCode)
+                .orElseThrow(() -> new SessionNotFoundException(sessionCode));
+        return resolveVenue(session).map(VenueView::toSessionVenue).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public SessionVenueView attachSessionVenue(String sessionCode, String venueCode) {
+        Session session = sessions.findBySessionCode(sessionCode)
+                .orElseThrow(() -> new SessionNotFoundException(sessionCode));
+        Venue venue = venues.findByVenueCode(venueCode)
+                .orElseThrow(() -> new VenueNotFoundException(venueCode));
+        session.setVenueId(venue.getId());
+        sessions.save(session);
+        return resolveVenue(session).map(VenueView::toSessionVenue).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public SessionVenueView detachSessionVenue(String sessionCode) {
+        Session session = sessions.findBySessionCode(sessionCode)
+                .orElseThrow(() -> new SessionNotFoundException(sessionCode));
+        session.setVenueId(null);
+        sessions.save(session);
+        return resolveVenue(session).map(VenueView::toSessionVenue).orElse(null);
+    }
+
+    /** 场次场馆优先，未指定时继承父活动场馆；两者都没有 → 空（场馆信息不全是正常态）。 */
+    private Optional<VenueView> resolveVenue(Session session) {
+        if (session.getVenueId() != null) {
+            return venues.findById(session.getVenueId()).map(this::toView);
+        }
+        return events.findById(session.getEventId())
+                .map(Event::getVenueId)
+                .filter(Objects::nonNull)
+                .flatMap(venues::findById)
+                .map(this::toView);
+    }
+
     /** 场次仅在其父活动对公开读可见时可见 */
     private boolean publiclyVisible(Session session) {
         return events.findById(session.getEventId())
@@ -172,7 +238,7 @@ public class EventFacadeImpl implements EventFacade {
 
     private VenueView toView(Venue v) {
         return VenueView.of(v.getId(), v.getVenueCode(), v.getName(),
-                v.getCity(), v.getAddress());
+                v.getCity(), v.getAddress(), v.getLatitude(), v.getLongitude());
     }
 
     private EventView toView(Event e) {
@@ -181,7 +247,7 @@ public class EventFacadeImpl implements EventFacade {
     }
 
     private SessionView toView(Session s) {
-        return new SessionView(s.getId(), s.getSessionCode(), s.getEventId(),
+        return SessionView.of(s.getId(), s.getSessionCode(), s.getEventId(),
                 s.getName(), s.getStatus(), s.getStartTime(), s.getEndTime());
     }
 }
