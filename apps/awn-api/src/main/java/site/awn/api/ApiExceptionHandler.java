@@ -30,6 +30,8 @@ import site.awn.payment.domain.RefundNotFoundException;
 import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderNotFoundException;
+import site.awn.order.domain.DisputeNotFoundException;
+import site.awn.order.domain.OrderDisputeConflictException;
 import site.awn.order.domain.WaitlistConflictException;
 import site.awn.order.domain.WaitlistNotFoundException;
 import site.awn.shared.error.ErrorCode;
@@ -96,6 +98,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(WaitlistConflictException.class)
     public ResponseEntity<ErrorResponse> waitlistConflict(WaitlistConflictException e) {
         return envelope(ErrorCode.WAITLIST_CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(DisputeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> disputeNotFound(DisputeNotFoundException e) {
+        return envelope(ErrorCode.DISPUTE_NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(OrderDisputeConflictException.class)
+    public ResponseEntity<ErrorResponse> disputeConflict(OrderDisputeConflictException e) {
+        return envelope(ErrorCode.DISPUTE_CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(EventConflictException.class)

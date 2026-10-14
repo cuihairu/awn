@@ -58,8 +58,9 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
                 "INVENTORY_CONFLICT", "PAYMENT_CONFLICT", "PAYMENT_CALLBACK_REJECTED",
                 "REFUND_CONFLICT", "CONFLICT", "RATE_LIMITED", "INTERNAL_ERROR",
                 "SESSION_NOT_FOUND", "VENUE_NOT_FOUND", "PERSON_NOT_FOUND", "WORK_NOT_FOUND",
-                "WAITLIST_NOT_FOUND", "WAITLIST_CONFLICT");
-        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(24);
+                "WAITLIST_NOT_FOUND", "WAITLIST_CONFLICT",
+                "DISPUTE_NOT_FOUND", "DISPUTE_CONFLICT");
+        assertThat(Arrays.stream(ErrorCode.values()).count()).isEqualTo(26);
     }
 
     @Test

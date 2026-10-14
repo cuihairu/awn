@@ -16,10 +16,14 @@ import site.awn.event.api.SessionVenueView;
 import site.awn.event.api.SessionView;
 import site.awn.event.api.VenueView;
 import site.awn.inventory.api.InventoryFacade;
+import site.awn.order.api.AdjudicateDisputeCommand;
+import site.awn.order.api.DisputeFacade;
+import site.awn.order.api.DisputeView;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderView;
 import site.awn.payment.api.PaymentFacade;
 import site.awn.payment.api.PaymentReconciliationReport;
+import site.awn.order.domain.DisputeResolution;
 import site.awn.shared.alert.AlertRecord;
 import site.awn.shared.alert.AlertRecorder;
 
@@ -41,21 +45,48 @@ public class AdminController {
     private final EventFacade events;
     private final AlertRecorder alerts;
     private final AuditFacade audit;
+    private final DisputeFacade disputes;
 
     public AdminController(OrderFacade orders, InventoryFacade inventory, PaymentFacade payments,
-                           EventFacade events, AlertRecorder alerts, AuditFacade audit) {
+                           EventFacade events, AlertRecorder alerts, AuditFacade audit,
+                           DisputeFacade disputes) {
         this.orders = orders;
         this.inventory = inventory;
         this.payments = payments;
         this.events = events;
         this.alerts = alerts;
         this.audit = audit;
+        this.disputes = disputes;
     }
 
     /** 订单视图：最近订单（新→旧） */
     @GetMapping("/orders")
     public List<OrderView> recentOrders() {
         return orders.recentOrders();
+    }
+
+    /** 争议视图：最近争议（新→旧）。受理与裁决仅平台管理员（本面 X-Admin-Token 收口）。 */
+    @GetMapping("/disputes")
+    public List<DisputeView> recentDisputes() {
+        return disputes.recentDisputes();
+    }
+
+    /** 受理：OPEN → UNDER_REVIEW。受理后买家不能单方面撤回。 */
+    @PostMapping("/disputes/{disputeNo}/accept")
+    public DisputeView acceptDispute(@PathVariable String disputeNo) {
+        return disputes.accept(disputeNo);
+    }
+
+    /** 裁决：UNDER_REVIEW → RESOLVED，结论与 note 必填并留痕。裁决不动钱：退款走既有退款流。 */
+    @PostMapping("/disputes/{disputeNo}/adjudicate")
+    public DisputeView adjudicateDispute(
+            @PathVariable String disputeNo,
+            @RequestBody AdjudicateDisputeRequest request) {
+        return disputes.adjudicate(new AdjudicateDisputeCommand(
+                disputeNo, request.actor(), request.resolution(), request.note()));
+    }
+
+    public record AdjudicateDisputeRequest(String actor, DisputeResolution resolution, String note) {
     }
 
     /** 活动视图：全状态活动列表（发布流入口，草稿可发布） */

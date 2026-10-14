@@ -255,8 +255,8 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
     private ListingView toView(Listing l) {
         String sellerNo = sellers.findById(l.getSellerId())
                 .map(Seller::getSellerNo).orElse(null);
-        return new ListingView(l.getListingNo(), sellerNo, l.getProductCode(), l.getSessionCode(),
-                l.getUnitPrice(), l.isPlatformGuaranteed(), l.getStatus().name());
+        return new ListingView(l.getListingNo(), l.getSellerId(), sellerNo, l.getProductCode(),
+                l.getSessionCode(), l.getUnitPrice(), l.isPlatformGuaranteed(), l.getStatus().name());
     }
 
     private TicketUnitView toView(TicketUnit u) {
