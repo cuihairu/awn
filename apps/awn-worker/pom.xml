@@ -54,6 +54,13 @@
       <artifactId>spring-boot-starter-data-redis</artifactId>
     </dependency>
 
+    <!-- Spring Boot 4 把 Flyway 自动配置拆到独立模块，缺它则 spring.flyway.* 全部失效。
+         生产仍禁用迁移（application.yml spring.flyway.enabled=false），
+         只有测试覆盖里打开它以在 Testcontainers 空库上建 schema。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-flyway</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
