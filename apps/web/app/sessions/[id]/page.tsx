@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import {
   ApiError,
@@ -18,10 +18,11 @@ import { formatEventDateTime, productToTier } from '../../../lib/event-labels'
  * 票档渲染真实商品与可售状态（GET /api/v1/sessions/{sessionId}/products，
  * available 为缓存展示口径，下单时后端原子重校验）；
  * 票档序号按价格降序（1 = 最高价档），与原型 tier-dot-1..5 一致。
- * 下单链路由后续购买流程接入，本页暂只读。
+ * 数量选择在结算页选（/checkout?session={id}），本页只读展示。
  */
 export default function SessionProductsPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const sessionId = params.id
 
   const [session, setSession] = useState<SessionView | null>(null)
@@ -113,14 +114,21 @@ export default function SessionProductsPage() {
         {tiers.length === 0 && <p className="muted">该场次暂未开放票档。</p>}
         <div className="tier-list">
           {tiers.map((tier, index) => (
-            <TierCard
-              key={tier.productId}
-              tier={tier}
-              tierLevel={(index % 5) + 1}
-            />
+            <TierCard key={tier.productId} tier={tier} tierLevel={(index % 5) + 1} />
           ))}
         </div>
         <p className="muted">可售数量为缓存展示，实际以下单结果为准。</p>
+        <div className="cols-2">
+          <span className="muted">选票档与数量在结算页完成。</span>
+          <button
+            type="button"
+            className="btn"
+            disabled={tiers.length === 0}
+            onClick={() => router.push(`/checkout?session=${encodeURIComponent(sessionId)}`)}
+          >
+            去选票
+          </button>
+        </div>
       </section>
     </main>
   )

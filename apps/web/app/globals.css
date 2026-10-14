@@ -676,3 +676,156 @@ li {
 .tier-dot-1 {
   background: var(--awn-gold);
 }
+
+/* ── 购买流程（原型 web/purchase.html） ───────────────────── */
+
+/* 步骤条：只标进度，不做可点击导航 */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--awn-ink-2);
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step + .step::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  margin-right: 10px;
+  background: var(--awn-border);
+}
+
+.step .n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--awn-border);
+  font-size: 12px;
+}
+
+.step[data-done='true'] {
+  color: var(--awn-ink);
+}
+
+.step[data-done='true'] .n {
+  border-color: var(--awn-gold);
+  background: var(--awn-gold-soft);
+  color: var(--awn-gold-deep);
+}
+
+/* 主区 + 结算摘要两栏（窄屏回落单列） */
+.purchase-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .purchase-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cart-summary {
+  padding: 20px;
+  border: 1px solid var(--awn-border);
+  border-radius: 16px;
+  background: var(--awn-card);
+  position: sticky;
+  top: 24px;
+}
+
+/* 数量步进器：触控目标 44px（docs/design/ui-system.md 触控规范） */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--awn-border);
+  border-radius: 10px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper span {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 说明与分隔 */
+.hint {
+  margin: 6px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--awn-ink-2);
+}
+
+.divider {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--awn-border);
+}
+
+/* 原型 components.css 的字号令牌：@awn/ui 只注入颜色令牌，字号留在本层 */
+:root {
+  --fs-xs: 12px;
+}
+
+/* 订单明细表（/orders/{orderNo}） */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.table th,
+.table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--awn-border);
+  text-align: left;
+}
+
+.table th {
+  color: var(--awn-ink-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.table th.num,
+.table td.num {
+  text-align: right;
+}
+
+/* 次级动作按钮（刷新 / 取消）：不与主 CTA 抢视觉权重 */
+.btn--ghost {
+  background: transparent;
+  color: var(--awn-ink-2);
+  border: 1px solid var(--awn-border);
+}

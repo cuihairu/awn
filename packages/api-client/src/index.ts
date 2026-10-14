@@ -37,41 +37,193 @@ async function readJson<T>(res: Response): Promise<T> {
   return body as T
 }
 
-export interface OrderCreatePayload {
-  /** 客户端生成的幂等键 */
-  idempotencyKey: string
-  lines: { productId: string; sessionId: string; quantity: number }[]
+/**
+ * 交易（docs/api/contracts.md 交易接口）：
+ * 订单创建必须带 Idempotency-Key；金额一律服务端重算，客户端只传单价与优惠；
+ * 支付创建只传渠道，金额/币种取订单快照（任何端不得凭前端参数确认支付成功）。
+ */
+
+/** 订单行来源二选一：数量型走 poolCode，凭证型走 listingNo */
+export interface OrderLinePayload {
+  poolCode: string | null
+  listingNo: string | null
+  productId: string
+  productNameSnapshot: string
+  sessionId: string
+  ticketCategorySnapshot: string | null
+  quantity: number
+  unitPrice: number
+  discountAmount: number
+  feeAmount: number
 }
 
-export interface OrderStatus {
-  orderId: string
-  status:
-    | 'PENDING_PAYMENT'
-    | 'PAID'
-    | 'FULFILLING'
-    | 'FULFILLED'
-    | 'REFUND_PENDING'
-    | 'REFUNDED'
-    | 'CANCELLED'
-    | 'EXPIRED'
-  amountMinor: number
-  currency: 'CNY'
+export interface OrderCreatePayload {
+  /** 客户端生成的幂等键（放 Idempotency-Key 头，不进请求体） */
+  idempotencyKey: string
+  userId: string
+  currency: string
+  lines: OrderLinePayload[]
+}
+
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAID'
+  | 'FULFILLING'
+  | 'FULFILLED'
+  | 'REFUND_PENDING'
+  | 'REFUNDED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+
+export interface OrderItemView {
+  poolCode: string | null
+  productId: string
+  productNameSnapshot: string
+  sessionId: string
+  ticketCategorySnapshot: string | null
+  quantity: number
+  unitPrice: number
+  discountAmount: number
+  feeAmount: number
+  lineTotal: number
+  reservationNo: string | null
+  listingNo: string | null
+  unitNo: string | null
+}
+
+export interface OrderView {
+  orderNo: string
+  status: OrderStatus
+  currency: string
+  totalAmount: number
+  discountAmount: number
+  feeAmount: number
+  payAmount: number
+  expiresAt: string | null
+  items: OrderItemView[]
+}
+
+export interface QuoteView {
+  currency: string
+  totalAmount: number
+  discountAmount: number
+  feeAmount: number
+  payAmount: number
+}
+
+export interface PaymentView {
+  paymentNo: string
+  orderNo: string
+  channel: string
+  channelTxnNo: string | null
+  status: string
+  currency: string
+  amount: number
+  paidAt: string | null
 }
 
 export async function createOrder(
   payload: OrderCreatePayload,
   init?: RequestInit,
-): Promise<unknown> {
+): Promise<OrderView> {
+  const { idempotencyKey, ...body } = payload
   return fetch(`${API_BASE}/orders`, {
     ...init,
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'idempotency-key': payload.idempotencyKey,
+      'idempotency-key': idempotencyKey,
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify(body),
+  }).then((res) => readJson<OrderView>(res))
+}
+
+/** 结算报价：不扣库存、不产生订单；下单时服务端重新计算并原子预留 */
+export async function quoteCheckout(
+  payload: { currency: string; lines: OrderLinePayload[] },
+  init?: RequestInit,
+): Promise<QuoteView> {
+  return fetch(`${API_BASE}/checkout/quote`, {
+    ...init,
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
       ...(init?.headers ?? {}),
     },
     body: JSON.stringify(payload),
-  }).then((res) => readJson<unknown>(res))
+  }).then((res) => readJson<QuoteView>(res))
+}
+
+export async function getOrder(
+  orderNo: string,
+  init?: RequestInit,
+): Promise<OrderView> {
+  return fetch(`${API_BASE}/orders/${orderNo}`, init)
+    .then((res) => readJson<OrderView>(res))
+}
+
+export async function cancelOrder(
+  orderNo: string,
+  init?: RequestInit,
+): Promise<OrderView> {
+  return fetch(`${API_BASE}/orders/${orderNo}/cancel`, {
+    ...init,
+    method: 'POST',
+  }).then((res) => readJson<OrderView>(res))
+}
+
+/** 发起支付：只传渠道，金额/币种服务端取订单快照 */
+export async function createPayment(
+  orderNo: string,
+  channel: string,
+  init?: RequestInit,
+): Promise<PaymentView> {
+  return fetch(`${API_BASE}/orders/${orderNo}/payments`, {
+    ...init,
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify({ channel }),
+  }).then((res) => readJson<PaymentView>(res))
+}
+
+export async function listPayments(
+  orderNo: string,
+  init?: RequestInit,
+): Promise<PaymentView[]> {
+  return fetch(`${API_BASE}/orders/${orderNo}/payments`, init).then((res) =>
+    readJson<PaymentView[]>(res),
+  )
+}
+
+/** 履约状态（独立于订单与支付状态机：支付成功只推进到 PENDING_SELLER） */
+export type FulfillmentStatus =
+  | 'NOT_STARTED'
+  | 'PENDING_SELLER'
+  | 'PENDING_VERIFICATION'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+
+export interface FulfillmentView {
+  fulfillmentNo: string
+  orderNo: string
+  status: FulfillmentStatus
+  failReason: string | null
+}
+
+/** 履约单查询；订单未支付进入履约或未知 → 404（由调用方区分文案） */
+export async function getFulfillment(
+  orderNo: string,
+  init?: RequestInit,
+): Promise<FulfillmentView> {
+  return fetch(`${API_BASE}/orders/${orderNo}/fulfillment`, init).then((res) =>
+    readJson<FulfillmentView>(res),
+  )
 }
 
 /* ------------------------------------------------------------------ *
