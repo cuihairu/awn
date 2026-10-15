@@ -303,6 +303,8 @@ function pending(section: CampaignSection, reason: string): SectionResolution {
 
 /** 待接入模块的中文标签（页面展示用，不发明后端没有的内容）。 */
 export const PENDING_SECTION_LABELS: Record<string, string> = {
+  eventList: '场次列表',
+  ticketGrid: '票档',
   rulePanel: '购票须知',
   faq: '常见问题',
   imageGallery: '图片',

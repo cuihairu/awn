@@ -8,7 +8,7 @@ import {
   type SessionView,
 } from '@awn/api-client'
 import type { CampaignSection } from '@awn/campaign-renderer'
-import { resolveSections, type CampaignDataApi } from './campaign-resolve'
+import { PENDING_SECTION_LABELS, resolveSections, type CampaignDataApi } from './campaign-resolve'
 
 /**
  * 专场模块解析层契约（docs/architecture/campaign-rendering.md）：
@@ -376,5 +376,23 @@ describe('resolveSections', () => {
     await expect(
       resolveSections([section({ type: 'eventList', props: { eventIds: ['1'] } })], api),
     ).rejects.toThrow('network down')
+  })
+
+  it('labels every pending section type in Chinese for the page display', () => {
+    // 种子实例（scripts/seed/demo-campaigns.mjs）的场次 / 票档区块在活动回填前
+    // 长期处于待接入态，标签不能回落到英文类型名
+    for (const type of [
+      'eventList',
+      'ticketGrid',
+      'rulePanel',
+      'faq',
+      'imageGallery',
+      'priceTrend',
+      'ticketComparison',
+      'channelComparison',
+      'videoEmbed',
+    ]) {
+      expect(PENDING_SECTION_LABELS[type], `missing label for ${type}`).toBeTruthy()
+    }
   })
 })

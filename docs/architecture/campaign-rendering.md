@@ -154,3 +154,30 @@ flowchart TD
 | 小程序 | Taro 实现同一模块白名单的子集 | 模块能力按平台降级 |
 | 客户端 | Flutter 按渲染契约实现原生组件 | 长期运营的用户入口 |
 | 管理后台 | `apps/admin` 专场编辑器 | 草稿 / 校验 / 发布 / 下线 |
+
+## 预置实例与种子脚本
+
+三套已批准原型对应三套专场实例（原型过目已代决，demo-note 标注「数据为示例」）：
+
+| 专场码 | 实例 | 内容出处 |
+|--------|--------|--------|
+| `f1-2026-china` | 2026 F1 中国大奖赛 | `docs/design/prototypes/web/activity-f1.html` |
+| `jay-carnival-2026` | 周杰伦「嘉年华」世界巡回演唱会 | `docs/design/prototypes/web/activity-jay.html` |
+| `zcx-shibuzhigui-2026` | 周传雄「时不知归」巡回演唱会 | `docs/design/prototypes/web/activity-zcx.html` |
+
+`scripts/seed-demo-campaigns.mjs` 走专场管理写接口（create → draft → validate → publish，
+`X-Admin-Token` 鉴权）把 `scripts/seed/demo-campaigns.mjs` 的内容创建为已发布专场：
+
+```bash
+AWN_API_BASE=http://localhost:8080 AWN_ADMIN_TOKEN=awn-admin-dev-token \
+  node scripts/seed-demo-campaigns.mjs            # 幂等：已存在则复用并重新发布
+node scripts/seed-demo-campaigns.mjs --dry-run    # 只打印载荷
+```
+
+两条红线写进种子内容并由测试（`scripts/seed/demo-campaigns.test.mjs`）守住：
+
+- **素材红线**：不含 `imageGallery` / `videoEmbed` 区块与任何媒体引用键
+  （`url` / `src` / `poster` / `assetId`），视觉一律文字占位。
+- **不造假数据**：场次列表 / 票档区块引用占位活动 id `'0'`（不存在），公开解析层
+  按「待接入」渲染并说明原因；运营在目录创建真实活动后，回填真实 `eventId`
+  再走 draft → validate → publish。
