@@ -1,0 +1,62 @@
+{
+  "id": "hongkou-football-stadium",
+  "name": { "zh": "虹口足球场", "en": "Hongkou Football Stadium" },
+  "city": { "zh": "上海", "en": "Shanghai" },
+  "type": "FOOTBALL_STADIUM",
+  "priority": 1,
+  "capacity": [
+    {
+      "value": 33060,
+      "scope": "OVERALL",
+      "note": "条目信息框标注的座位数",
+      "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+      "accessed": "2026-10-16"
+    },
+    {
+      "value": 35000,
+      "scope": "OVERALL",
+      "note": "正文“35000个观众席”——与信息框 33,060 不一致，原条目未说明差异原因，两个口径都保留不择一",
+      "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+      "accessed": "2026-10-16"
+    }
+  ],
+  "stands": {
+    "count": 22,
+    "naming": "NOT_PUBLIC",
+    "note": "公开条目只给出看台总数 22 与包厢 47，没有看台编号、命名方式与各区座位数",
+    "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+    "accessed": "2026-10-16"
+  },
+  "boxes": {
+    "count": 47,
+    "note": "大小两种尺寸",
+    "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+    "accessed": "2026-10-16"
+  },
+  "field": {
+    "shape": "RECTANGLE",
+    "lengthM": 105,
+    "widthM": 70,
+    "note": "标准矩形足球场地，非椭圆",
+    "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+    "accessed": "2026-10-16"
+  },
+  "areas": {
+    "siteM2": 56000,
+    "buildingM2": 72000,
+    "source": "https://zh.wikipedia.org/wiki/虹口足球场",
+    "accessed": "2026-10-16"
+  },
+  "years": {
+    "originalOpened": 1955,
+    "convertedToFootballStadium": "1999-03-14"
+  },
+  "notPublic": [
+    "看台编号与命名",
+    "看台层数（几层）",
+    "各看台座位数",
+    "排与座席编号",
+    "看台朝向与方位编号",
+    "包厢几何位置"
+  ]
+}

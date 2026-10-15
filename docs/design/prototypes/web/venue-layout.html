@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>场馆布局（公开数据重建示意）· AWN 原型</title>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  .venue-shell { display:grid; grid-template-columns:1fr 320px; gap:var(--space-lg); align-items:start }
+  .venue-tabs [aria-selected="true"] { border-color:var(--t-brand); color:var(--t-brand); font-weight:600 }
+  #viewport { transition:transform .12s ease-out; transform-origin:0 0 }
+  .hit { cursor:pointer; transition:opacity .12s }
+  .hit:hover { opacity:.9 }
+  .hit:focus-visible { outline:2px solid var(--t-brand); outline-offset:2px }
+  .hit.on { stroke-width:3.5 }
+  .legend-line { display:inline-block; width:26px; height:0; margin-right:6px; vertical-align:middle }
+  .legend-solid { border-top:2px solid var(--t-fg) }
+  .legend-dash { border-top:2px dashed var(--t-warning) }
+  .legend-dot { border-top:2px dotted var(--t-fg-muted) }
+  .fact-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-bottom:1px solid var(--t-border) }
+  .fact-row:last-child { border-bottom:0 }
+  .gap-tag { background:var(--t-danger-soft); color:var(--t-danger); }
+  @media (max-width:900px){ .venue-shell { grid-template-columns:1fr } }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="wrap inner">
+    <a class="brand" href="home.html">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L14 10 L12 22 L10 10 Z"/><path d="M6 6 L9 12 L8 16 L5 10 Z" opacity=".7"/><path d="M18 6 L15 12 L16 16 L19 10 Z" opacity=".7"/></svg>
+      AWN · 麦芒网
+    </a>
+    <nav class="row" style="gap:16px">
+      <a class="nav-link" href="home.html">发现</a>
+      <a class="nav-link" href="seatmap-2d.html">选座</a>
+      <a class="nav-link" href="venue-layout.html" aria-current="page">场馆布局</a>
+    </nav>
+    <div class="row" style="margin-left:auto"><button class="btn btn-ghost btn-sm">登录</button></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px">
+  <div class="row-between" style="margin-bottom:14px">
+    <div>
+      <h1>场馆布局 · 公开数据重建示意</h1>
+      <p class="muted" style="font-size:var(--fs-sm);margin:0">上海场馆优先样本：虹口足球场（做透）+ 上海体育馆（异形边界）· 能点、能缩放 · 数据均来自公开来源，布局为本仓自行整理重建</p>
+    </div>
+    <span class="demo-note">仅场馆级公开事实 · 未录入分区编号与座席编号</span>
+  </div>
+
+  <div class="row" role="tablist" aria-label="切换场馆样本" style="margin-bottom:12px">
+    <button class="chip venue-tabs" role="tab" aria-selected="true" data-venue="hongkou">虹口足球场（优先级 1）</button>
+    <button class="chip venue-tabs" role="tab" aria-selected="false" data-venue="wanti">上海体育馆 · 万体馆（异形边界）</button>
+  </div>
+
+  <div class="row-between" style="margin-bottom:10px">
+    <h3 style="margin:0" id="venueTitle">虹口足球场</h3>
+    <div class="row" style="gap:8px">
+      <button class="btn btn-soft btn-sm" id="zoomIn" aria-label="放大">＋ 放大</button>
+      <button class="btn btn-soft btn-sm" id="zoomOut" aria-label="缩小">－ 缩小</button>
+      <button class="btn btn-ghost btn-sm" id="zoomReset">重置视图</button>
+      <span class="hint" id="zoomLevel">缩放 100%</span>
+    </div>
+  </div>
+
+  <div class="venue-shell">
+    <!-- 左：布局画布 -->
+    <div class="card" style="padding:14px">
+      <svg id="stage" viewBox="0 0 1000 700" style="width:100%;height:auto;display:block;border-radius:var(--radius-md);background:var(--t-sunken)" role="group" aria-label="场馆布局示意图">
+        <g id="viewport"></g>
+      </svg>
+
+      <div style="margin-top:10px">
+        <span class="legend-line legend-solid"></span><span class="hint">公开数据（条目给出数值）</span>
+        <span style="margin-left:18px"><span class="legend-line legend-dash"></span><span class="hint">重建示意（本仓按公开数量自行排布）</span></span>
+        <span style="margin-left:18px"><span class="legend-line legend-dot"></span><span class="hint">未公开 / 待场馆方提供</span></span>
+        <span class="hint" style="margin-left:18px">滚轮缩放 · 拖拽平移 · 点击看台或内场查看详情</span>
+      </div>
+    </div>
+
+    <!-- 右：事实与缺口面板 -->
+    <aside class="card" id="panel" aria-live="polite">
+      <h3 id="panelTitle" style="margin-top:0">场馆事实</h3>
+      <div id="panelBody"></div>
+    </aside>
+  </div>
+
+  <!-- 数据来源与重建声明 -->
+  <section class="grid grid-2" style="margin-top:28px">
+    <div class="card">
+      <h3>数据来源与重建声明</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">本原型只使用两个样本的场馆级公开事实，布局由本仓自行整理重建，不是官方图纸，也没有复制任何第三方仓的数据文件：</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· <strong>虹口足球场</strong>：座位数 33,060（信息框）/ 35,000（正文，两口径并存不择一）· 看台 22 · 包厢 47 · 场地 105×70m · 占地面积 56,000m² / 建筑面积 72,000m² · 来源 <a href="https://zh.wikipedia.org/wiki/虹口足球场">zh.wikipedia.org/wiki/虹口足球场</a>（查阅 2026-10-16）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">· <strong>上海体育馆（万体馆）</strong>：体育比赛 12,000 座 / 文艺演出 10,000 座 · 内场表面为地板 · 来源 <a href="https://zh.wikipedia.org/wiki/上海体育馆">zh.wikipedia.org/wiki/上海体育馆</a>（查阅 2026-10-16）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">场馆名称为真实名称，未使用任何第三方商标或图片素材；看台排布、内场轮廓均为示意，点击任意看台可看该样本明确未公开的字段清单。</p>
+    </div>
+    <div class="card">
+      <h3>样本数据（过 schema 校验）</h3>
+      <p class="muted" style="font-size:var(--fs-sm)">样本落在 <code>docs/data/venues/</code>，随附 <code>schema.json</code> 与零依赖校验脚本 <code>validate.mjs</code>：</p>
+      <p class="muted" style="font-size:var(--fs-sm)"><code>node docs/data/venues/validate.mjs</code> → 4 份样本全部 PASS（虹口足球场 / 万体馆 / 浦东足球场 / 上海体育场）</p>
+      <p class="muted" style="font-size:var(--fs-sm)">校验同时固化一条缺口断言：样本 17 个字段中 <strong>14 个在当前数据库 schema 里无处落库</strong>（venue 表仅有名称 / 城市 / 地址 / 坐标 / 地图图），座席表是场次级且无几何。详见 <code>docs/design/venue-layout-schema.md</code>。</p>
+      <p class="muted" style="font-size:var(--fs-sm)">红线：容量与分区只取公开可查数值，<strong>不编造精确座位号</strong>；校验脚本对样本含 <code>sections</code> / <code>rows</code> / <code>seats</code> 字段直接判 FAIL。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap row-between">
+    <span>AWN · 麦芒网 — 场馆布局原型 · 公开数据重建示意</span>
+    <a href="../index.html">返回原型总览</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  /* 样本事实来自 docs/data/venues/*.json（公开来源整理重建，不复制第三方数据文件）。
+     看台排布只体现公开给出的「数量」，分区编号与位置均为示意。 */
+  var SRC_HK = 'https://zh.wikipedia.org/wiki/虹口足球场';
+  var SRC_WT = 'https://zh.wikipedia.org/wiki/上海体育馆';
+
+  var VENUES = {
+    hongkou: {
+      title: '虹口足球场 · 上海 · 足球场',
+      facts: [
+        ['座位数', '33,060（信息框）/ 35,000（正文）· 两口径并存'],
+        ['看台数量', '22'],
+        ['包厢', '47 个（大小两种尺寸）'],
+        ['场地', '105 × 70 m 矩形（标准足球场，非椭圆）'],
+        ['面积', '占地 56,000 m² / 建筑 72,000 m²'],
+        ['年份', '1955 建成 · 1999-03-14 改建为足球场'],
+        ['来源', 'zh.wikipedia · 查阅 2026-10-16']
+      ],
+      notPublic: ['看台编号与命名', '看台层数（几层）', '各看台座位数', '排与座席编号', '看台朝向与方位编号', '包厢几何位置']
+    },
+    wanti: {
+      title: '上海体育馆（万体馆）· 上海 · 室内体育馆',
+      facts: [
+        ['座位数', '体育比赛 12,000 / 文艺演出 10,000 · 随演出类型变化'],
+        ['看台数量', '未公开'],
+        ['内场', '表面为地板；形状与面积未公开'],
+        ['别名', '万体馆 / 万人体育馆 / 上海大舞台'],
+        ['年份', '1975 建成 · 1976 开放 · 1999、2004 两次改造'],
+        ['来源', 'zh.wikipedia · 查阅 2026-10-16']
+      ],
+      notPublic: ['看台数量与层数', '分区结构与编号', '内场面积与形状', '排与座席编号'],
+      boundary: '可变内场 + 容量随演出类型变化：体育比赛与文艺演出的可售座数不同，现有单一容量字段表达不了。'
+    }
+  };
+
+  var viewport = document.getElementById('viewport');
+  var panelTitle = document.getElementById('panelTitle');
+  var panelBody = document.getElementById('panelBody');
+  var venueTitle = document.getElementById('venueTitle');
+  var current = 'hongkou';
+  var hits = [];
+
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(x, y, content, size, color, weight, anchor, parent) {
+    var n = el('text', {
+      x: x, y: y, 'text-anchor': anchor || 'middle', fill: color || 'var(--t-fg)',
+      'font-size': size || 11, 'font-weight': weight || 400, 'pointer-events': 'none'
+    }, parent || viewport);
+    n.textContent = content;
+    return n;
+  }
+
+  /* 场馆级总览面板 */
+  function showOverview(key) {
+    var v = VENUES[key];
+    panelTitle.textContent = v.title;
+    panelBody.innerHTML = '';
+    var box = document.createElement('div');
+    v.facts.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'fact-row';
+      row.innerHTML = '<span class="muted" style="font-size:var(--fs-xs)">' + f[0] + '</span>' +
+        '<span style="font-size:var(--fs-sm);text-align:right;flex:1">' + f[1] + '</span>';
+      box.appendChild(row);
+    });
+    panelBody.appendChild(box);
+
+    var hr = document.createElement('hr');
+    hr.className = 'divider';
+    hr.style.cssText = 'margin:12px 0';
+    panelBody.appendChild(hr);
+
+    var head = document.createElement('p');
+    head.style.cssText = 'margin:0 0 6px;font-weight:600;font-size:var(--fs-sm)';
+    head.textContent = '明确未公开的字段';
+    panelBody.appendChild(head);
+    var ul = document.createElement('ul');
+    ul.style.cssText = 'margin:0;padding-left:18px';
+    v.notPublic.forEach(function (n) {
+      var li = document.createElement('li');
+      li.className = 'muted';
+      li.style.cssText = 'font-size:var(--fs-xs);margin:2px 0';
+      li.textContent = n;
+      ul.appendChild(li);
+    });
+    panelBody.appendChild(ul);
+
+    if (v.boundary) {
+      var b = document.createElement('p');
+      b.className = 'hint';
+      b.style.cssText = 'margin-top:10px';
+      b.innerHTML = '<strong>模型边界：</strong>' + v.boundary;
+      panelBody.appendChild(b);
+    }
+    var tip = document.createElement('p');
+    tip.className = 'hint';
+    tip.style.cssText = 'margin-top:10px';
+    tip.textContent = '点击图中看台 / 内场查看该项的具体缺口。';
+    panelBody.appendChild(tip);
+  }
+
+  function showDetail(name, key, facts, gaps) {
+    panelTitle.textContent = name;
+    panelBody.innerHTML = '';
+    var box = document.createElement('div');
+    facts.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'fact-row';
+      row.innerHTML = '<span class="muted" style="font-size:var(--fs-xs)">' + f[0] + '</span>' +
+        '<span style="font-size:var(--fs-sm);text-align:right;flex:1">' + f[1] + '</span>';
+      box.appendChild(row);
+    });
+    panelBody.appendChild(box);
+    if (gaps.length) {
+      var head = document.createElement('p');
+      head.className = 'muted';
+      head.style.cssText = 'margin:10px 0 4px;font-weight:600;font-size:var(--fs-sm)';
+      head.textContent = '该项未公开（不可编造）';
+      panelBody.appendChild(head);
+      var tags = document.createElement('div');
+      tags.className = 'row';
+      tags.style.cssText = 'flex-wrap:wrap;gap:6px';
+      gaps.forEach(function (g) {
+        var s = document.createElement('span');
+        s.className = 'badge gap-tag';
+        s.textContent = g;
+        tags.appendChild(s);
+      });
+      panelBody.appendChild(tags);
+    }
+    var src = document.createElement('p');
+    src.className = 'hint';
+    src.style.cssText = 'margin-top:10px';
+    src.innerHTML = '来源：<a href="' + (key === 'wanti' ? SRC_WT : SRC_HK) + '">公开条目</a> · 查阅 2026-10-16';
+    panelBody.appendChild(src);
+  }
+
+  /* node 承载事件（键盘在带 tabindex 的组上），shape 承载高亮与数据 */
+  function markHit(node, shape) {
+    shape = shape || node;
+    shape.addEventListener('click', function () {
+      hits.forEach(function (h) { h.classList.remove('on'); h.setAttribute('fill-opacity', h.dataset.baseOpacity); });
+      shape.classList.add('on');
+      shape.setAttribute('fill-opacity', '0.5');
+      shape.__onSelect.call(shape);
+    });
+    node.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shape.dispatchEvent(new Event('click')); }
+    });
+    hits.push(shape);
+  }
+
+  /* ---- 虹口足球场：矩形场地 + 22 个看台（示意排布）+ 47 包厢（位置未公开） ---- */
+  function drawHongkou() {
+    var v = VENUES.hongkou;
+    /* 外碗轮廓：重建示意 */
+    el('rect', { x: 150, y: 82, width: 700, height: 536, rx: 120, ry: 120,
+      fill: 'var(--t-sunken)', stroke: 'var(--t-fg-muted)', 'stroke-width': 2,
+      'stroke-dasharray': '9 6' }, viewport);
+    /* 场地：105×70m，公开数据 */
+    el('rect', { x: 364, y: 259, width: 272, height: 182, rx: 8,
+      fill: 'var(--t-success)', 'fill-opacity': 0.22, stroke: 'var(--t-success)', 'stroke-width': 2 }, viewport);
+    txt(500, 350, '场地 105 × 70 m', 14, 'var(--t-success)', 700);
+    txt(500, 368, '公开数据 · 矩形（非椭圆）', 10, 'var(--t-fg-muted)');
+    el('line', { x1: 500, y1: 267, x2: 500, y2: 433, stroke: 'var(--t-success)', 'stroke-width': 1, 'stroke-dasharray': '4 4', 'pointer-events': 'none' }, viewport);
+    el('line', { x1: 372, y1: 350, x2: 628, y2: 350, stroke: 'var(--t-success)', 'stroke-width': 1, 'stroke-dasharray': '4 4', 'pointer-events': 'none' }, viewport);
+
+    var gaps = ['看台编号与命名', '各看台座位数', '排与座席编号'];
+    /* 22 个看台：南北各 6、东西各 5，排布为示意重建 */
+    var standId = 0;
+    function stand(x, y, w, h, num) {
+      var g = el('g', { tabindex: 0, role: 'button', 'aria-label': '看台 ' + num + '（示意编号，位置与编号未公开）' }, viewport);
+      var r = el('rect', { x: x, y: y, width: w, height: h, rx: 6, class: 'hit',
+        fill: 'var(--t-brand)', 'fill-opacity': 0.2, stroke: 'var(--t-brand)', 'stroke-width': 2,
+        'data-base-opacity': '0.2' }, g);
+      r.__onSelect = function () {
+        showDetail('看台 ' + num + '（示意编号）', 'hongkou',
+          [['场馆看台总数', '22（公开）'], ['本看台座位数', '未公开'], ['本看台朝向 / 方位', '未公开']],
+          gaps);
+      };
+      markHit(g, r);
+      txt(x + w / 2, y + h / 2 + 4, '看台 ' + num, 11, 'var(--t-fg)', 700, 'middle', g);
+    }
+    var nw = 56, nh = 84, gapX = 8, yN = 108, yS = 508;
+    for (var i = 0; i < 6; i++) { stand(320 + i * (nw + gapX), yN, nw, nh, ++standId); }
+    for (var j = 0; j < 6; j++) { stand(320 + j * (nw + gapX), yS, nw, nh, ++standId); }
+    var sw = 116, sh = 50, xE = 706, xW = 178, yE = 208, sh2 = 52;
+    for (var e = 0; e < 5; e++) { stand(xE, yE + e * (sh + 7), sw, sh, ++standId); }
+    for (var w = 0; w < 5; w++) { stand(xW, yE + w * (sh2 + 7), sw, sh2, ++standId); }
+
+    /* 47 包厢：数量公开，位置未公开 → 示意点阵 */
+    el('rect', { x: 364, y: 456, width: 272, height: 40, rx: 6,
+      fill: 'none', stroke: 'var(--t-fg-muted)', 'stroke-width': 1.5, 'stroke-dasharray': '5 5', 'pointer-events': 'none' }, viewport);
+    var bx = el('g', { tabindex: 0, role: 'button', 'aria-label': '包厢 47 个，几何位置未公开' }, viewport);
+    for (var b = 0; b < 47; b++) {
+      var col = b % 24, rowI = Math.floor(b / 24);
+      el('circle', { cx: 374 + col * 11.2, cy: 466 + rowI * 14, r: 2.6,
+        fill: 'var(--t-fg-muted)', 'pointer-events': 'none' }, bx);
+    }
+    txt(500, 512, '包厢 47 个（数量公开 · 位置未公开）', 10, 'var(--t-fg-muted)');
+    var boxes = el('rect', { x: 360, y: 452, width: 280, height: 48, rx: 6,
+      fill: 'transparent', class: 'hit', 'data-base-opacity': '0' }, viewport);
+    boxes.__onSelect = function () {
+      showDetail('包厢', 'hongkou', [['包厢数量', '47（公开，大小两种尺寸）'], ['包厢座位数', '未公开'], ['包厢几何位置', '未公开']],
+        ['包厢几何位置', '包厢座位数']);
+    };
+    markHit(boxes);
+
+    txt(500, 76, '外碗轮廓为示意重建 · 看台 22 个按数量均分排布（实际分区 / 编号 / 朝向未公开）', 11, 'var(--t-warning)', 600);
+  }
+
+  /* ---- 上海体育馆（万体馆）：椭圆碗 + 未公开的内场形状 ---- */
+  function drawWanti() {
+    el('ellipse', { cx: 500, cy: 350, rx: 372, ry: 282,
+      fill: 'var(--t-sunken)', stroke: 'var(--t-fg-muted)', 'stroke-width': 2, 'stroke-dasharray': '9 6' }, viewport);
+    /* 看台环：数量与分区未公开 */
+    var ring = el('ellipse', { cx: 500, cy: 350, rx: 300, ry: 218, fill: 'none',
+      stroke: 'var(--t-warning)', 'stroke-width': 2.5, 'stroke-dasharray': '10 7' }, viewport);
+    var ringHit = el('ellipse', { cx: 500, cy: 350, rx: 330, ry: 248, fill: 'transparent',
+      class: 'hit', 'data-base-opacity': '0' }, viewport);
+    ringHit.__onSelect = function () {
+      showDetail('看台（环形）', 'wanti',
+        [['看台数量', '未公开'], ['看台层数', '未公开'], ['分区结构与编号', '未公开']],
+        ['看台数量与层数', '分区结构与编号', '排与座席编号']);
+    };
+    markHit(ringHit);
+    txt(500, 132, '看台环（数量 / 层数 / 分区编号未公开）', 11, 'var(--t-warning)', 600);
+
+    /* 内场：形状与面积未公开 → 虚线 */
+    var floor = el('ellipse', { cx: 500, cy: 350, rx: 168, ry: 118,
+      fill: 'var(--t-brand-soft)', 'fill-opacity': 0.3, stroke: 'var(--t-brand)',
+      'stroke-width': 2, 'stroke-dasharray': '7 6', class: 'hit', 'data-base-opacity': '0.3' }, viewport);
+    floor.__onSelect = function () {
+      showDetail('内场', 'wanti',
+        [['内场表面', '地板（公开）'], ['内场形状', '未公开'], ['内场面积', '未公开'],
+         ['体育比赛座位数', '12,000（公开）'], ['文艺演出座位数', '10,000（公开）']],
+        ['内场面积与形状', '排与座席编号']);
+    };
+    markHit(floor);
+    txt(500, 344, '内场', 15, 'var(--t-brand)', 700);
+    txt(500, 364, '形状 / 面积未公开 · 随场次变动', 10, 'var(--t-fg-muted)');
+
+    txt(500, 72, '碗体轮廓为示意重建 · 内场形状未公开（虚线）', 11, 'var(--t-warning)', 600);
+  }
+
+  /* 缩放 / 平移 */
+  var scale = 1, tx = 0, ty = 0;
+  function applyView() {
+    viewport.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+    document.getElementById('zoomLevel').textContent = '缩放 ' + Math.round(scale * 100) + '%';
+  }
+  function zoomAt(factor, cx, cy) {
+    var next = Math.min(Math.max(scale * factor, 0.4), 4);
+    var k = next / scale;
+    tx = cx - (cx - tx) * k;
+    ty = cy - (cy - ty) * k;
+    scale = next;
+    applyView();
+  }
+  document.getElementById('zoomIn').addEventListener('click', function () { zoomAt(1.25, 500, 350); });
+  document.getElementById('zoomOut').addEventListener('click', function () { zoomAt(1 / 1.25, 500, 350); });
+  document.getElementById('zoomReset').addEventListener('click', function () { scale = 1; tx = 0; ty = 0; applyView(); });
+
+  var svg = document.getElementById('stage');
+  svg.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var rect = svg.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, (e.clientX - rect.left) / rect.width * 1000, (e.clientY - rect.top) / rect.height * 700);
+  }, { passive: false });
+  var drag = null;
+  svg.addEventListener('pointerdown', function (e) {
+    if (e.target.classList.contains('hit')) return;
+    drag = { x: e.clientX, y: e.clientY, tx: tx, ty: ty };
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var rect = svg.getBoundingClientRect();
+    var k = 1000 / rect.width;
+    tx = drag.tx + (e.clientX - drag.x) * k;
+    ty = drag.ty + (e.clientY - drag.y) * k;
+    applyView();
+  });
+  svg.addEventListener('pointerup', function () { drag = null; });
+
+  function render(key) {
+    current = key;
+    while (viewport.firstChild) viewport.removeChild(viewport.firstChild);
+    hits = [];
+    if (key === 'hongkou') drawHongkou(); else drawWanti();
+    venueTitle.textContent = VENUES[key].title;
+    showOverview(key);
+  }
+
+  document.querySelectorAll('.venue-tabs').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.venue-tabs').forEach(function (b) { b.setAttribute('aria-selected', 'false'); });
+      btn.setAttribute('aria-selected', 'true');
+      scale = 1; tx = 0; ty = 0;
+      render(btn.dataset.venue);
+      applyView();
+    });
+  });
+
+  render(current);
+  applyView();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "id": "shanghai-indoor-stadium",
+  "name": { "zh": "上海体育馆（万体馆）", "en": "Shanghai Indoor Stadium" },
+  "city": { "zh": "上海", "en": "Shanghai" },
+  "type": "INDOOR_ARENA",
+  "priority": 2,
+  "boundaryCase": "可变内场 + 容量随演出类型变化：体育比赛与文艺演出的可售座数不同，现有单一容量字段表达不了",
+  "capacity": [
+    {
+      "value": 12000,
+      "scope": "SPORT_EVENT",
+      "note": "体育比赛",
+      "source": "https://zh.wikipedia.org/wiki/上海体育馆",
+      "accessed": "2026-10-16"
+    },
+    {
+      "value": 10000,
+      "scope": "ART_EVENT",
+      "note": "文艺演出（内场临时搭建或开放范围不同）",
+      "source": "https://zh.wikipedia.org/wiki/上海体育馆",
+      "accessed": "2026-10-16"
+    }
+  ],
+  "stands": {
+    "count": null,
+    "naming": "NOT_PUBLIC",
+    "note": "条目未给出看台数量、层数与分区结构",
+    "source": "https://zh.wikipedia.org/wiki/上海体育馆",
+    "accessed": "2026-10-16"
+  },
+  "floor": {
+    "areaM2": null,
+    "shape": "NOT_PUBLIC",
+    "surface": "地板",
+    "note": "条目只注明表面为“地板”，无内场面积与形状数值；演出时的内场开放范围随场次变动",
+    "source": "https://zh.wikipedia.org/wiki/上海体育馆",
+    "accessed": "2026-10-16"
+  },
+  "years": {
+    "completed": 1975,
+    "opened": 1976,
+    "renovated": [1999, 2004]
+  },
+  "aliases": ["万体馆", "万人体育馆", "上海大舞台"],
+  "notPublic": [
+    "看台数量与层数",
+    "分区结构与编号",
+    "内场面积与形状",
+    "排与座席编号"
+  ]
+}

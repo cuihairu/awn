@@ -1,0 +1,40 @@
+{
+  "id": "pudong-football-stadium",
+  "name": { "zh": "浦东足球场", "en": "Pudong Football Stadium" },
+  "city": { "zh": "上海", "en": "Shanghai" },
+  "type": "FOOTBALL_STADIUM",
+  "priority": 2,
+  "capacity": [
+    {
+      "value": 37000,
+      "scope": "OVERALL",
+      "note": "条目信息框标注值",
+      "source": "https://en.wikipedia.org/wiki/Pudong_Football_Stadium",
+      "accessed": "2026-10-16"
+    }
+  ],
+  "stands": {
+    "count": null,
+    "naming": "NOT_PUBLIC",
+    "note": "条目未给出看台数量、层数与分区结构",
+    "source": "https://en.wikipedia.org/wiki/Pudong_Football_Stadium",
+    "accessed": "2026-10-16"
+  },
+  "field": {
+    "shape": "RECTANGLE",
+    "lengthM": 105,
+    "widthM": 68,
+    "note": "105×68 为标准足球场尺寸，按类型通用值标注；该条目本身未写场地尺寸，故此条不可作为浦东足球场的独立取证，仅作类型级参照",
+    "source": "https://en.wikipedia.org/wiki/Football_pitch",
+    "accessed": "2026-10-16",
+    "evidence": "TYPE_DEFAULT"
+  },
+  "years": {
+    "opened": "2020-10-31"
+  },
+  "notPublic": [
+    "看台数量与层数",
+    "分区结构与编号",
+    "各看台座位数"
+  ]
+}

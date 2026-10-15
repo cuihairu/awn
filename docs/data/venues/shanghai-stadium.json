@@ -1,0 +1,40 @@
+{
+  "id": "shanghai-stadium",
+  "name": { "zh": "上海体育场", "en": "Shanghai Stadium" },
+  "city": { "zh": "上海", "en": "Shanghai" },
+  "type": "FOOTBALL_STADIUM",
+  "priority": 2,
+  "capacity": [
+    {
+      "value": 72000,
+      "scope": "OVERALL",
+      "note": "2020–2022 完全改建后的现容量",
+      "source": "https://en.wikipedia.org/wiki/Shanghai_Stadium",
+      "accessed": "2026-10-16"
+    },
+    {
+      "value": 56842,
+      "scope": "OVERALL",
+      "note": "改建前容量，条目明确写“increased from 56,842 to 72,000”",
+      "source": "https://en.wikipedia.org/wiki/Shanghai_Stadium",
+      "accessed": "2026-10-16"
+    }
+  ],
+  "stands": {
+    "count": null,
+    "naming": "NOT_PUBLIC",
+    "note": "条目未给出看台数量、层数与分区结构",
+    "source": "https://en.wikipedia.org/wiki/Shanghai_Stadium",
+    "accessed": "2026-10-16"
+  },
+  "years": {
+    "opened": 1997,
+    "reconstructed": "2020-2022"
+  },
+  "notPublic": [
+    "看台数量与层数",
+    "分区结构与编号",
+    "场地尺寸",
+    "排与座席编号"
+  ]
+}

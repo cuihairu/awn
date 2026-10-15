@@ -72,17 +72,15 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | One-shot verify | `docker compose -f deploy/docker-compose.yml up -d --build` → `curl -s http://127.0.0.1:18080/actuator/health` returns `UP` | Smoke + details: `deploy/README.md` |
 
 
-## 本地测试口径
+## Local test scope
 
-CI 与本地开发按改动面三路分流——改一行文档不该全量编译。Maven 版本经 wrapper 钉定（`./mvnw`，3.10.0，首次运行自动下载），本地与 CI 一致。
+CI and local dev route by change surface — a one-line docs edit should not trigger a full build. The Maven version is pinned by wrapper (`./mvnw`, 3.10.0, auto-downloaded on first run), identical locally and in CI.
 
-1. **文档改动**（`*.md`、`docs/**`、图片）：不编译。主 CI workflow 的
-   `paths-ignore` 已跳过这些路径。
-2. **代码改动**：只跑改动子集，不全量。
-   - `./mvnw -pl <改动模块> -am test`
-   - `pnpm --filter @awn/<包> test`
-3. **全量**（`./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`）：仅以下情形触发——pom.xml / pnpm-lock.yaml / package.json、
-   `.github/**`、Docker/Compose 配置、发布前。
+1. **Docs-only changes** (`*.md`, `docs/**`, images): no compilation. The main CI workflow's `paths-ignore` already skips these paths.
+2. **Code changes**: run only the changed subset, not the full suite.
+   - `./mvnw -pl <changed-module> -am test`
+   - `pnpm --filter @awn/<pkg> test`
+3. **Full suite** (`./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am`): triggered only for pom.xml / pnpm-lock.yaml / package.json, `.github/**`, Docker/Compose config, or before release.
 
 ## Implementation phases
 

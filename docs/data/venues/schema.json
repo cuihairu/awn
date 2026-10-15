@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "AWN venue layout sample record (venue-level public facts only)",
+  "description": "场馆级样本记录：只收录公开可查的场馆级事实（容量口径、看台/包厢数量、场地尺寸、面积、年份、未公开项清单）。不得包含分区编号、排座编号等未公开或自行臆造的座席级数据；不得复制第三方仓的数据文件。校验见同目录 validate.mjs。",
+  "type": "object",
+  "required": ["id", "name", "city", "type", "capacity", "stands", "years", "notPublic"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "kebab-case 唯一标识，必须与文件名一致"
+    },
+    "name": { "type": "object", "required": ["zh", "en"], "properties": { "zh": { "type": "string" }, "en": { "type": "string" } } },
+    "city": { "type": "object", "required": ["zh", "en"], "properties": { "zh": { "type": "string" }, "en": { "type": "string" } } },
+    "type": { "type": "string", "enum": ["FOOTBALL_STADIUM", "INDOOR_ARENA"] },
+    "priority": { "type": "integer", "minimum": 1, "description": "执行单给定的采集优先级" },
+    "boundaryCase": { "type": "string", "description": "该样本用于验证哪个模型边界" },
+    "aliases": { "type": "array", "items": { "type": "string" } },
+    "capacity": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["value", "scope", "note", "source", "accessed"],
+        "properties": {
+          "value": { "type": "integer", "exclusiveMinimum": 0 },
+          "scope": { "type": "string", "enum": ["OVERALL", "SPORT_EVENT", "ART_EVENT"] },
+          "note": { "type": "string" },
+          "source": { "type": "string", "pattern": "^https?://" },
+          "accessed": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+        }
+      }
+    },
+    "stands": {
+      "type": "object",
+      "required": ["count", "naming"],
+      "properties": {
+        "count": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+        "naming": { "type": "string", "description": "公开条目给出的看台命名方式；未公开一律 NOT_PUBLIC" },
+        "note": { "type": "string" },
+        "source": { "type": "string" },
+        "accessed": { "type": "string" }
+      }
+    },
+    "boxes": {
+      "type": "object",
+      "required": ["count"],
+      "properties": { "count": { "type": "integer", "minimum": 0 }, "note": { "type": "string" } }
+    },
+    "field": {
+      "type": "object",
+      "required": ["shape", "source", "accessed"],
+      "properties": {
+        "shape": { "type": "string", "enum": ["RECTANGLE", "ELLIPSE", "NOT_PUBLIC"] },
+        "lengthM": { "type": "number", "exclusiveMinimum": 0 },
+        "widthM": { "type": "number", "exclusiveMinimum": 0 },
+        "note": { "type": "string" },
+        "evidence": { "type": "string", "enum": ["VENUE_SOURCE", "TYPE_DEFAULT"], "description": "TYPE_DEFAULT = 该条为类型级参照值，非本场馆独立取证" },
+        "source": { "type": "string" },
+        "accessed": { "type": "string" }
+      }
+    },
+    "floor": {
+      "type": "object",
+      "required": ["shape", "source", "accessed"],
+      "properties": {
+        "areaM2": { "oneOf": [{ "type": "number", "exclusiveMinimum": 0 }, { "type": "null" }] },
+        "shape": { "type": "string" },
+        "surface": { "type": "string" },
+        "note": { "type": "string" },
+        "source": { "type": "string" },
+        "accessed": { "type": "string" }
+      }
+    },
+    "areas": {
+      "type": "object",
+      "properties": { "siteM2": { "type": "number", "exclusiveMinimum": 0 }, "buildingM2": { "type": "number", "exclusiveMinimum": 0 } }
+    },
+    "years": { "type": "object", "minProperties": 1 },
+    "notPublic": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "该样本明确未公开的字段清单，用于登记模型缺口，不得省略"
+    }
+  }
+}
