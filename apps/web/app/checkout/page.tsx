@@ -318,7 +318,7 @@ function CheckoutFlow() {
                   <span className="price price-yuan num">{formatMinor(line.product.unitPrice)}</span>
                   <span className="num">{line.seatNos.length} 座</span>
                   <Link
-                    className="btn btn-sm btn-ghost"
+                    className="btn btn--ghost"
                     href={`/sessions/${encodeURIComponent(sessionId)}#seats-${line.product.productCode}`}
                   >
                     重新选座
