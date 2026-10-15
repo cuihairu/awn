@@ -96,7 +96,7 @@
 - [x] P05 卖家取消挂牌（LISTED → DELISTED；RESERVED/SOLD 不可撤，撤下后凭证行不可再下单）— a418f39（delist 域守卫 + facade）；守卫测试 `sellerDelistGuards`（撤后下单被拒 / 预留中拒绝 / 成交后拒绝 / 拒绝后无残余 / 未知挂牌 NotFound）随本提交补
   - 余项：`delist` 无卖家归属校验（调用方只传 listingNo），随 HTTP 卖家端点落地时补 sellerNo 归属守卫
 - [x] P05 争议处理（买卖双方争议受理与裁决）— 77418bf：设计先行 `docs/architecture/dispute-handling.md`（争议单模型 / 状态机 / 裁决权限 / 边界），实现落在 awn-order 模块（waitlist 先例）+ V22__order_disputes.sql；状态机 OPEN→（受理）UNDER_REVIEW→（裁决）RESOLVED，买家可撤回未受理争议（WITHDRAWN 终态），部分唯一索引兜底同订单至多一张在途争议；开单守卫 = 订单本人 + PAID/FULFILLING/FULFILLED + REFUND 金额≤订单应付 + 凭证 URL 受控域白名单，卖家归属按凭证行快照（ListingView 增 sellerId）；裁决权限收敛在 `/api/v1/admin/disputes/**`（X-Admin-Token，买家面无任何裁决入口），裁决三种结论并留痕 decidedBy/decidedAt，裁决不动钱（退款走既有退款流、重新交付走履约面）；测试 `DisputeModuleTests` 12 例 + 错误码守卫新增 DISPUTE_NOT_FOUND / DISPUTE_CONFLICT（26 码），后端全量 268 例绿
-  - 余项：`docs/api/contracts.md` 争议端点段未补（该文件在会话内被专场内容改动占用，落库后一并补）；买家争议入口 UI（web 订单页后续迭代）；卖家回执 / 申辩随 HTTP 卖家端点落地（与上条 delist 归属校验同批）；裁决 REFUND_APPROVED 后的退款执行联动
+  - 余项：~~contracts.md 争议端点段~~ 已补（5d5b55e）；~~买家争议入口 UI~~ 已落地（7bd8312，订单页争议区：开单/列表/撤回 + `lib/disputes.ts` 守卫镜像自检，演示身份读 localStorage `DEMO_USER_KEY`；测试 dispute.test.ts 6 例 + disputes.test.ts 15 例，`next build` 绿）；卖家回执 / 申辩随 HTTP 卖家端点落地（与上条 delist 归属校验同批）；裁决 REFUND_APPROVED 后的退款执行联动
 
 ### 公开 HTTP 端点缺口（contracts.md 已列）
 - [x] 活动/场次/情报公开读端点（GET /events、/events/{eventId}、/sessions/{sessionId}、/intelligence/events/{eventId}/prices）— 7c81622；PublicEventApiTests 13 例
