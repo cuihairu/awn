@@ -43,6 +43,12 @@ async function readJson<T>(res: Response): Promise<T> {
  * 支付创建只传渠道，金额/币种取订单快照（任何端不得凭前端参数确认支付成功）。
  */
 
+/** 观演人实名（请求）：一票一证，提供时数量必须等于行 quantity */
+export interface AttendeePayload {
+  name: string
+  idNumber: string
+}
+
 /** 订单行来源三选一：数量型走 poolCode，凭证型走 listingNo，座位型走 seatNo */
 export interface OrderLinePayload {
   poolCode: string | null
@@ -56,6 +62,11 @@ export interface OrderLinePayload {
   unitPrice: number
   discountAmount: number
   feeAmount: number
+  /**
+   * 逐票实名（可选）。提供时数量必须等于 quantity（空数组会被后端按数量不符拒绝 400）；
+   * 同一场次同一证件号限 1 张（本单内与跨单均判），冲突 → 409 ORDER_CONFLICT。
+   */
+  attendees?: AttendeePayload[] | null
 }
 
 export interface OrderCreatePayload {
@@ -91,6 +102,14 @@ export interface OrderItemView {
   listingNo: string | null
   unitNo: string | null
   seatNo: string | null
+  /** 逐票实名；证件号为服务端脱敏值（原文只在库里），无实名订单为空数组 */
+  attendees: AttendeeView[]
+}
+
+/** 观演人实名（读）：idNumber 已是服务端脱敏值，客户端不得反推或二次加工 */
+export interface AttendeeView {
+  name: string
+  idNumber: string
 }
 
 export interface OrderView {

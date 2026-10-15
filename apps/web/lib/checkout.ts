@@ -1,4 +1,5 @@
 import type {
+  AttendeeView,
   FulfillmentStatus,
   OrderItemView,
   OrderLinePayload,
@@ -144,6 +145,132 @@ export function fulfillmentStatusLabel(status: string): string {
 }
 
 /* ------------------------------------------------------------------ *
+ * 观演人实名（一票一证，docs/api/contracts.md「观演人实名（一票一证）」）
+ * ------------------------------------------------------------------ */
+
+/** 观演人表单行（与后端 AttendeeCommand 同字段名） */
+export interface AttendeeInput {
+  name: string
+  idNumber: string
+}
+
+/** 表单行表：键为票档编码（数量行）或「票档编码:座位号」（座位行） */
+export type AttendeeRecord = Record<string, AttendeeInput[]>
+
+/** 后端字段上限（AttendeeCommand：姓名 ≤64、证件号 ≤32），前端先挡一次 */
+export const ATTENDEE_NAME_MAX = 64
+export const ATTENDEE_ID_NO_MAX = 32
+
+const EMPTY_ATTENDEE: AttendeeInput = { name: '', idNumber: '' }
+
+/** 表单行键：数量行按票档，座位行按「票档:座位号」（同票档多座互不覆盖） */
+export function attendeeRowKey(productCode: string, seatNo?: string): string {
+  return seatNo ? `${productCode}:${seatNo}` : productCode
+}
+
+/** 该行应渲染的观演人行：补齐到票数并保留已填内容（不改原记录） */
+export function attendeeRowsFor(
+  record: AttendeeRecord,
+  key: string,
+  count: number,
+): AttendeeInput[] {
+  const rows = record[key] ?? []
+  return Array.from({ length: Math.max(0, count) }, (_, i) => rows[i] ?? EMPTY_ATTENDEE)
+}
+
+/** 改某一行的某个字段（不可变更新） */
+export function setAttendeeRow(
+  record: AttendeeRecord,
+  key: string,
+  index: number,
+  patch: Partial<AttendeeInput>,
+): AttendeeRecord {
+  const rows = attendeeRowsFor(record, key, index + 1).map((row, i) =>
+    i === index ? { ...row, ...patch } : row,
+  )
+  return { ...record, [key]: rows }
+}
+
+const isBlank = (value: string | undefined) => !value || value.trim() === ''
+
+const rowEmpty = (row: AttendeeInput) => isBlank(row.name) && isBlank(row.idNumber)
+
+/** 已填行集合的逐行校验：缺字段 / 超长各给首条原因（行号从 1 起，与页面标签一致） */
+function incompleteReason(rows: AttendeeInput[], label: string): string | null {
+  if (rows.every(rowEmpty)) return null
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]
+    if (isBlank(row.name)) return `${label}观演人 ${i + 1} 请填写姓名`
+    if (isBlank(row.idNumber)) return `${label}观演人 ${i + 1} 请填写证件号`
+    if (row.name.trim().length > ATTENDEE_NAME_MAX)
+      return `${label}观演人 ${i + 1} 姓名过长（最多 ${ATTENDEE_NAME_MAX} 字）`
+    if (row.idNumber.trim().length > ATTENDEE_ID_NO_MAX)
+      return `${label}观演人 ${i + 1} 证件号过长（最多 ${ATTENDEE_ID_NO_MAX} 位）`
+  }
+  return null
+}
+
+/**
+ * 观演人表单自检；返回首条阻塞原因，无阻塞返回 null。
+ * 与后端同口径：实名可选（不填则整单不带 attendees）、一票一证（行数=票数）、
+ * 同场次同证件限 1 张（无场次的行不参与判重）、字段长度上限。
+ * 重复证件最终由后端 409 裁决，这里只做同口径先挡。
+ */
+export function validateAttendees(
+  record: AttendeeRecord,
+  cart: CartLine[],
+  seatCart: SeatCartLine[],
+): string | null {
+  const seen = new Set<string>()
+  const lines = [
+    ...cart.map((line) => ({
+      key: attendeeRowKey(line.product.productCode),
+      count: line.quantity,
+      label: `「${line.product.name}」`,
+      sessionId: line.product.sessionId ?? '',
+    })),
+    ...seatCart.flatMap((line) =>
+      [...new Set(line.seatNos)]
+        .filter((seatNo) => seatNo.trim() !== '')
+        .map((seatNo) => ({
+          key: attendeeRowKey(line.product.productCode, seatNo),
+          count: 1,
+          label: `「${line.product.name} ${seatNo}」`,
+          sessionId: line.product.sessionId ?? '',
+        })),
+    ),
+  ]
+  for (const line of lines) {
+    const rows = attendeeRowsFor(record, line.key, line.count)
+    const incomplete = incompleteReason(rows, line.label)
+    if (incomplete) return incomplete
+    // 无场次（sessionId 空）与后端同口径：不参与同场次判重
+    if (isBlank(line.sessionId)) continue
+    for (const row of rows) {
+      if (rowEmpty(row)) continue
+      const fingerprint = `${line.sessionId}|${row.idNumber.trim()}`
+      if (seen.has(fingerprint)) return '同一观演人证件号在本单重复：本场次同一证件限 1 张'
+      seen.add(fingerprint)
+    }
+  }
+  return null
+}
+
+/**
+ * 该行的实名载荷：整行未填 → null（实名可选，后端把空数组判为数量不符 400）；
+ * 填了一半 → 同样 null（页面已被 validateAttendees 阻塞，不补发非法载荷）。
+ */
+function attendeePayload(
+  record: AttendeeRecord,
+  key: string,
+  count: number,
+): AttendeeInput[] | null {
+  const rows = attendeeRowsFor(record, key, count)
+  if (rows.every(rowEmpty) || incompleteReason(rows, '') !== null) return null
+  return rows.map((row) => ({ name: row.name.trim(), idNumber: row.idNumber.trim() }))
+}
+
+/* ------------------------------------------------------------------ *
  * 购物车
  * ------------------------------------------------------------------ */
 
@@ -188,9 +315,9 @@ export function cartTotalQuantity(cart: CartLine[]): number {
 
 /**
  * 购物车 → 下单行（数量型）：poolCode 必填，客户端只传单价与优惠，
- * 不传总价（服务端按同一服务端口径重算）。
+ * 不传总价（服务端按同一服务端口径重算）；实名行按票档键挂 attendees（一票一证）。
  */
-export function toOrderLines(cart: CartLine[]): OrderLinePayload[] {
+export function toOrderLines(cart: CartLine[], attendees: AttendeeRecord = {}): OrderLinePayload[] {
   return cart.map((line) => ({
     poolCode: line.product.poolCode ?? null,
     listingNo: null,
@@ -203,6 +330,7 @@ export function toOrderLines(cart: CartLine[]): OrderLinePayload[] {
     unitPrice: line.product.unitPrice,
     discountAmount: 0,
     feeAmount: 0,
+    attendees: attendeePayload(attendees, attendeeRowKey(line.product.productCode), line.quantity),
   }))
 }
 
@@ -230,9 +358,13 @@ export interface SeatCartLine {
 /**
  * 座位购物车 → 下单行（座位型）：每座独立成行且 quantity=1，
  * 只给 seatNo，poolCode / listingNo 保持 null（服务端三路径互斥校验）。
- * 去重与空串过滤：座位图选区可重复点选，重复提交同一座位会被判冲突。
+ * 去重与空串过滤：座位图选区可重复点选，重复提交同一座位会被判冲突；
+ * 实名按「票档:座位号」键逐座挂 attendees。
  */
-export function toSeatOrderLines(seatCart: SeatCartLine[]): OrderLinePayload[] {
+export function toSeatOrderLines(
+  seatCart: SeatCartLine[],
+  attendees: AttendeeRecord = {},
+): OrderLinePayload[] {
   const lines: OrderLinePayload[] = []
   for (const { product, seatNos } of seatCart) {
     const unique = [...new Set(seatNos)].filter((seatNo) => seatNo.trim() !== '')
@@ -249,6 +381,7 @@ export function toSeatOrderLines(seatCart: SeatCartLine[]): OrderLinePayload[] {
         unitPrice: product.unitPrice,
         discountAmount: 0,
         feeAmount: 0,
+        attendees: attendeePayload(attendees, attendeeRowKey(product.productCode, seatNo), 1),
       })
     }
   }
@@ -318,6 +451,15 @@ export interface QuoteRow {
   name: string
   quantity: number
   lineTotal: string
+}
+
+/**
+ * 订单页实名展示：证件号用服务端下发的脱敏值原样呈现，
+ * 前端不再加工（本地二次脱敏只会让展示与后端口径漂移）。
+ */
+export function attendeesLabel(attendees: AttendeeView[] | null | undefined): string {
+  if (!attendees || attendees.length === 0) return ''
+  return attendees.map((a) => `${a.name} ${a.idNumber}`).join('、')
 }
 
 export function quoteRows(order: OrderView): QuoteRow[] {

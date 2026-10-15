@@ -18,15 +18,20 @@ import {
   DEMO_USER_KEY,
   MAX_TICKETS_PER_LINE,
   addToCart,
+  attendeeRowKey,
+  attendeeRowsFor,
   cartTotalQuantity,
   formatMinor,
   newIdempotencyKey,
   quoteTotals,
+  setAttendeeRow,
   setQuantity,
   seatCartQuantity,
   toOrderLines,
   toSeatOrderLines,
+  validateAttendees,
   validateCheckout,
+  type AttendeeRecord,
   type CartLine,
   type SeatCartLine,
 } from '../../lib/checkout'
@@ -44,7 +49,9 @@ import {
  * - 金额一律取服务端报价（POST /checkout/quote 不扣库存），下单时后端重算并原子预留；
  * - 幂等键在一次结算尝试内固定，改购物车后换新键，防重复下单又不误判冲突；
  * - 座位选区在 /sessions/{id} 选出后随本页带入（sessionStorage 按场次暂存，
- *   提交时每座一行由后端原子预留），观演人实名后端契约未提供，不渲染假表单。
+ *   提交时每座一行由后端原子预留）；
+ * - 观演人实名按票逐行填写（一票一证，docs/api/contracts.md「观演人实名」）：
+ *   实名可选，不填则整单不带 attendees；证件号只发原文一次，展示脱敏由服务端下发。
  */
 
 const STEPS = ['选场次', '票档/数量', '报价', '下单', '支付', '出票'] as const
@@ -60,6 +67,7 @@ function CheckoutFlow() {
   const [session, setSession] = useState<SessionView | null>(null)
   const [products, setProducts] = useState<ProductListItem[]>([])
   const [cart, setCart] = useState<CartLine[]>([])
+  const [attendees, setAttendees] = useState<AttendeeRecord>({})
   const [seatSelection, setSeatSelection] = useState<SeatSelection>({})
   const [quote, setQuote] = useState<QuoteView | null>(null)
   const [userId, setUserId] = useState('')
@@ -111,22 +119,27 @@ function CheckoutFlow() {
       .map(([productCode, seatNos]) => ({ product: byCode.get(productCode)!, seatNos }))
   }, [products, seatSelection])
 
-  /** 全部下单行：数量型 + 座位型（每座一行），报价与提交同源 */
-  const orderLines = useMemo(
+  /** 报价行：数量型 + 座位型（每座一行），不带实名（报价只算钱，实名不影响金额） */
+  const quoteLines = useMemo(
     () => [...toOrderLines(cart), ...toSeatOrderLines(seatCart)],
     [cart, seatCart],
+  )
+  /** 提交行：同一批行挂上逐票实名（一票一证，不填则 attendees 为 null） */
+  const orderLines = useMemo(
+    () => [...toOrderLines(cart, attendees), ...toSeatOrderLines(seatCart, attendees)],
+    [cart, seatCart, attendees],
   )
   const totalTickets = cartTotalQuantity(cart) + seatCartQuantity(seatCart)
 
   /** 购物车 / 座位车变化即重算服务端报价；报价失败不阻塞选择，只是不展示金额 */
   useEffect(() => {
     const blocker = validateCheckout(cart, seatCart)
-    if (blocker || orderLines.length === 0) {
+    if (blocker || quoteLines.length === 0) {
       setQuote(null)
       return
     }
     let alive = true
-    quoteCheckout({ currency: 'CNY', lines: orderLines })
+    quoteCheckout({ currency: 'CNY', lines: quoteLines })
       .then((q) => {
         if (alive) setQuote(q)
       })
@@ -136,17 +149,26 @@ function CheckoutFlow() {
     return () => {
       alive = false
     }
-  }, [cart, seatCart, orderLines])
+  }, [cart, seatCart, quoteLines])
 
-  /** 改购物车即换幂等键：同键不同内容后端会判冲突 */
+  /** 改购物车即换幂等键：同键不同内容后端会判冲突；实名行随票数裁剪或补齐 */
   const mutateCart = (next: CartLine[]) => {
     setCart(next)
     setIdempotencyKey(newIdempotencyKey())
     setSubmitError(null)
+    setAttendees((prev) =>
+      next.reduce<AttendeeRecord>((record, line) => {
+        const key = attendeeRowKey(line.product.productCode)
+        return record[key]
+          ? { ...record, [key]: attendeeRowsFor(record, key, line.quantity) }
+          : record
+      }, prev),
+    )
   }
 
   const totals = useMemo(() => quoteTotals(quote), [quote])
-  const blocker = validateCheckout(cart, seatCart)
+  // 票档/座位自检 + 观演人实名自检（同一证件重复最终由后端 409 裁决，这里先挡）
+  const blocker = validateCheckout(cart, seatCart) ?? validateAttendees(attendees, cart, seatCart)
   const userIdOk = userId.trim().length > 0
   /** 已带入选座的票档编码：这些票档不渲染数量步进器（座位 1:1，不按数量买） */
   const seatProductCodes = useMemo(
@@ -179,9 +201,11 @@ function CheckoutFlow() {
               ? '座位已被抢占或与所选票档不符，请返回座位图重新选座'
               : err.code === 'SEAT_NOT_FOUND'
                 ? '所选座位已失效，请返回座位图重新选座'
-                : err.code === 'IDEMPOTENCY_CONFLICT'
-                  ? '提交内容已变更，请重新提交'
-                  : `下单失败（${err.code}），请稍后重试`,
+                : err.code === 'ORDER_CONFLICT'
+                  ? '本场次同一证件限 1 张：该证件号在本单重复或已有订单，请修改观演人后重试'
+                  : err.code === 'IDEMPOTENCY_CONFLICT'
+                    ? '提交内容已变更，请重新提交'
+                    : `下单失败（${err.code}），请稍后重试`,
         )
       } else {
         setSubmitError('下单失败，请稍后重试')
@@ -343,12 +367,106 @@ function CheckoutFlow() {
           </div>
 
           <div className="sunken" style={{ marginTop: 16, textAlign: 'left' }}>
-            <strong>座位与实名</strong>
-            <p className="hint">
-              {seatCart.length > 0
-                ? `已带入 ${seatCartQuantity(seatCart)} 个选座（场次页暂存，提交订单时后端原子预留，下单成功自动清除）。`
-                : '座位票请先在场次页座位图选座，选区会带入本页随订单提交。'}
-              观演人实名后端契约暂未提供，本页不渲染无法提交的表单。
+            <strong>观演人实名（一票一证）</strong>
+            {cart.length === 0 && seatCart.length === 0 && (
+              <p className="hint">请先选择票档或座位，再填写观演人信息。</p>
+            )}
+            {cart.map((line) => (
+              <div key={line.product.productCode} style={{ marginTop: 8 }}>
+                <p className="hint" style={{ margin: '4px 0' }}>
+                  {line.product.name} × {line.quantity}
+                </p>
+                {attendeeRowsFor(
+                  attendees,
+                  attendeeRowKey(line.product.productCode),
+                  line.quantity,
+                ).map((row, index) => {
+                  const base = `att-${line.product.productCode}-${index}`
+                  return (
+                    <div key={index} className="row" style={{ gap: 12 }}>
+                      <div className="field" style={{ flex: 1 }}>
+                        <label htmlFor={`${base}-name`}>观演人 {index + 1}</label>
+                        <input
+                          id={`${base}-name`}
+                          value={row.name}
+                          autoComplete="off"
+                          onChange={(e) =>
+                            setAttendees(
+                              setAttendeeRow(
+                                attendees,
+                                attendeeRowKey(line.product.productCode),
+                                index,
+                                { name: e.target.value },
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="field" style={{ flex: 2 }}>
+                        <label htmlFor={`${base}-id`}>证件号</label>
+                        <input
+                          id={`${base}-id`}
+                          className="num"
+                          value={row.idNumber}
+                          autoComplete="off"
+                          onChange={(e) =>
+                            setAttendees(
+                              setAttendeeRow(
+                                attendees,
+                                attendeeRowKey(line.product.productCode),
+                                index,
+                                { idNumber: e.target.value },
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+            {seatCart.map((line) =>
+              [...new Set(line.seatNos)].filter((seatNo) => seatNo.trim() !== '').map((seatNo) => {
+                const key = attendeeRowKey(line.product.productCode, seatNo)
+                const row = attendeeRowsFor(attendees, key, 1)[0]
+                const base = `att-${line.product.productCode}-${seatNo}`
+                return (
+                  <div key={key} style={{ marginTop: 8 }}>
+                    <div className="row" style={{ gap: 12 }}>
+                      <div className="field" style={{ flex: 1 }}>
+                        <label htmlFor={`${base}-name`}>观演人 · {line.product.name} {seatNo}</label>
+                        <input
+                          id={`${base}-name`}
+                          value={row.name}
+                          autoComplete="off"
+                          onChange={(e) =>
+                            setAttendees(setAttendeeRow(attendees, key, 0, { name: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="field" style={{ flex: 2 }}>
+                        <label htmlFor={`${base}-id`}>证件号</label>
+                        <input
+                          id={`${base}-id`}
+                          className="num"
+                          value={row.idNumber}
+                          autoComplete="off"
+                          onChange={(e) =>
+                            setAttendees(setAttendeeRow(attendees, key, 0, { idNumber: e.target.value }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              }),
+            )}
+            <p className="hint" style={{ marginTop: 8 }}>
+              {seatCart.length > 0 &&
+                `已带入 ${seatCartQuantity(seatCart)} 个选座（场次页暂存，提交订单时后端原子预留，下单成功自动清除）。`}
+              实名可选，不填则整单不带实名；证件号仅用于实名校验，展示时脱敏，提交后不可修改。本场次同一证件限
+              1 张。
             </p>
           </div>
         </section>

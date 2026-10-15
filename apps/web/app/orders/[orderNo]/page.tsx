@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
   ApiError,
   cancelOrder,
@@ -24,6 +24,7 @@ import {
 } from '@awn/api-client'
 import {
   DEMO_USER_KEY,
+  attendeesLabel,
   canPay,
   canRetryPayment,
   formatCountdown,
@@ -343,12 +344,21 @@ export default function OrderDetailPage() {
           </thead>
           <tbody>
             {order.items.map((item) => (
-              <tr key={item.productId}>
-                <td>{item.productNameSnapshot}</td>
-                <td className="num">{formatMinor(item.unitPrice)}</td>
-                <td className="num">{item.quantity}</td>
-                <td className="num">{formatMinor(item.lineTotal)}</td>
-              </tr>
+              <Fragment key={item.seatNo ? `${item.productId}:${item.seatNo}` : item.productId}>
+                <tr>
+                  <td>{item.productNameSnapshot}</td>
+                  <td className="num">{formatMinor(item.unitPrice)}</td>
+                  <td className="num">{item.quantity}</td>
+                  <td className="num">{formatMinor(item.lineTotal)}</td>
+                </tr>
+                {item.attendees?.length > 0 && (
+                  <tr>
+                    <td colSpan={4} className="hint" style={{ paddingTop: 0 }}>
+                      观演人：{attendeesLabel(item.attendees)}（证件号展示脱敏，以服务端下发为准）
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

@@ -6,6 +6,9 @@ import {
   ORDER_STATUS_LABEL_ZH,
   PAYMENT_STATUS_LABEL_ZH,
   addToCart,
+  attendeeRowKey,
+  attendeeRowsFor,
+  attendeesLabel,
   canPay,
   canRetryPayment,
   cartTotalQuantity,
@@ -23,13 +26,16 @@ import {
   paymentInFlight,
   paymentStatusLabel,
   quoteTotals,
+  setAttendeeRow,
   setQuantity,
   toOrderLines,
   toSeatOrderLines,
+  validateAttendees,
   validateCart,
   validateCheckout,
   validateSeatCart,
   seatCartQuantity,
+  type AttendeeInput,
   type CartLine,
   type SeatCartLine,
 } from './checkout'
@@ -97,6 +103,8 @@ describe('toOrderLines', () => {
         unitPrice: 168000,
         discountAmount: 0,
         feeAmount: 0,
+        // 未填实名 → null（后端把空数组判为数量不符 400，绝不发空数组）
+        attendees: null,
       },
     ])
     expect(lines[0]).not.toHaveProperty('payAmount')
@@ -362,4 +370,129 @@ describe('amount formatting', () => {
     ).toEqual({ total: '3,360.00', discount: '20.00', fee: '48.00', pay: '3,388.00' })
   })
 
+})
+
+/**
+ * 观演人实名（docs/api/contracts.md「观演人实名（一票一证）」）：
+ * 一票一证（提供时数量必须等于行数量）、同场次同证件限 1 张、姓名/证件号长度上限、
+ * 不填实名则整行不带 attendees（空数组会被后端判数量不符 400）。
+ */
+describe('attendee rows', () => {
+  const attendee = (overrides: Partial<AttendeeInput> = {}): AttendeeInput => ({
+    name: '张三',
+    idNumber: '11010119900307861X',
+    ...overrides,
+  })
+
+  it('keys a quantity line by product and a seat line by product plus seat', () => {
+    expect(attendeeRowKey('p-1')).toBe('p-1')
+    expect(attendeeRowKey('p-1', 'SEAT-A-1-05')).toBe('p-1:SEAT-A-1-05')
+    // 同票档两个座位互不覆盖
+    expect(attendeeRowKey('p-1', 'SEAT-A-1-06')).not.toBe(attendeeRowKey('p-1', 'SEAT-A-1-05'))
+  })
+
+  it('pads rows to the ticket count and keeps what the buyer already typed', () => {
+    const one = { 'p-1': [attendee()] }
+    expect(attendeeRowsFor(one, 'p-1', 2)).toEqual([attendee(), { name: '', idNumber: '' }])
+    expect(attendeeRowsFor(one, 'p-1', 1)).toEqual([attendee()])
+    expect(attendeeRowsFor(one, 'p-2', 2)).toEqual([
+      { name: '', idNumber: '' },
+      { name: '', idNumber: '' },
+    ])
+  })
+
+  it('updates a single field without mutating the record', () => {
+    const rows = { 'p-1': [attendee(), { name: '', idNumber: '' }] }
+    const next = setAttendeeRow(rows, 'p-1', 1, { name: '李四' })
+    expect(next['p-1'][1]).toEqual({ name: '李四', idNumber: '' })
+    expect(rows['p-1'][1]).toEqual({ name: '', idNumber: '' })
+  })
+
+  it('accepts an all-empty form as no real name (backend treats attendees as optional)', () => {
+    expect(validateAttendees({}, cartOf([{ product: product(), quantity: 2 }]), [])).toBeNull()
+    // 有行但全空 = 没填，同样视为不提交实名
+    const blank = { 'p-1': [{ name: '', idNumber: '' }, { name: '', idNumber: '' }] }
+    expect(validateAttendees(blank, cartOf([{ product: product(), quantity: 2 }]), [])).toBeNull()
+  })
+
+  it('requires every row once the buyer starts filling the form', () => {
+    const cart = cartOf([{ product: product(), quantity: 2 }])
+    const partial = { 'p-1': [attendee(), { name: '', idNumber: '' }] }
+    expect(validateAttendees(partial, cart, [])).toContain('观演人 2')
+    // 只填了姓名没填证件号同样阻塞
+    const half = { 'p-1': [attendee(), { name: '李四', idNumber: '' }] }
+    expect(validateAttendees(half, cart, [])).toContain('证件号')
+  })
+
+  it('checks seat rows the same way, one attendee per seat', () => {
+    const seatCart: SeatCartLine[] = [{ product: product(), seatNos: ['SEAT-A-1-05'] }]
+    const filled = { 'p-1:SEAT-A-1-05': [attendee()] }
+    expect(validateAttendees(filled, [], seatCart)).toBeNull()
+    const partial = { 'p-1:SEAT-A-1-05': [{ name: '', idNumber: '11010119900307861X' }] }
+    expect(validateAttendees(partial, [], seatCart)).toContain('观演人')
+  })
+
+  it('rejects duplicate ids inside one session but allows them without a session', () => {
+    const cart = cartOf([{ product: product(), quantity: 1 }])
+    const dup = {
+      'p-1': [attendee()],
+      'p-2': [attendee()],
+    }
+    const two = cartOf([
+      { product: product(), quantity: 1 },
+      { product: product({ productCode: 'p-2' }), quantity: 1 },
+    ])
+    expect(validateAttendees(dup, two, [])).toContain('同一证件限 1 张')
+    // 无场次（sessionId 空）不与后端同场次唯一口径冲突，不前端误判
+    const noSession = cartOf([
+      { product: product({ sessionId: '' }), quantity: 1 },
+      { product: product({ productCode: 'p-2', sessionId: '' }), quantity: 1 },
+    ])
+    expect(validateAttendees(dup, noSession, [])).toBeNull()
+  })
+
+  it('enforces the backend field length caps', () => {
+    const cart = cartOf([{ product: product(), quantity: 1 }])
+    const longName = { 'p-1': [attendee({ name: '张'.repeat(65) })] }
+    expect(validateAttendees(longName, cart, [])).toContain('64')
+    const longId = { 'p-1': [attendee({ idNumber: '1'.repeat(33) })] }
+    expect(validateAttendees(longId, cart, [])).toContain('32')
+  })
+
+  it('attaches trimmed attendees to quantity lines and null when left empty', () => {
+    const rows = { 'p-1': [attendee({ name: ' 张三 ' })] }
+    const lines = toOrderLines(cartOf([{ product: product(), quantity: 1 }]), rows)
+    expect(lines[0].attendees).toEqual([{ name: '张三', idNumber: '11010119900307861X' }])
+    // 不填实名整行不带 attendees：空数组会被后端按数量不符拒绝
+    expect(toOrderLines(cartOf([{ product: product(), quantity: 1 }]), {})[0].attendees).toBeNull()
+    // 填了一半（前端已阻塞）也不发非法载荷
+    const half = { 'p-1': [{ name: '张三', idNumber: '' }] }
+    expect(toOrderLines(cartOf([{ product: product(), quantity: 1 }]), half)[0].attendees).toBeNull()
+  })
+
+  it('binds one attendee to each seat line', () => {
+    const seatCart: SeatCartLine[] = [
+      { product: product(), seatNos: ['SEAT-A-1-05', 'SEAT-A-1-06'] },
+    ]
+    const rows = {
+      'p-1:SEAT-A-1-05': [attendee()],
+      'p-1:SEAT-A-1-06': [attendee({ name: '李四', idNumber: '310101199502140029' })],
+    }
+    const lines = toSeatOrderLines(seatCart, rows)
+    expect(lines.map((l) => [l.seatNo, l.attendees?.[0].name])).toEqual([
+      ['SEAT-A-1-05', '张三'],
+      ['SEAT-A-1-06', '李四'],
+    ])
+  })
+
+  it('renders masked attendees as returned by the server, never re-deriving them', () => {
+    expect(
+      attendeesLabel([
+        { name: '张三', idNumber: '110***********861X' },
+        { name: '李四', idNumber: '310***********0029' },
+      ]),
+    ).toBe('张三 110***********861X、李四 310***********0029')
+    expect(attendeesLabel([])).toBe('')
+    expect(attendeesLabel(null)).toBe('')
+  })
 })

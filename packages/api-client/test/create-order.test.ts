@@ -139,6 +139,72 @@ describe('seat order lines', () => {
   })
 })
 
+describe('attendee real-name lines', () => {
+  it('posts per-ticket attendees verbatim (one id per ticket)', async () => {
+    const attendees = [
+      { name: '张三', idNumber: '11010119900307861X' },
+      { name: '李四', idNumber: '310101199502140029' },
+    ]
+    const fetchMock = mockFetchOnce({ orderNo: 'ORD-3' })
+
+    await createOrder({
+      ...payload,
+      lines: [{ ...line, quantity: 2, attendees }],
+    })
+
+    const { body } = callOf(fetchMock)
+    // 一票一证：attendees 数量必须等于行数量（后端 400 守卫）
+    expect(body.lines[0].attendees).toEqual(attendees)
+    expect(body.lines[0].attendees).toHaveLength(body.lines[0].quantity)
+  })
+
+  it('keeps attendee-free lines free of an attendees field', async () => {
+    const fetchMock = mockFetchOnce({ orderNo: 'ORD-4' })
+    await createOrder({ ...payload, lines: [{ ...line, attendees: null }] })
+    expect(callOf(fetchMock).body.lines[0].attendees).toBeNull()
+  })
+
+  it('reads masked attendees back from the order view', async () => {
+    const fetchMock = mockFetchOnce({
+      orderNo: 'ORD-5',
+      status: 'PENDING_PAYMENT',
+      currency: 'CNY',
+      totalAmount: 168000,
+      discountAmount: 0,
+      feeAmount: 0,
+      payAmount: 168000,
+      expiresAt: null,
+      serverTime: '2026-10-15T11:00:00Z',
+      payExpiresInSeconds: 0,
+      items: [
+        {
+          poolCode: 'POOL-1',
+          listingNo: null,
+          unitNo: null,
+          seatNo: null,
+          productId: 'prod-001',
+          productNameSnapshot: '内场 A 区',
+          sessionId: 'sess-001',
+          ticketCategorySnapshot: null,
+          quantity: 1,
+          unitPrice: 168000,
+          discountAmount: 0,
+          feeAmount: 0,
+          lineTotal: 168000,
+          reservationNo: 'RES-1',
+          // 服务端脱敏值（前 3 后 4），客户端原样展示不反推
+          attendees: [{ name: '张三', idNumber: '110***********861X' }],
+        },
+      ],
+    })
+
+    const order = await getOrder('ORD-5')
+    expect(order.items[0].attendees).toEqual([
+      { name: '张三', idNumber: '110***********861X' },
+    ])
+  })
+})
+
 describe('quoteCheckout', () => {
   it('posts the same lines to the quote endpoint without an idempotency key', async () => {
     const fetchMock = mockFetchOnce({ currency: 'CNY', payAmount: 336000 })
