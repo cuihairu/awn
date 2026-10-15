@@ -764,3 +764,77 @@ export async function cancelWaitlist(
     method: 'POST',
   }).then((res) => readJson<{ canceled: boolean }>(res))
 }
+
+/**
+ * 争议（docs/api/contracts.md「争议端点」）：买家面只有开单 / 列表 / 撤回，
+ * 裁决在 /api/v1/admin/disputes/**（X-Admin-Token，此客户端不提供裁决入口）。
+ * REFUND 必填 requestedAmount ∈ (0, 订单应付]，REDELIVER 不带金额；守卫失败 409 DISPUTE_CONFLICT。
+ */
+export type DisputeReason = 'NOT_DELIVERED' | 'TICKET_INVALID' | 'DESCRIPTION_MISMATCH' | 'OTHER'
+export type DisputeRequestType = 'REFUND' | 'REDELIVER'
+export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'WITHDRAWN'
+
+export interface DisputeView {
+  disputeNo: string
+  orderNo: string
+  openedBy: number
+  sellerId: number | null
+  listingNo: string | null
+  unitNo: string | null
+  reason: DisputeReason
+  description: string
+  evidenceUrl: string | null
+  requestedResolution: DisputeRequestType
+  requestedAmount: number | null
+  status: DisputeStatus
+  resolution: string | null
+  resolutionNote: string | null
+  decidedBy: string | null
+  decidedAt: string | null
+  createdAt: string
+}
+
+export interface OpenDisputePayload {
+  userId: number
+  reason: DisputeReason
+  description: string
+  evidenceUrl: string | null
+  requestedResolution: DisputeRequestType
+  requestedAmount: number | null
+}
+
+export async function openDispute(
+  orderNo: string,
+  body: OpenDisputePayload,
+  init?: RequestInit,
+): Promise<DisputeView> {
+  return fetch(`${API_BASE}/orders/${orderNo}/disputes`, {
+    ...init,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    body: JSON.stringify(body),
+  }).then((res) => readJson<DisputeView>(res))
+}
+
+export async function listOrderDisputes(
+  orderNo: string,
+  userId: number,
+  init?: RequestInit,
+): Promise<DisputeView[]> {
+  return fetch(`${API_BASE}/orders/${orderNo}/disputes?userId=${userId}`, init).then((res) =>
+    readJson<DisputeView[]>(res),
+  )
+}
+
+export async function withdrawDispute(
+  disputeNo: string,
+  userId: number,
+  init?: RequestInit,
+): Promise<DisputeView> {
+  return fetch(`${API_BASE}/disputes/${disputeNo}/withdraw`, {
+    ...init,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    body: JSON.stringify({ userId }),
+  }).then((res) => readJson<DisputeView>(res))
+}

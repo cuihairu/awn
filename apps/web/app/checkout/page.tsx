@@ -15,6 +15,7 @@ import {
 } from '@awn/api-client'
 import { formatEventDateTime } from '../../lib/event-labels'
 import {
+  DEMO_USER_KEY,
   MAX_TICKETS_PER_LINE,
   addToCart,
   cartTotalQuantity,
@@ -48,8 +49,7 @@ import {
 
 const STEPS = ['选场次', '票档/数量', '报价', '下单', '支付', '出票'] as const
 
-/** 演示身份：无登录态时下单需要 userId，显式说明而不是伪造静默身份 */
-const DEMO_USER_KEY = 'awn-demo-user'
+/** 演示身份：无登录态时下单需要 userId，显式说明而不是伪造静默身份（键值在 lib/checkout 共享） */
 
 function CheckoutFlow() {
   const params = useSearchParams()

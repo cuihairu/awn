@@ -9,14 +9,21 @@ import {
   createPayment,
   getOrder,
   getFulfillment,
+  listOrderDisputes,
   listPayments,
   listPaymentChannels,
+  openDispute,
   retryPayment,
+  withdrawDispute,
+  type DisputeReason,
+  type DisputeRequestType,
+  type DisputeView,
   type FulfillmentView,
   type OrderView,
   type PaymentView,
 } from '@awn/api-client'
 import {
+  DEMO_USER_KEY,
   canPay,
   canRetryPayment,
   formatCountdown,
@@ -33,6 +40,31 @@ import {
   paymentInFlight,
   paymentStatusLabel,
 } from '../../../lib/checkout'
+import {
+  DISPUTE_EVIDENCE_DOMAINS,
+  canOpenDispute,
+  canWithdrawDispute,
+  disputeReasonLabel,
+  disputeResolutionLabel,
+  disputeStatusBadge,
+  disputeStatusLabel,
+  hasInFlightDispute,
+  parseYuanToFen,
+  validateDisputeForm,
+} from '../../../lib/disputes'
+
+/** 争议操作失败文案：409 冲突给出可读解释，其余按错误信封展示 */
+function disputeErrorText(prefix: string) {
+  return (err: unknown) => {
+    if (err instanceof ApiError) {
+      if (err.code === 'DISPUTE_CONFLICT') {
+        return `${prefix}：该订单已有在途争议，或与订单状态不符（后端已拒绝）。`
+      }
+      return `${prefix}（${err.code}）：${err.message}`
+    }
+    return `${prefix}，请稍后重试。`
+  }
+}
 
 /**
  * 订单页 /orders/{orderNo}（原型 web/order-*.html）：支付、支付历史、取消与履约单。
@@ -45,6 +77,12 @@ import {
  * - 失败单重试 / 换渠道只认后端 retryable，渠道编码取 GET /payments/channels，不硬编码；
  * - 支付倒计时以 serverTime 为锚点本机推算，是否超时只认后端结论；
  * - 取消只对未支付订单开放，库存预留随之释放（服务端状态机裁决）。
+ *
+ * 争议口径（docs/api/contracts.md「争议端点」）：
+ * - 买家面只有开单 / 列表 / 撤回；受理与裁决在 /api/v1/admin/disputes（X-Admin-Token），
+ *   此页不放任何裁决入口；
+ * - 开单守卫（订单状态、在途争议、非下单人）一律由后端 409 裁决，前端只做同口径自检提示；
+ * - 裁决只记结论不动钱（退款走既有退款流），页面如实呈现结论文案。
  */
 export default function OrderDetailPage() {
   const params = useParams<{ orderNo: string }>()
@@ -159,6 +197,89 @@ export default function OrderDetailPage() {
       .catch(reportError('取消失败'))
       .finally(() => setBusy(false))
   }, [load, orderNo])
+
+  // ── 争议（买家面只有开单 / 列表 / 撤回；受理与裁决在 /admin/disputes，此页不提供入口）──
+  const [disputes, setDisputes] = useState<DisputeView[]>([])
+  const [disputeSeq, setDisputeSeq] = useState(0)
+  const [userId, setUserId] = useState(0)
+  const [disputeForm, setDisputeForm] = useState<{
+    reason: DisputeReason
+    description: string
+    evidenceUrl: string
+    resolution: DisputeRequestType
+    amountYuan: string
+  }>({
+    reason: 'NOT_DELIVERED',
+    description: '',
+    evidenceUrl: '',
+    resolution: 'REFUND',
+    amountYuan: '',
+  })
+  const [disputeError, setDisputeError] = useState('')
+  const [disputeBusy, setDisputeBusy] = useState(false)
+
+  // 演示身份与结算页同键（awn-demo-user）：无登录态，不伪造静默身份
+  useEffect(() => {
+    const saved = Number(window.localStorage.getItem(DEMO_USER_KEY) ?? '')
+    setUserId(Number.isInteger(saved) && saved > 0 ? saved : 0)
+  }, [])
+
+  const demoUser = userId > 0
+  const disputeEligible = canOpenDispute(order?.status ?? '')
+  const canOpen = disputeEligible && demoUser
+  const inFlight = hasInFlightDispute(disputes)
+
+  useEffect(() => {
+    if (!canOpen) return
+    let alive = true
+    listOrderDisputes(orderNo, userId)
+      .then((list) => {
+        if (alive) setDisputes(list)
+      })
+      .catch((err: unknown) => {
+        // 缺 / 非法 userId 的 400 视为无争议可查，不当错误打扰；网络类照常展示
+        if (!alive) return
+        if (!(err instanceof ApiError && err.status === 400)) {
+          setDisputeError(disputeErrorText('争议列表加载失败')(err))
+        }
+      })
+    return () => {
+      alive = false
+    }
+  }, [canOpen, userId, orderNo, disputeSeq])
+
+  const submitDispute = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!order) return
+    setDisputeError('')
+    const invalid = validateDisputeForm(disputeForm, order.payAmount)
+    if (invalid) {
+      setDisputeError(invalid)
+      return
+    }
+    setDisputeBusy(true)
+    openDispute(orderNo, {
+      userId,
+      reason: disputeForm.reason,
+      description: disputeForm.description.trim(),
+      evidenceUrl: disputeForm.evidenceUrl.trim() || null,
+      requestedResolution: disputeForm.resolution,
+      requestedAmount:
+        disputeForm.resolution === 'REFUND' ? parseYuanToFen(disputeForm.amountYuan) : null,
+    })
+      .then(() => setDisputeSeq((seq) => seq + 1))
+      .catch((err: unknown) => setDisputeError(disputeErrorText('开争议失败')(err)))
+      .finally(() => setDisputeBusy(false))
+  }
+
+  const withdraw = (disputeNo: string) => {
+    setDisputeBusy(true)
+    setDisputeError('')
+    withdrawDispute(disputeNo, userId)
+      .then(() => setDisputeSeq((seq) => seq + 1))
+      .catch((err: unknown) => setDisputeError(disputeErrorText('撤回失败')(err)))
+      .finally(() => setDisputeBusy(false))
+  }
 
   if (loading) {
     return (
@@ -348,6 +469,148 @@ export default function OrderDetailPage() {
             <span className="num">{fulfillment.fulfillmentNo}</span>
             <span className="badge">{fulfillmentStatusLabel(fulfillment.status)}</span>
           </p>
+        </section>
+      )}
+
+      {disputeEligible && (
+        <section className="detail-section">
+          <h2>争议</h2>
+
+          {disputes.length === 0 && !inFlight && (
+            <p className="hint">该订单暂无争议记录。</p>
+          )}
+
+          {disputes.map((dispute) => (
+            <div key={dispute.disputeNo} className="group">
+              <p className="row-between">
+                <span className="num">{dispute.disputeNo}</span>
+                <span className={`badge ${disputeStatusBadge(dispute.status)}`}>
+                  {disputeStatusLabel(dispute.status)}
+                </span>
+              </p>
+              <p className="hint" style={{ margin: 0 }}>
+                {disputeReasonLabel(dispute.reason)} · 诉求：
+                {dispute.requestedResolution === 'REFUND'
+                  ? ` 退款 ${formatMinor(dispute.requestedAmount ?? 0)}`
+                  : ' 重新交付'}
+              </p>
+              <p className="hint" style={{ margin: 0 }}>{dispute.description}</p>
+              {dispute.resolution && (
+                <p className="hint" style={{ margin: 0 }}>
+                  {disputeResolutionLabel(dispute.resolution)}
+                  {dispute.resolutionNote ? ` · ${dispute.resolutionNote}` : ''}
+                  （裁决只记结论不动钱，退款执行由运营另行发起）
+                </p>
+              )}
+              {canWithdrawDispute(dispute.status) && demoUser && (
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  disabled={disputeBusy}
+                  onClick={() => withdraw(dispute.disputeNo)}
+                >
+                  撤回争议
+                </button>
+              )}
+            </div>
+          ))}
+
+          {disputeError && (
+            <p className="state state--error" role="alert">
+              {disputeError}
+            </p>
+          )}
+
+          {disputeEligible && !demoUser && (
+            <p className="hint">
+              演示环境未记录下单身份 userId（在结算页输入过会自动带入本机），暂不能开或查争议。
+            </p>
+          )}
+
+          {canOpen && !inFlight && (
+            <form onSubmit={submitDispute}>
+              <div className="field">
+                <label htmlFor="dispute-reason">争议原因</label>
+                <select
+                  id="dispute-reason"
+                  value={disputeForm.reason}
+                  onChange={(e) =>
+                    setDisputeForm((form) => ({ ...form, reason: e.target.value as DisputeReason }))
+                  }
+                >
+                  <option value="NOT_DELIVERED">未交付</option>
+                  <option value="TICKET_INVALID">票券无效</option>
+                  <option value="DESCRIPTION_MISMATCH">与描述不符</option>
+                  <option value="OTHER">其他</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="dispute-resolution">诉求</label>
+                <select
+                  id="dispute-resolution"
+                  value={disputeForm.resolution}
+                  onChange={(e) =>
+                    setDisputeForm((form) => ({
+                      ...form,
+                      resolution: e.target.value as DisputeRequestType,
+                    }))
+                  }
+                >
+                  <option value="REFUND">退款</option>
+                  <option value="REDELIVER">重新交付</option>
+                </select>
+                {disputeForm.resolution === 'REFUND' && (
+                  <input
+                    className="num"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder={`退款金额（元，不超过 ${formatMinor(order?.payAmount ?? 0)}）`}
+                    value={disputeForm.amountYuan}
+                    onChange={(e) =>
+                      setDisputeForm((form) => ({ ...form, amountYuan: e.target.value }))
+                    }
+                  />
+                )}
+              </div>
+              <div className="field">
+                <label htmlFor="dispute-description">问题描述</label>
+                <textarea
+                  id="dispute-description"
+                  rows={3}
+                  placeholder="发生了什么、期望如何解决（必填）"
+                  value={disputeForm.description}
+                  onChange={(e) =>
+                    setDisputeForm((form) => ({ ...form, description: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="dispute-evidence">凭证链接（可选）</label>
+                <input
+                  id="dispute-evidence"
+                  type="text"
+                  placeholder="https://assets.awn.site/...（平台存储域）"
+                  value={disputeForm.evidenceUrl}
+                  onChange={(e) =>
+                    setDisputeForm((form) => ({ ...form, evidenceUrl: e.target.value }))
+                  }
+                />
+                <span className="hint">
+                  只接受平台存储域（{DISPUTE_EVIDENCE_DOMAINS.join(' / ')}）或 / 起的相对路径，与后端白名单同口径。
+                </span>
+              </div>
+              <button type="submit" className="btn btn--ghost" disabled={disputeBusy}>
+                {disputeBusy ? '提交中…' : '发起争议'}
+              </button>
+              <p className="hint">
+                开单后运营受理与裁决（页面不展示裁决入口）；裁决前可撤回。
+              </p>
+            </form>
+          )}
+
+          {canOpen && inFlight && (
+            <p className="hint">该订单已有在途争议，裁决或撤回前不能重复开单。</p>
+          )}
         </section>
       )}
 

@@ -27,6 +27,9 @@ export interface CartLine {
 
 export const MAX_TICKETS_PER_LINE = 4
 
+/** 演示身份 localStorage 键：结算页写入，订单页（争议等需要 userId 的操作）读取 */
+export const DEMO_USER_KEY = 'awn-demo-user'
+
 export const ORDER_STATUS_LABEL_ZH: Record<OrderStatus, string> = {
   PENDING_PAYMENT: '待支付',
   PAID: '已支付',
