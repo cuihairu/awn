@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import site.awn.order.api.AttendeeCommand;
 import site.awn.order.api.CreateOrderCommand;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderLineCommand;
@@ -56,8 +57,17 @@ public class OrderController {
                 .map(l -> new OrderLineCommand(l.poolCode(), l.listingNo(), l.seatNo(),
                         l.productId(), l.productNameSnapshot(), l.sessionId(),
                         l.ticketCategorySnapshot(), l.quantity(), l.unitPrice(),
-                        l.discountAmount(), l.feeAmount()))
+                        l.discountAmount(), l.feeAmount(), attendees(l.attendees())))
                 .toList();
         return new CreateOrderCommand(idempotencyKey, request.userId(), request.currency(), lines);
+    }
+
+    private static List<AttendeeCommand> attendees(List<CreateOrderRequest.Attendee> attendees) {
+        if (attendees == null) {
+            return null;
+        }
+        return attendees.stream()
+                .map(a -> new AttendeeCommand(a.name(), a.idNumber()))
+                .toList();
     }
 }

@@ -1,5 +1,7 @@
 package site.awn.order.api;
 
+import java.util.List;
+
 /**
  * 订单行命令。快照字段（商品名、票档）在 Phase 02 商品 API 落地前
  * 由调用方传入，落地后改为服务端从目录读取，防止客户端伪造快照。
@@ -26,6 +28,7 @@ package site.awn.order.api;
  * @param unitPrice          单价（最小货币单位），必须 &gt;= 0
  * @param discountAmount     行优惠（最小货币单位），必须 &gt;= 0
  * @param feeAmount          行费用（最小货币单位），必须 &gt;= 0
+ * @param attendees          观演人实名（可选，一票一证：提供时数量必须等于 quantity）
  */
 public record OrderLineCommand(
         String poolCode,
@@ -38,23 +41,42 @@ public record OrderLineCommand(
         int quantity,
         long unitPrice,
         long discountAmount,
-        long feeAmount) {
+        long feeAmount,
+        List<AttendeeCommand> attendees) {
 
-    /** 数量型行的便捷构造：不指定挂牌号与座位号。 */
+    /** 数量型行的便捷构造：不指定挂牌号与座位号，不带实名。 */
     public OrderLineCommand(String poolCode, String productId, String productNameSnapshot,
                             String sessionId, String ticketCategorySnapshot, int quantity,
                             long unitPrice, long discountAmount, long feeAmount) {
         this(poolCode, null, null, productId, productNameSnapshot, sessionId,
-                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount);
+                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount, null);
     }
 
-    /** 凭证型 / 数量型通吃的全参构造（兼容既有 10 参调用点，座位号为 null）。 */
+    /** 数量型行的便捷构造：带实名（一票一证，attendees 数量必须等于 quantity）。 */
+    public OrderLineCommand(String poolCode, String productId, String productNameSnapshot,
+                            String sessionId, String ticketCategorySnapshot, int quantity,
+                            long unitPrice, long discountAmount, long feeAmount,
+                            List<AttendeeCommand> attendees) {
+        this(poolCode, null, null, productId, productNameSnapshot, sessionId,
+                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount, attendees);
+    }
+
+    /** 凭证型 / 数量型通吃的全参构造（兼容既有 10 参调用点，座位号与实名均为 null）。 */
     public OrderLineCommand(String poolCode, String listingNo, String productId,
                             String productNameSnapshot, String sessionId,
                             String ticketCategorySnapshot, int quantity,
                             long unitPrice, long discountAmount, long feeAmount) {
         this(poolCode, listingNo, null, productId, productNameSnapshot, sessionId,
-                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount);
+                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount, null);
+    }
+
+    /** 兼容既有 11 参调用点（不带实名）。 */
+    public OrderLineCommand(String poolCode, String listingNo, String seatNo, String productId,
+                            String productNameSnapshot, String sessionId,
+                            String ticketCategorySnapshot, int quantity,
+                            long unitPrice, long discountAmount, long feeAmount) {
+        this(poolCode, listingNo, seatNo, productId, productNameSnapshot, sessionId,
+                ticketCategorySnapshot, quantity, unitPrice, discountAmount, feeAmount, null);
     }
 
     public OrderLineCommand {
@@ -80,6 +102,14 @@ public record OrderLineCommand(
         }
         if (unitPrice < 0 || discountAmount < 0 || feeAmount < 0) {
             throw new IllegalArgumentException("amounts must be non-negative");
+        }
+        // 实名一票一证：提供 attendees 时逐票对应（数量必须与 quantity 一致）
+        if (attendees != null) {
+            if (attendees.size() != quantity) {
+                throw new IllegalArgumentException(
+                        "attendee count must match quantity: " + attendees.size() + " != " + quantity);
+            }
+            attendees = List.copyOf(attendees);
         }
     }
 

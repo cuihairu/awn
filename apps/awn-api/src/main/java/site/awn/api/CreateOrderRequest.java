@@ -23,6 +23,11 @@ public record CreateOrderRequest(
             int quantity,
             long unitPrice,
             long discountAmount,
-            long feeAmount) {
+            long feeAmount,
+            List<Attendee> attendees) {
+    }
+
+    /** 观演人实名（可选，一票一证：数量必须与行 quantity 一致，违反 400 / 同场次同证件 409） */
+    public record Attendee(String name, String idNumber) {
     }
 }

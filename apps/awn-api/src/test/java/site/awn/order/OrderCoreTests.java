@@ -9,10 +9,12 @@ import site.awn.inventory.api.BalanceView;
 import site.awn.inventory.api.CreatePoolCommand;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.domain.InsufficientInventoryException;
+import site.awn.order.api.AttendeeCommand;
 import site.awn.order.api.CreateOrderCommand;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderLineCommand;
 import site.awn.order.api.OrderView;
+import site.awn.order.domain.IdempotencyConflictException;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderStatus;
 import site.awn.order.infrastructure.OrderRepository;
@@ -247,6 +249,107 @@ class OrderCoreTests extends AbstractPostgresIntegrationTest {
 
         OrderView reloaded = orderFacade.orderOf(order.orderNo());
         assertThat(reloaded.items().get(0).quantity()).isEqualTo(1);
+    }
+
+    @Test
+    void attendeesBindOneTicketOneIdAndMaskOnRead() {
+        String pool = pool("ord-att", 10);
+        String sessionId = "sess-att-" + uid();
+        var line = new OrderLineCommand(pool, "prod-att", "演出 实名", sessionId, "内场票", 2, 38000, 0, 0,
+                List.of(new AttendeeCommand("张三", "11010119900307861X"),
+                        new AttendeeCommand("李四", "310101199502140029")));
+        OrderView order = orderFacade.createOrder(command("att-view-" + uid(), line));
+
+        var attendees = order.items().get(0).attendees();
+        assertThat(attendees).hasSize(2);
+        assertThat(attendees.get(0).name()).isEqualTo("张三");
+        // 证件号展示脱敏：留前 3 后 4，其余打码
+        assertThat(attendees.get(0).idNumber()).isEqualTo("110***********861X");
+        assertThat(attendees.get(1).idNumber()).isEqualTo("310***********0029");
+        // 原文落库供实名校验，读面才脱敏（按本单统计：测试库跨用例持久，禁用全局 count）
+        Integer raw = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM order_attendees a JOIN order_items i ON a.item_id = i.id "
+                        + "JOIN orders o ON i.order_id = o.id "
+                        + "WHERE o.order_no = ? AND a.id_no = '11010119900307861X'",
+                Integer.class, order.orderNo());
+        assertThat(raw).isEqualTo(1);
+    }
+
+    @Test
+    void attendeeCountMustMatchQuantity() {
+        // 一票一证：attendees 数量必须等于行数量（命令构造期守卫，HTTP 层同路径 400）
+        assertThatThrownBy(() -> new OrderLineCommand(
+                "pool-att-count", "prod-att-c", "演出 C", "sess-att-c", null, 2, 1000, 0, 0,
+                List.of(new AttendeeCommand("张三", "11010119900307861X"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("attendee count");
+    }
+
+    @Test
+    void attendeeFieldsRequired() {
+        assertThatThrownBy(() -> new AttendeeCommand("  ", "11010119900307861X"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("attendee name");
+
+        assertThatThrownBy(() -> new AttendeeCommand("张三", " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("attendee idNumber");
+    }
+
+    @Test
+    void sameIdRejectedTwiceInOneOrderSameSession() {
+        String pool = pool("ord-att-dup1", 5);
+        String idNo = "11010119900307861X";
+        var line = new OrderLineCommand(pool, "prod-att-d1", "演出 D1", "sess-att-dup-" + uid(), null, 2, 1000, 0, 0,
+                List.of(new AttendeeCommand("张三", idNo), new AttendeeCommand("张三", idNo)));
+        assertThatThrownBy(() -> orderFacade.createOrder(command("att-d1-" + uid(), line)))
+                .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    void sameIdRejectedAcrossOrdersInSameSession() {
+        String idNo = "11010119900307861X";
+        String sessionId = "sess-att-x-" + uid();
+        String poolA = pool("ord-att-x1", 5);
+        String poolB = pool("ord-att-x2", 5);
+        orderFacade.createOrder(command("att-x1-" + uid(), new OrderLineCommand(
+                poolA, "prod-att-x1", "演出 X1", sessionId, null, 1, 1000, 0, 0,
+                List.of(new AttendeeCommand("张三", idNo)))));
+
+        assertThatThrownBy(() -> orderFacade.createOrder(command("att-x2-" + uid(), new OrderLineCommand(
+                poolB, "prod-att-x2", "演出 X2", sessionId, null, 1, 1000, 0, 0,
+                List.of(new AttendeeCommand("李四", idNo))))))
+                .isInstanceOf(OrderConflictException.class);
+
+        // 同证件不同场次不受限
+        OrderView other = orderFacade.createOrder(command("att-x3-" + uid(), new OrderLineCommand(
+                poolB, "prod-att-x3", "演出 X3", "sess-att-other-" + uid(), null, 1, 1000, 0, 0,
+                List.of(new AttendeeCommand("李四", idNo)))));
+        assertThat(other.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+    }
+
+    @Test
+    void ordersWithoutAttendeesStayBackwardCompatible() {
+        String pool = pool("ord-att-legacy", 5);
+        var line = new OrderLineCommand(pool, "prod-att-l", "演出 L", "sess-att-l", null, 1, 1000, 0, 0);
+        OrderView order = orderFacade.createOrder(command("att-l-" + uid(), line));
+        assertThat(order.items().get(0).attendees()).isEmpty();
+    }
+
+    @Test
+    void attendeeChangeIsIdempotencyConflict() {
+        String pool = pool("ord-att-key", 5);
+        String key = "att-key-" + UUID.randomUUID();
+        String sessionId = "sess-att-k-" + uid();
+        var withA = new OrderLineCommand(pool, "prod-att-k", "演出 K", sessionId, null, 1, 1000, 0, 0,
+                List.of(new AttendeeCommand("张三", "11010119900307861X")));
+        var withB = new OrderLineCommand(pool, "prod-att-k", "演出 K", sessionId, null, 1, 1000, 0, 0,
+                List.of(new AttendeeCommand("李四", "11010119900307861X")));
+
+        orderFacade.createOrder(command(key, withA));
+        // 仅实名不同、行完全一致：同键不同请求仍判冲突（指纹含 attendees）
+        assertThatThrownBy(() -> orderFacade.createOrder(command(key, withB)))
+                .isInstanceOf(IdempotencyConflictException.class);
     }
 
     /** 按幂等键统计订单数（测试库跨用例持久，禁止用全局 count 断言） */

@@ -171,6 +171,21 @@ GET /api/v1/works/{workId}
   订单未知或未进入履约（未支付）→ 404 `NOT_FOUND`；
   履约单停在 `PENDING_SELLER` 直到卖家交付 + 平台核验（见 `docs/architecture/trading-model.md`）。
 
+### 观演人实名（一票一证）
+
+订单行可携带 `attendees`（观演人姓名 + 证件号，V25 迁移），原型口径见
+`docs/design/prototypes/web/purchase.html` 步骤 3：
+
+- `POST /orders` 请求行为可选 `attendees: [{"name","idNumber"}]`；提供时数量必须等于行 `quantity`
+  （一票一证，违反 → 400 `VALIDATION_FAILED`）；姓名与证件号必填、去空白后长度上限 64 / 32。
+- **同一场次同一证件至多一张**：同订单内与跨订单都校验（按行 `sessionId` 判重），
+  违反 → 409 `ORDER_CONFLICT`；未声明 `sessionId` 的行无从按场次判重，不参与该约束；
+  并发提交由 `ux_order_attendees_session_idno` 唯一索引兜底，败者同 409。
+- 读面（订单视图行内 `attendees`）证件号**脱敏**：留前 3 后 4，长度 ≤ 7 全打码；
+  原文仅落库供实名校验。无实名的订单 `attendees` 为空数组（向后兼容）。
+- 提交后不可修改（订单明细快照同一不可变口径）。
+- 幂等键请求指纹包含 `attendees`：同键不同实名 → `IDEMPOTENCY_CONFLICT`。
+
 支付与退款接口已暴露 HTTP：
 
 - `POST /api/v1/orders/{orderId}/payments`：为订单发起支付，**金额与币种由服务端取订单应付快照**，

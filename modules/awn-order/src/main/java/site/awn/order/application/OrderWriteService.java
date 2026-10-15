@@ -1,20 +1,24 @@
 package site.awn.order.application;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.ReserveInventoryCommand;
 import site.awn.inventory.api.ReservationView;
 import site.awn.marketplace.api.MarketplaceFacade;
+import site.awn.order.api.AttendeeCommand;
 import site.awn.order.api.CreateOrderCommand;
 import site.awn.order.api.OrderLineCommand;
 import site.awn.order.api.OrderView;
 import site.awn.order.domain.Order;
+import site.awn.order.domain.OrderAttendee;
 import site.awn.order.domain.OrderConflictException;
 import site.awn.order.domain.OrderItem;
 import site.awn.order.domain.OrderNotFoundException;
 import site.awn.order.domain.OrderStatus;
 import site.awn.order.domain.IdempotencyConflictException;
+import site.awn.order.infrastructure.OrderAttendeeRepository;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
 import site.awn.shared.outbox.OutboxMessageRepository;
@@ -25,8 +29,10 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,15 +52,18 @@ public class OrderWriteService {
 
     private final OrderRepository orders;
     private final OrderItemRepository items;
+    private final OrderAttendeeRepository attendeeRows;
     private final InventoryFacade inventory;
     private final MarketplaceFacade marketplace;
     private final OutboxMessageRepository outbox;
 
     OrderWriteService(OrderRepository orders, OrderItemRepository items,
+                      OrderAttendeeRepository attendeeRows,
                       InventoryFacade inventory, MarketplaceFacade marketplace,
                       OutboxMessageRepository outbox) {
         this.orders = orders;
         this.items = items;
+        this.attendeeRows = attendeeRows;
         this.inventory = inventory;
         this.marketplace = marketplace;
         this.outbox = outbox;
@@ -71,8 +80,13 @@ public class OrderWriteService {
                 throw new IdempotencyConflictException(
                         "idempotency key already used by a different request: " + command.idempotencyKey());
             }
-            return OrderReadService.toView(existing, items.findByOrderId(existing.getId()));
+            return OrderReadService.toView(existing, items.findByOrderId(existing.getId()),
+                    attendeesOf(items.findByOrderId(existing.getId())));
         }
+
+        // 2) 实名守卫（一票一证）：同场次同证件至多一张（行内查重 + 跨订单查重，
+        //    数据库唯一索引兜底并发）；未声明 sessionId 的行无从按场次判重，不参与该约束
+        validateAttendeeUniqueness(command.lines());
 
         // 2) 计算金额（服务端计算，禁止浮点；金额为最小货币单位整数）
         Amounts amounts = computeAmounts(command.lines());
@@ -142,6 +156,18 @@ public class OrderWriteService {
             item.setUnitNo(unitNos.get(i));
             item.setSeatNo(seatNos.get(i));
             items.save(item);
+            if (line.attendees() != null) {
+                for (AttendeeCommand attendee : line.attendees()) {
+                    try {
+                        attendeeRows.save(OrderAttendee.attach(
+                                item.getId(), line.sessionId(), attendee.name(), attendee.idNumber()));
+                    } catch (DataIntegrityViolationException e) {
+                        // 并发下唯一索引兜底：败者也按 409 呈现，不泄漏为 500
+                        throw new OrderConflictException(
+                                "attendee id already used for this session: " + line.sessionId());
+                    }
+                }
+            }
         }
 
         // 5) 同事务写 Outbox：事务提交则事件必然存在，Worker 才不会漏单
@@ -149,7 +175,36 @@ public class OrderWriteService {
                 payload(orderNo, order.getStatus().name(), order.getPayAmount(), order.getCurrency(),
                         order.getUserId()));
 
-        return OrderReadService.toView(order, items.findByOrderId(order.getId()));
+        return OrderReadService.toView(order, items.findByOrderId(order.getId()),
+                attendeesOf(items.findByOrderId(order.getId())));
+    }
+
+    /** 实名一票一证：同场次同证件至多一张（行内 + 跨订单；并发由唯一索引兜底转 409） */
+    private void validateAttendeeUniqueness(List<OrderLineCommand> lines) {
+        Set<String> seen = new HashSet<>();
+        for (OrderLineCommand line : lines) {
+            if (line.attendees() == null) {
+                continue;
+            }
+            String sessionId = line.sessionId();
+            if (sessionId == null || sessionId.isBlank()) {
+                continue;
+            }
+            for (AttendeeCommand attendee : line.attendees()) {
+                if (!seen.add(sessionId + "|" + attendee.idNumber())) {
+                    throw new OrderConflictException(
+                            "same attendee id not allowed twice in one session: " + sessionId);
+                }
+                if (attendeeRows.existsBySessionIdAndIdNo(sessionId, attendee.idNumber())) {
+                    throw new OrderConflictException(
+                            "attendee id already used for this session: " + sessionId);
+                }
+            }
+        }
+    }
+
+    private List<OrderAttendee> attendeesOf(List<OrderItem> lines) {
+        return attendeeRows.findByItemIdIn(lines.stream().map(OrderItem::getId).toList());
     }
 
     /**
@@ -314,7 +369,10 @@ public class OrderWriteService {
                         nvl(l.poolCode()), nvl(l.listingNo()), nvl(l.seatNo()), l.productId(),
                         nvl(l.sessionId()), nvl(l.ticketCategorySnapshot()), nvl(l.productNameSnapshot()),
                         String.valueOf(l.quantity()), String.valueOf(l.unitPrice()),
-                        String.valueOf(l.discountAmount()), String.valueOf(l.feeAmount())))
+                        String.valueOf(l.discountAmount()), String.valueOf(l.feeAmount()),
+                        l.attendees() == null ? "" : l.attendees().stream()
+                                .map(a -> a.name() + "/" + a.idNumber())
+                                .reduce((x, y) -> x + "," + y).orElse("")))
                 .sorted()
                 .forEach(l -> canonical.append('|').append(l));
         try {
