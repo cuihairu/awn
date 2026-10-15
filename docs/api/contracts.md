@@ -121,7 +121,7 @@ GET /api/v1/works/{workId}
 - `GET /api/v1/events` 仅返回 `PUBLISHED` / `COMPLETED` 活动，按开始时间倒序；
 - `GET /api/v1/events/{eventId}` 与 `GET /api/v1/sessions/{sessionId}` 对未知资源、以及父活动未发布（草稿）的场次一律 404，不泄露草稿内容；
 - `GET /api/v1/sessions/{sessionId}/seatmap` 返回场次座位图条目（`seatNo` / `productCode` / `section` / `row` / `seat` / `status`），可见性与场次详情同口径（父活动未公开 → 404 `SESSION_NOT_FOUND`）；`status` 为逐座状态机 `IN_STOCK` / `RESERVED` / `SOLD` / `DELIVERED` / `INVALID`，占座订单号不进公开面；图上「可选」仅为数据标记，实际可售以下单时后端原子预留为准；
-- 场次公开读（详情与列表）响应带 `geo`（场馆派生：场次指定场馆优先，未指定继承父活动场馆；无任何场馆为 `null`）。坐标缺失为 `null` 是正常态，客户端不得按 (0,0) 或占位坐标兜底；
+- 场次公开读（详情与列表）响应带 `geo`（场馆派生：场次指定场馆优先，未指定继承父活动场馆；无任何场馆为 `null`）。坐标缺失为 `null` 是正常态，客户端不得按 (0,0) 或占位坐标兜底；`geo` 另带位置示意图三字段（`mapImageUrl` / `mapMarkerX` / `mapMarkerY`，可各自缺省）：`mapImageUrl` 是运营提供的**非精确示意图**（首方静态图，域白名单校验，不接第三方地图 SDK），`mapMarkerX`/`mapMarkerY` 为图上标记位置（相对图片左上角的百分比 0-100，**成对出现**，与图片可各自缺省）；示意图没有地理范围，经纬度与图上位置无换算关系，客户端不得自行猜标记位置；图加载失败回退文字行，不报错占位；
 - `GET /api/v1/intelligence/events/{eventId}/prices` 返回该活动下**所有场次**的价格历史（按观测时间倒序，每条可溯源）；活动未知或未公开 → 404；场次无价格数据时返回空数组。
 
 活动发布（`DRAFT` → `PUBLISHED`）是运营动作，经 `X-Admin-Token` 鉴权暴露：`POST /api/v1/admin/events/{eventCode}/publish`（见「运营接口」）；仅草稿可发布，重复发布 → 409 `CONFLICT`，未知活动 → 404 `EVENT_NOT_FOUND`。
@@ -372,7 +372,7 @@ POST   /api/v1/admin/works/{workId}/cast
 
 图鉴运营写操作同权（`X-Admin-Token`）：建人物 / 作品草稿、发布（`DRAFT` → `PUBLISHED` 守卫，重复发布 → 409 `CONFLICT`）、给作品绑定人物身份（`roleType` / `roleName` / `billingOrder`，重复绑定 → 409）。绑定与发布校验未知资源 → 404 `PERSON_NOT_FOUND` / `WORK_NOT_FOUND`。
 
-场次场馆配置（巡回赛逐场换城市）经 `X-Admin-Token`：`GET /admin/venues` 列全部场馆；`GET /admin/events/{eventCode}/sessions` 列活动下全状态场次（响应 `geo` 为解析结果：场次场馆覆盖 → 父活动场馆 → `null`）；`POST /admin/sessions/{sessionCode}/venue`（体 `{"venueCode":...}`）挂场馆、`DELETE` 摘场馆回退继承，响应为操作后的解析 geo（无场馆时空体）。未知场次 / 场馆 → 404 `SESSION_NOT_FOUND` / `VENUE_NOT_FOUND`。
+场次场馆配置（巡回赛逐场换城市）经 `X-Admin-Token`：`GET /admin/venues` 列全部场馆；`GET /admin/events/{eventCode}/sessions` 列活动下全状态场次（响应 `geo` 为解析结果：场次场馆覆盖 → 父活动场馆 → `null`）；`POST /admin/sessions/{sessionCode}/venue`（体 `{"venueCode":...}`）挂场馆、`DELETE` 摘场馆回退继承，响应为操作后的解析 geo（无场馆时空体）。`PUT /admin/venues/{venueCode}`（体：`name`/`city`/`address`/`latitude`/`longitude`/`mapImageUrl`/`mapMarkerX`/`mapMarkerY`）为场馆配置**全量覆盖**——请求体里缺省即清空该字段，坐标与图上标记各自成对守卫（半截一律 400 `VALIDATION_FAILED`），`mapImageUrl` 域白名单校验（拒绝 → 400）。未知场次 / 场馆 → 404 `SESSION_NOT_FOUND` / `VENUE_NOT_FOUND`。
 
 铺座（座位运营入口）经 `X-Admin-Token`：`POST /admin/sessions/{sessionCode}/seats`（体
 `{"productCode","positions":[{"section","row","seat"}]}`）一次铺一个商品在同一场次下的座位，

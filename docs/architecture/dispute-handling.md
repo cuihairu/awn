@@ -186,4 +186,4 @@ CREATE INDEX ix_dispute_seller_responses_dispute
   提供执行入口——GET `/orders/{orderNo}/payments` 取成功支付单，金额预填裁决金额，
   POST `/orders/{orderNo}/refunds`（幂等键随内容变化换新，可退余额由服务端守卫，
   超额 409 `REFUND_CONFLICT`）。后端无退款列表端点，重复执行靠余额守卫拦截。
-- 争议时效（超时自动升级 / 关闭）待运营口径明确后补。
+- 争议时效：**已代决（2026-10-15，巡检单 R1015F 授权）**——不设自动时效，争议单维持现状由运营手工处置；超时自动升级 / 关闭待有真实运营口径再补（用户可事后推翻）。

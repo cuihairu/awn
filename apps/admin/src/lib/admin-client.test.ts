@@ -77,6 +77,82 @@ describe('admin client', () => {
     expect(geo).toBeNull()
   })
 
+  it('updates a venue by put with the map fields and encodes the venue code', async () => {
+    const fetchMock = mockFetchOnce({
+      venueCode: 'v 1',
+      name: '北京工人体育场',
+      city: '北京',
+      address: '朝阳工人体育场北路',
+      latitude: 39.9308,
+      longitude: 116.4435,
+      mapImageUrl: 'https://assets.awn.site/venues/gongti.png',
+      mapMarkerX: 62,
+      mapMarkerY: 40,
+    })
+    const venue = await adminApi.updateVenue('secret-token', 'v 1', {
+      name: '北京工人体育场',
+      city: '北京',
+      address: '朝阳工人体育场北路',
+      latitude: 39.9308,
+      longitude: 116.4435,
+      mapImageUrl: 'https://assets.awn.site/venues/gongti.png',
+      mapMarkerX: 62,
+      mapMarkerY: 40,
+    })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/venues/v%201')
+    expect(init.method).toBe('PUT')
+    expect(init.headers['x-admin-token']).toBe('secret-token')
+    expect(init.headers['content-type']).toBe('application/json')
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: '北京工人体育场',
+      city: '北京',
+      address: '朝阳工人体育场北路',
+      latitude: 39.9308,
+      longitude: 116.4435,
+      mapImageUrl: 'https://assets.awn.site/venues/gongti.png',
+      mapMarkerX: 62,
+      mapMarkerY: 40,
+    })
+    expect(venue.mapImageUrl).toBe('https://assets.awn.site/venues/gongti.png')
+    expect(venue.mapMarkerX).toBe(62)
+  })
+
+  it('sends null for cleared venue fields so the full-coverage put blanks them', async () => {
+    const fetchMock = mockFetchOnce({
+      venueCode: 'v-2',
+      name: '场馆 B',
+      city: null,
+      address: null,
+      latitude: null,
+      longitude: null,
+      mapImageUrl: null,
+      mapMarkerX: null,
+      mapMarkerY: null,
+    })
+    await adminApi.updateVenue('t', 'v-2', {
+      name: '场馆 B',
+      city: null,
+      address: null,
+      latitude: null,
+      longitude: null,
+      mapImageUrl: null,
+      mapMarkerX: null,
+      mapMarkerY: null,
+    })
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: '场馆 B',
+      city: null,
+      address: null,
+      latitude: null,
+      longitude: null,
+      mapImageUrl: null,
+      mapMarkerX: null,
+      mapMarkerY: null,
+    })
+  })
+
   it('rejects with ApiError carrying backend code on failure', async () => {
     mockFetchOnce(
       { code: 'UNAUTHORIZED', message: 'admin token required' },

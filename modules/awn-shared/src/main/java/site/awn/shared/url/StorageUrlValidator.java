@@ -43,8 +43,13 @@ public final class StorageUrlValidator {
 
     /** 校验失败直接拒绝：IllegalArgumentException（映射 VALIDATION_FAILED 错误码） */
     public static void validate(String url) {
+        validate(url, "evidence url");
+    }
+
+    /** field 为报错字段名（场馆地图等新增场景带上自己的字段，便于定位） */
+    public static void validate(String url, String field) {
         if (!isAllowed(url)) {
-            throw new IllegalArgumentException("evidence url must use whitelisted storage domain: " + url);
+            throw new IllegalArgumentException(field + " must use whitelisted storage domain: " + url);
         }
     }
 

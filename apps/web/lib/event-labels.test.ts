@@ -105,6 +105,9 @@ describe('geoLine', () => {
     address: '朝阳工人体育场北路',
     latitude: 39.9308,
     longitude: 116.4435,
+    mapImageUrl: null,
+    mapMarkerX: null,
+    mapMarkerY: null,
     ...overrides,
   })
 

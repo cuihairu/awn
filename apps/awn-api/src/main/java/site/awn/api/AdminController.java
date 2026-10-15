@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
 import site.awn.event.api.SessionVenueView;
 import site.awn.event.api.SessionView;
+import site.awn.event.api.UpdateVenueCommand;
 import site.awn.event.api.VenueView;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.order.api.AdjudicateDisputeCommand;
@@ -157,6 +159,20 @@ public class AdminController {
         return events.venues();
     }
 
+    /**
+     * 场馆地理与地图配置（V26，docs/design/map-display-plan.md 方案 B）：
+     * 全量覆盖（null 即清空），未知场馆 404 VENUE_NOT_FOUND；mapImageUrl 走
+     * 受控存储域白名单（同供货凭证 / 争议凭证），坐标与标记成对校验（半截一律 400）。
+     */
+    @PutMapping("/venues/{venueCode}")
+    public VenueView updateVenue(@PathVariable String venueCode,
+                                 @RequestBody UpdateVenueRequest request) {
+        return events.updateVenue(venueCode, new UpdateVenueCommand(
+                request.name(), request.city(), request.address(),
+                request.latitude(), request.longitude(),
+                request.mapImageUrl(), request.mapMarkerX(), request.mapMarkerY()));
+    }
+
     /** 场次视图：活动下全部场次（全状态，按开始时间升序），geo 为解析结果（覆盖 → 继承 → null） */
     @GetMapping("/events/{eventCode}/sessions")
     public List<SessionView> sessions(@PathVariable String eventCode) {
@@ -199,6 +215,11 @@ public class AdminController {
     }
 
     public record AttachVenueRequest(String venueCode) {
+    }
+
+    public record UpdateVenueRequest(String name, String city, String address,
+                                     Double latitude, Double longitude,
+                                     String mapImageUrl, Double mapMarkerX, Double mapMarkerY) {
     }
 
     public record AlertView(Long id, String category, String severity, String message,

@@ -9,6 +9,7 @@ import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
 import site.awn.event.api.SessionVenueView;
 import site.awn.event.api.SessionView;
+import site.awn.event.api.UpdateVenueCommand;
 import site.awn.event.api.VenueView;
 import site.awn.event.domain.Event;
 import site.awn.event.domain.EventNotFoundException;
@@ -21,6 +22,7 @@ import site.awn.event.domain.VenueNotFoundException;
 import site.awn.event.infrastructure.EventRepository;
 import site.awn.event.infrastructure.SessionRepository;
 import site.awn.event.infrastructure.VenueRepository;
+import site.awn.shared.url.StorageUrlValidator;
 
 import java.util.Comparator;
 import java.util.List;
@@ -51,6 +53,25 @@ public class EventFacadeImpl implements EventFacade {
     public VenueView createVenue(CreateVenueCommand command) {
         Venue venue = new Venue(command.venueCode(), command.name(),
                 command.city(), command.address(), command.latitude(), command.longitude());
+        return toView(venues.save(venue));
+    }
+
+    /**
+     * 场馆地理与地图配置（V26，docs/design/map-display-plan.md 方案 B）：
+     * 示意图 URL 走受控存储域白名单（同供货凭证 / 争议凭证口径），标记成对守卫在实体。
+     */
+    @Override
+    @Transactional
+    public VenueView updateVenue(String venueCode, UpdateVenueCommand command) {
+        Venue venue = venues.findByVenueCode(venueCode)
+                .orElseThrow(() -> new VenueNotFoundException(venueCode));
+        if (command.mapImageUrl() != null) {
+            StorageUrlValidator.validate(command.mapImageUrl(), "venue map image url");
+        }
+        venue.applyGeo(command.name(), command.city(), command.address(),
+                command.latitude(), command.longitude());
+        venue.setMapImageUrl(command.mapImageUrl());
+        venue.applyMapMarker(command.mapMarkerX(), command.mapMarkerY());
         return toView(venues.save(venue));
     }
 
@@ -238,7 +259,8 @@ public class EventFacadeImpl implements EventFacade {
 
     private VenueView toView(Venue v) {
         return VenueView.of(v.getId(), v.getVenueCode(), v.getName(),
-                v.getCity(), v.getAddress(), v.getLatitude(), v.getLongitude());
+                v.getCity(), v.getAddress(), v.getLatitude(), v.getLongitude(),
+                v.getMapImageUrl(), v.getMapMarkerX(), v.getMapMarkerY());
     }
 
     private EventView toView(Event e) {

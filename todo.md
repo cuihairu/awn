@@ -154,11 +154,12 @@
   - 后端（576cf44）：OrderView 补 serverTime + payExpiresInSeconds；PaymentView 补 retryable、PaymentFacade 补 channels() 与 retryPayment()；V20__waitlist.sql + WaitlistStatus/WaitlistEntry/WaitlistService/WaitlistRepository（守卫迁移 + bindOrder + pg_advisory_xact_lock 判重）+ WaitlistFacade/Controller/Worker 递补任务（awn.worker.tasks.waitlist-promotion 默认关闭）+ WAITLIST_NOT_FOUND/WAITLIST_CONFLICT 错误码入表；递补抢占→建单→绑单同一 TransactionTemplate（库存预留失败整条回滚席位保持 WAITING；建单幂等键取候补编号派生值重跑返回同一订单不重复预留）；排队不占库存不预生成订单，位次按同池 WAITING（created_at, id）派生不落库；候补递补订单与普通下单同源同倒计时口径
   - 前端（web，只接状态展示不造假入口）：api-client 补三块契约类型与调用（含候补全端点）；订单页倒计时以 serverTime 为锚点每秒重算、状态推进即停计时；渠道清单改由 GET /payments/channels 下发（清单不可用禁用发起支付并明示，不硬编码兜底）；失败单 retryable 为真时按钮切「重新支付」走 retry 端点可换渠道；候补入口暂不建 UI——无登录态且超出「只接状态展示」，api-client 契约齐备待登录态落地后铺；小程序 / Flutter 只读面本轮未接
   - 测试：新增 WaitlistModuleTests 14 例 + PurchaseFlowApiTests 11 例 + ApiExceptionHandlerTests 错误码守卫 22→24；checkout.test.ts 补倒计时（锚点推算 / 归零 / 不可解析兜底 / 格式）与可重试门槛（retryable 与状态双重判定）共 8 例；后端全套 verify 246 例全绿 + 前端 206 例全绿 + next build 通过；测试基建顺手收紧：所有测试上下文共享同一 PostgreSQL 容器，Hikari 按主配置 20 预热 × 多缓存上下文曾打满 max_connections（PSQL too many clients），AbstractPostgresIntegrationTest 收紧为 maximum-pool-size 6 / minimum-idle 1
-- [ ] 每场次地理位置（城市/地址/坐标 + 地图）— 原型过目已代决（2026-10-14 巡检授权）；后端模块已落地（8323788）：V19 迁移（venue 坐标列 + session venue_id 外键/索引 + session 直配 geo 列 + 城市索引）、Venue 坐标成对与范围守卫（单给坐标/越界一律拒）、EventFacade 场馆查询/全场次列表/sessionVenue/attach/detach 与继承解析（场次场馆覆盖 → 父活动场馆 → null 不造假坐标）、VENUE_NOT_FOUND 错误码接异常处理器并同步 contracts.md 错误码表；测试 VenueGeoModuleTests 8 例 + 后端全套 verify 227 例全绿
+- [x] 每场次地理位置（城市/地址/坐标 + 地图）— 原型过目已代决（2026-10-14 巡检授权）；后端模块已落地（8323788）：V19 迁移（venue 坐标列 + session venue_id 外键/索引 + session 直配 geo 列 + 城市索引）、Venue 坐标成对与范围守卫（单给坐标/越界一律拒）、EventFacade 场馆查询/全场次列表/sessionVenue/attach/detach 与继承解析（场次场馆覆盖 → 父活动场馆 → null 不造假坐标）、VENUE_NOT_FOUND 错误码接异常处理器并同步 contracts.md 错误码表；测试 VenueGeoModuleTests 8 例 + 后端全套 verify 227 例全绿
   - 公开读透出 + web 展示已落地（75865ae）：publicSession/publicSessions 组装 geo（场次场馆覆盖 → 父活动场馆 → null，全空场馆不渲染假地点），contracts.md 补 geo 口径（坐标缺失为 null，客户端不得按 (0,0) 兜底）；api-client SessionView 加 geo；web 活动页场次卡与场次页头部渲染 geo-row（GeoRow 组件，样式 f348026 已备，场馆名/城市/地址非空项「·」连接）；测试 VenueGeoModuleTests 8→12 + PublicEventApiTests 16 回归 + 前端 198 例全绿 + next build 通过
   - 运营配置面已落地（01bdff4）：管理面端点 GET /admin/venues、GET /admin/events/{eventCode}/sessions（allSessions 组装解析 geo）、POST/DELETE /admin/sessions/{sessionCode}/venue（挂/摘，摘除回退继承父活动场馆，未知场次/场馆 404 SESSION_NOT_FOUND/VENUE_NOT_FOUND）+ contracts.md 运营接口条目；admin 第五视图「场次配置」（选活动 → 场次表含当前 geo → 场馆下拉挂/摘，geo 空显示「—」不造假地点）；测试 AdminApiTests 7→8（venue 管理全流：鉴权 401、列表、挂/摘回退、404 信封）+ VenueGeoModuleTests 12 回归 + 前端 201 例全绿 + admin vite build 通过
-  - 余项：地图展示（坐标已有，缺地图服务商选型，挂起待用户裁决，不引第三方不拍板）——地图之外整条地理链（存储 / 守卫 / 公开读 / web 展示 / 运营配置）已闭环
+  - 整条地理链（存储 / 守卫 / 公开读 / web 展示 / 运营配置）已闭环；交互地图（缩放 / 路线 / 精确到门牌）按 R1015F 裁决暂不启动，等真实需求与 SDK 拍板再议
   - 地图方案已交（docs/design/map-display-plan.md，2026-10-15）：建议走「首方静态图」（运营传图片 + 前端坐标落标记，不引第三方 SDK、不拍板服务商），契约预估 V25 map_image_url（存储域白名单）+ SessionVenueView.mapImageUrl + GeoRow 升级（无图回退现状文字行）；待裁决三点——是否接受「示意图」口径 / 是否需要交互地图（需则拍板 SDK）/ 图片由谁提供
+  - 地图展示已落地（2026-10-15，R1015F 授权：接受「示意图」口径；交互地图与供图方式待真实需求再议）：V26__venue_map_image.sql（预估 V25 已被 order_attendees 占用）+ 标记改为运营随图给定百分比（0-100 成对守卫——示意图无地理范围，经纬度不能线性映射）；VenueView/SessionVenueView 透出 mapImageUrl/mapMarkerX/mapMarkerY 随 geo 继承链 + StorageUrlValidator 域白名单（拒绝 400 VALIDATION_FAILED）+ PUT /admin/venues/{venueCode} 全量覆盖（半截坐标/半截标记/越界一律 400，未知场馆 404 VENUE_NOT_FOUND）+ admin「场次配置」场馆配置卡片（全量覆盖口径表单上方明示）+ web GeoRow 图/标记/文字行（onError 回落，无图行为与现状一致，根节点保持 span 适配 Link 内使用）；测试 VenueGeoModuleTests 12→17 + AdminApiTests 7→9 + 前端 geo-image 4 例 / GeoRow 6 例 / admin 契约 8 例全绿 + 后端全套 verify 298 例 + 前端 328 例 + web/admin 构建通过
 - [x] 2D 座位图（P1）— 原型过目已代决（2026-10-14 巡检授权，seatmap-2d.html 与 Venue→Section→RowRange 模型对齐）；公开链路已落地（854a77b）：后端 GET /api/v1/sessions/{sessionId}/seatmap（复用 PlatformSeatService.seatsOfSession 经 InventoryFacade 透出，可见性与场次详情同口径：未知场次或父活动未公开一律 404 SESSION_NOT_FOUND；公开载荷剥去 orderNo/sessionCode，占座订单号不进公开面，productCode 保留供票档归位）+ contracts.md 条目 + api-client getSeatmap/SeatMapItem + /sessions/{id} 座位型商品选座区（座位型 = 座位图载荷中出现过的商品编码，不发明字段；SeatMap 分组渲染 + 选择收集）；测试 SeatmapApiTests 4 例（真实 PG）+ PlatformSeatModuleTests 9 例回归 + 前端 195 例全绿 + next build 通过；余项已清（0cfcb69）：铺座运营入口与选座下单契约——订单行第三路径座位型（V23 seat_no 列 + ck_order_item_source 三分支互斥，OrderLineCommand.seatLine 一行一座 quantity=1），下单/取消/超时/支付确认全链座位状态机联动（reserveSeatForOrder 商品归属校验 409 INVENTORY_CONFLICT、未知座位 404 SEAT_NOT_FOUND 新错误码），管理面 POST/GET /api/v1/admin/sessions/{sessionCode}/seats 铺座批次（重复位置/未知商品整体失败）+ admin 第六视图「铺座」（分区,排,座 逐行粘贴解析，坏行带行号报错不静默丢弃），web 选座→结算打通（sessionStorage 按场次暂存选区带入 /checkout，每座独立成行提交，下单成功清除；座位冲突/失效按服务端结论引导回座位图重选）；测试 SeatOrderModuleTests 8 例（含并发抢座只放一单）+ SeatAdminApiTests 4 例 + 前端 244 例全绿 + next/vite build 通过
   - 前端组件已落地（b607772）：数据层（lib/seatmap.ts 分组/排序/可选性）+ SVG 组件（components/SeatMap.tsx，三态图例与原型一致：可选/已售置灰/本次选中，aria-label 区分五态，Enter/键盘可选）+ 11 例（分组排序 5 + 渲染交互 6）
   - 已代决（2026-10-14 巡检授权）：platform_seats 只有分区/排/座编号无坐标 → 程序化网格排布，不臆造场馆几何（弧形/朝向需空间数据源，属挂起调研项）；舞台位置与朝向不声称正确，只标方向提示
@@ -174,10 +175,10 @@
 
 ---
 
-## 挂起项（待用户裁决，不计入缺口）
+## 挂起项 / 卡点（只缺用户裁决或数据，不计入缺口）
 
-- 座位图数据来源调研到立项决策 — 调研已交（dde227b），待用户拍板后才动实现
-- 座位图第一阶段范围与三问验证 — 待用户指定 5 个目标场馆与人力
+- 座位图数据来源调研到立项决策 — **卡点：缺用户拍板**；调研已交（dde227b），拍板后才动实现
+- 座位图第一阶段范围与三问验证 — **卡点：缺首批 5 场馆名单与人力**；名单与人力给出即可开工（3D 方案 S2 起同样依赖此项）
 - ~~Phase 07 全部 UI 条目的原型过目与拍板~~ — 已代决（2026-10-14 巡检授权）：原型走查完成，13 项待办验收口径全覆盖，无阻塞缺陷；用户可事后核对推翻，推翻时按 todo 各条「已代决」注记回溯
 
 - [x] 文档去 AI 腔（来源：用户 2026-10-14）— 12 个文档（architecture 7 / implementation-plan / deployment / design 2 / research），42 增 43 删；docs build 通过 — 23135f7
@@ -193,7 +194,7 @@
   - 验收：先出数据模型与页面结构（原型或设计文档），**经用户拍板后再实现**；不许直接开工写业务代码
 
 - [x] 图鉴编辑能力（已代决 巡检 R2）— 草稿可改（PUT）可删（DELETE）、已发布冻结、改动需先 unpublish，与专场「发布版本不可变 + 撤回」同构；关系行随外键级联清除 — 4a58ab7；StarModuleTests 7 + StarApiTests 5
-  - 理由：交付后发现草稿创建后无法修改或删除（只有 create/publish/bind），编辑能力设计稿 §4.3 已列为待补；属设计取舍且有明确推荐，故代决执行。分页暂不做（规模未到，且会改动刚交付的公开响应形状），仍列待拍板。
+  - 理由：交付后发现草稿创建后无法修改或删除（只有 create/publish/bind），编辑能力设计稿 §4.3 已列为待补；属设计取舍且有明确推荐，故代决执行。分页**已代决（2026-10-15，R1015F 授权）：不分页，列表返回全量**，待真实规模需要再补（用户可推翻）。
 - [x] 文档与契约卫生（已代决 巡检 R2）— README 徽章同步 Spring Boot 4.1.1 / Modulith 2.1.1、star 运营写接口补入 contracts.md、删除陈旧重复 README.zh-CN.md — cbea2d9；docs build 通过
   - 理由：徽章与 pom 实际版本不符；star 运营接口交付时漏进契约；README.zh-CN.md 是 README.zh.md 的陈旧无引用子集（缺切换器与 awn-star 行），全局命名规则以 README.zh.md 为准。
 - [x] 图鉴前端错误处理（已代决 巡检 R2）— api-client 非 2xx 抛 ApiError（带 status + 后端错误码），列表页不再把错误信封当数组渲染（429 / 500 时会白屏崩溃）；详情页按 404 区分「不存在或未发布」与「加载失败」 — baeffac；前端 49 例

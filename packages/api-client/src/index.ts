@@ -484,7 +484,11 @@ export interface EventView {
   venueId: string | null
 }
 
-/** 场次地理位置（场馆派生：场次场馆覆盖 → 父活动场馆；坐标缺失为 null，不按 (0,0) 处理） */
+/**
+ * 场次地理位置（场馆派生：场次场馆覆盖 → 父活动场馆；坐标缺失为 null，不按 (0,0) 处理）。
+ * mapImageUrl 是运营提供的「位置示意图」（首方静态图，非精确地图）；标记为图上百分比，
+ * 可与图片单独缺失，客户端不得自行猜测图上位置。
+ */
 export interface SessionVenueView {
   venueCode: string
   venueName: string
@@ -492,6 +496,9 @@ export interface SessionVenueView {
   address: string | null
   latitude: number | null
   longitude: number | null
+  mapImageUrl: string | null
+  mapMarkerX: number | null
+  mapMarkerY: number | null
 }
 
 export interface SessionView {

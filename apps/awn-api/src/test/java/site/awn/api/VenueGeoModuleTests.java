@@ -10,12 +10,14 @@ import site.awn.event.api.EventFacade;
 import site.awn.event.api.EventView;
 import site.awn.event.api.SessionView;
 import site.awn.event.api.SessionVenueView;
+import site.awn.event.api.UpdateVenueCommand;
 import site.awn.event.api.VenueView;
 import site.awn.event.domain.SessionNotFoundException;
 import site.awn.event.domain.VenueNotFoundException;
 import site.awn.support.AbstractPostgresIntegrationTest;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -210,5 +212,128 @@ class VenueGeoModuleTests extends AbstractPostgresIntegrationTest {
         java.util.List<SessionView> publicList = events.publicSessions(event.id());
         assertThat(publicList).isNotEmpty();
         assertThat(publicList).allMatch(s -> s.geo() != null && "上海".equals(s.geo().city()));
+    }
+
+    // ---- 位置示意图（V26，docs/design/map-display-plan.md 方案 B） ----
+
+    @Test
+    void venueMapImageTravelsWithTheGeoResolveChain() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "北京工人体育场", "北京", "朝阳工人体育场北路", 39.9308, 116.4435));
+        EventView event = eventWithVenue(suffix, venue);
+        SessionView session = session(suffix, event);
+
+        VenueView updated = events.updateVenue(venue.venueCode(), new UpdateVenueCommand(
+                "北京工人体育场", "北京", "朝阳工人体育场北路", 39.9308, 116.4435,
+                "https://assets.awn.site/venues/wogt-schema.png", 62.0, 48.0));
+
+        assertThat(updated.mapImageUrl()).isEqualTo("https://assets.awn.site/venues/wogt-schema.png");
+        assertThat(updated.mapMarkerX()).isEqualTo(62.0);
+        assertThat(updated.mapMarkerY()).isEqualTo(48.0);
+
+        // 继承路径（场次未覆盖场馆）与覆盖路径都要透出同一份示意图
+        SessionVenueView inherited = events.sessionVenue(session.sessionCode());
+        assertThat(inherited.mapImageUrl())
+                .isEqualTo("https://assets.awn.site/venues/wogt-schema.png");
+        assertThat(inherited.mapMarkerY()).isEqualTo(48.0);
+
+        VenueView home = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix + "-home", "主赛场", "北京", null, null, null));
+        events.updateVenue(home.venueCode(), new UpdateVenueCommand(
+                "主赛场", "北京", null, null, null, null, 20.0, 20.0));
+        events.attachSessionVenue(session.sessionCode(), home.venueCode());
+        SessionVenueView overridden = events.sessionVenue(session.sessionCode());
+        assertThat(overridden.venueCode()).isEqualTo(home.venueCode());
+        assertThat(overridden.mapImageUrl()).isNull();
+        assertThat(overridden.mapMarkerX()).isEqualTo(20.0);
+
+        events.detachSessionVenue(session.sessionCode());
+        assertThat(events.sessionVenue(session.sessionCode()).mapImageUrl())
+                .isEqualTo("https://assets.awn.site/venues/wogt-schema.png");
+    }
+
+    @Test
+    void publicSessionSurfacesTheMapImageForEachSession() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "上海大舞台", "上海", "天钥桥路", 31.1885, 121.4380));
+        events.updateVenue(venue.venueCode(), new UpdateVenueCommand(
+                "上海大舞台", "上海", "天钥桥路", 31.1885, 121.4380,
+                "/venues/dwt-schema.png", 50.0, 50.0));
+        EventView event = eventWithVenue(suffix, venue);
+        events.publishEvent(event.eventCode());
+        SessionView session = session(suffix, event);
+
+        SessionVenueView geo = events.publicSession(session.id()).geo();
+        assertThat(geo.mapImageUrl()).isEqualTo("/venues/dwt-schema.png");
+        assertThat(geo.mapMarkerX()).isEqualTo(50.0);
+        assertThat(events.publicSessions(event.id())).isNotEmpty();
+        assertThat(events.publicSessions(event.id()))
+                .allMatch(s -> "/venues/dwt-schema.png".equals(s.geo().mapImageUrl()));
+    }
+
+    @Test
+    void mapImageOutsideTheWhitelistedStorageDomainIsRejected() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "待定场馆", "北京", null));
+
+        assertThatThrownBy(() -> events.updateVenue(venue.venueCode(), new UpdateVenueCommand(
+                "待定场馆", "北京", null, null, null,
+                "https://map.example.com/schema.png", null, null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("venue map image url");
+
+        // 拒绝不落地：图与标记都保持空
+        assertThat(events.venue(venue.venueCode()).mapImageUrl()).isNull();
+    }
+
+    @Test
+    void aHalfOrOutOfRangeMapMarkerIsRejected() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "待定场馆", "北京", null));
+
+        for (UpdateVenueCommand command : List.of(
+                new UpdateVenueCommand("待定场馆", "北京", null, null, null,
+                        "/venues/x.png", 10.0, null),
+                new UpdateVenueCommand("待定场馆", "北京", null, null, null,
+                        "/venues/x.png", null, 10.0),
+                new UpdateVenueCommand("待定场馆", "北京", null, null, null,
+                        "/venues/x.png", 150.0, 50.0),
+                new UpdateVenueCommand("待定场馆", "北京", null, null, null,
+                        "/venues/x.png", 50.0, -1.0))) {
+            assertThatThrownBy(() -> events.updateVenue(venue.venueCode(), command))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        assertThatThrownBy(() -> events.updateVenue(venue.venueCode(), new UpdateVenueCommand(
+                "待定场馆", "北京", null, 39.9, null, "/venues/x.png", null, null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(events.venue(venue.venueCode()).mapMarkerX()).isNull();
+    }
+
+    @Test
+    void venueUpdateClearsTheMapFieldsAndKeepsTheVenue() {
+        String suffix = uid();
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-" + suffix, "待定场馆", "北京", "工人体育场北路", 39.9308, 116.4435));
+        events.updateVenue(venue.venueCode(), new UpdateVenueCommand(
+                "工人体育场", "北京", "工人体育场北路", 39.9308, 116.4435,
+                "/venues/gc-schema.png", 50.0, 50.0));
+
+        VenueView cleared = events.updateVenue(venue.venueCode(),
+                new UpdateVenueCommand("工人体育场", null, null, null, null, null, null, null));
+
+        assertThat(cleared.name()).isEqualTo("工人体育场");
+        assertThat(cleared.city()).isNull();
+        assertThat(cleared.latitude()).isNull();
+        assertThat(cleared.mapImageUrl()).isNull();
+        assertThat(cleared.mapMarkerX()).isNull();
+        assertThat(cleared.mapMarkerY()).isNull();
+        assertThatThrownBy(() -> events.updateVenue("v-nope-" + suffix, new UpdateVenueCommand(
+                "未知场馆", null, null, null, null, null, null, null)))
+                .isInstanceOf(VenueNotFoundException.class);
     }
 }

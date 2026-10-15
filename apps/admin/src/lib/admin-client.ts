@@ -74,6 +74,22 @@ export interface AdminVenue {
   address: string | null
   latitude: number | null
   longitude: number | null
+  /** 位置示意图（首方静态图，非精确地图）；受控存储域白名单，半截标记由服务端拒绝 */
+  mapImageUrl: string | null
+  mapMarkerX: number | null
+  mapMarkerY: number | null
+}
+
+/** 场馆配置提交体（PUT /venues/{venueCode} 全量覆盖，null 即清空） */
+export interface AdminVenueForm {
+  name: string
+  city: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  mapImageUrl: string | null
+  mapMarkerX: number | null
+  mapMarkerY: number | null
 }
 
 /** geo 为解析结果（场次场馆覆盖 → 父活动场馆 → null），null 表示当前无任何场馆 */
@@ -193,6 +209,13 @@ export const adminApi = {
     }),
 
   venues: (token: string) => request<AdminVenue[]>('/venues', token),
+
+  /** 场馆地理与地图配置：全量覆盖，未知场馆 404，白名单/成对守卫由服务端给 400 */
+  updateVenue: (token: string, venueCode: string, form: AdminVenueForm) =>
+    request<AdminVenue>(`/venues/${encodeURIComponent(venueCode)}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(form),
+    }),
 
   eventSessions: (token: string, eventCode: string) =>
     request<AdminSessionRow[]>(`/events/${encodeURIComponent(eventCode)}/sessions`, token),

@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -312,6 +313,67 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
         mockMvc.perform(delete("/api/v1/admin/sessions/s-nope/venue").header(TOKEN_HEADER, TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"));
+    }
+
+    /** 场馆地图配置（V26，方案 B）：全量覆盖 PUT，白名单 / 成对标记 / 未知场馆守卫 */
+    @Test
+    void venueMapImageConfigFlowForTheOpsConsole() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        VenueView venue = events.createVenue(new CreateVenueCommand(
+                "v-map-" + suffix, "上海体育馆", "上海", "徐汇区零陵路", 31.1885, 121.4380));
+        Instant start = Instant.now().plusSeconds(3600);
+        EventView event = events.createEvent(new CreateEventCommand(
+                "e-map-" + suffix, "巡回赛", null, start, start.plusSeconds(7200), venue.id()));
+        SessionView session = events.createSession(new CreateSessionCommand(
+                "s-map-" + suffix, event.id(), "上海站", start, start.plusSeconds(7200)));
+
+        // 无令牌 → 401
+        mockMvc.perform(put("/api/v1/admin/venues/" + venue.venueCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上海体育馆\"}"))
+                .andExpect(status().isUnauthorized());
+
+        // 配置示意图 + 标记 → 200 且字段回显
+        mockMvc.perform(put("/api/v1/admin/venues/" + venue.venueCode())
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上海体育馆\",\"city\":\"上海\",\"address\":\"徐汇区零陵路\","
+                                + "\"latitude\":31.1885,\"longitude\":121.4380,"
+                                + "\"mapImageUrl\":\"https://assets.awn.site/venues/schema.png\","
+                                + "\"mapMarkerX\":62.0,\"mapMarkerY\":48.0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mapImageUrl")
+                        .value("https://assets.awn.site/venues/schema.png"))
+                .andExpect(jsonPath("$.mapMarkerX").value(62.0));
+
+        // 公开场次 geo 透出示意图（父活动场馆继承）
+        events.publishEvent(event.eventCode());
+        mockMvc.perform(get("/api/v1/events/" + event.id() + "/sessions"))
+                .andExpect(jsonPath(
+                        "$[?(@.sessionCode == '" + session.sessionCode() + "')].geo.mapImageUrl")
+                        .value(hasItem("https://assets.awn.site/venues/schema.png")));
+
+        // 半截标记 → 400 VALIDATION_FAILED；外域图 → 400；未知场馆 → 404 VENUE_NOT_FOUND
+        mockMvc.perform(put("/api/v1/admin/venues/" + venue.venueCode())
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上海体育馆\",\"mapMarkerX\":10.0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(put("/api/v1/admin/venues/" + venue.venueCode())
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上海体育馆\",\"mapImageUrl\":\"https://maps.example.com/a.png\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(put("/api/v1/admin/venues/v-map-nope")
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"未知场馆\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("VENUE_NOT_FOUND"));
     }
 
     // ------------------------------------------------------------------

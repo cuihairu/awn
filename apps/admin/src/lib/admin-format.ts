@@ -163,3 +163,48 @@ export function validateRefundYuan(input: string, capMinor: number | null): stri
   }
   return null
 }
+
+// ===== 场馆地理与地图配置（V26，位置示意图 docs/design/map-display-plan.md 方案 B） =====
+
+/** 数值输入 → 范围内数字；空串返回 null（资料可缺），越界或非法返回 null 不猜值 */
+export function parseBounded(input: string, min: number, max: number): number | null {
+  const text = input.trim()
+  if (!text) return null
+  const value = Number(text)
+  return Number.isFinite(value) && value >= min && value <= max ? value : null
+}
+
+/** 场馆配置表单原始输入（字符串态；坐标 / 标记提交前经 parseBounded 转数字，文本空串按缺省下 null） */
+export interface VenueFormInput {
+  name: string
+  city: string
+  address: string
+  latitude: string
+  longitude: string
+  mapImageUrl: string
+  mapMarkerX: string
+  mapMarkerY: string
+}
+
+/**
+ * 场馆配置自检：返回首条原因，null 表示可提交。
+ * 坐标与标记都必须成对——半截在地图上必然指错位置，比没有更糟（与后端同口径）。
+ */
+export function validateVenueForm(input: VenueFormInput): string | null {
+  if (!input.name.trim()) return '场馆名称必填。'
+  const latBlank = input.latitude.trim() === ''
+  const lngBlank = input.longitude.trim() === ''
+  if (latBlank !== lngBlank) return '经纬度需成对填写（半截坐标必然指错位置）。'
+  if (!latBlank && parseBounded(input.latitude, -90, 90) === null)
+    return '纬度需在 -90 到 90 之间。'
+  if (!lngBlank && parseBounded(input.longitude, -180, 180) === null)
+    return '经度需在 -180 到 180 之间。'
+  const xBlank = input.mapMarkerX.trim() === ''
+  const yBlank = input.mapMarkerY.trim() === ''
+  if (xBlank !== yBlank) return '地图标记位置需成对填写（半截标记必然指错位置）。'
+  if (!xBlank && parseBounded(input.mapMarkerX, 0, 100) === null)
+    return '标记横向位置需在 0 到 100 之间。'
+  if (!yBlank && parseBounded(input.mapMarkerY, 0, 100) === null)
+    return '标记纵向位置需在 0 到 100 之间。'
+  return null
+}

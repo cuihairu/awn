@@ -26,7 +26,7 @@
 - **素材红线不变**：地图图片由运营从公开来源取用，平台不提供也不代发任何地图数据 API；不使用场馆照片或 logo 代餐。
 - **降级**：图片缺失或加载失败时回退现有 `GeoRow` 文字行，不报错、不白屏。
 
-### 方案 B 的契约改动（预估，未实现）
+### 方案 B 的契约改动（预估，已于 2026-10-15 落地，见 §5）
 
 - `venue` 表增 `map_image_url VARCHAR`（可空，受控存储域白名单校验，与供货凭证 / 争议凭证同一 `StorageUrlValidator` 口径）
 - `SessionVenueView` 增 `mapImageUrl: string | null`（随现有 geo 解析链路透出，场次场馆覆盖 → 父活动场馆 → null）
@@ -52,3 +52,17 @@
 3. **图片由谁提供**——运营手工制图（B 方案默认），还是要我补一个「按坐标生成静态图」的服务端能力（那才引入第三方瓦片源，等同方案 A）。
 
 裁决 1 为「接受」即可按本方案落 V25 与两端渲染；裁决 2 为「需要」则先出 SDK 选型对比再动实现。
+
+## 5. 落地记录（2026-10-15，巡检单 R1015F 授权）
+
+裁决结果：**① 接受「示意图」口径 → 按方案 B 落地；② 交互地图、③ 供图方式暂不启动**，等真实需求与供图再议（用户事后可推翻）。与预估相比有两处偏离：
+
+1. **迁移号 V26，不是预估的 V25**——`V25__order_attendees.sql` 已被订单实名条目占用，实际迁移为 `V26__venue_map_image.sql`（`map_image_url` + `map_marker_x` + `map_marker_y` 三列）。
+2. **标记位置改为运营随图给定，不做坐标线性映射**——§2 预估「图上标记位置由坐标线性映射到图片范围」，但示意图没有地理范围（不是按比例尺截取的地图），经纬度无法换算到图上位置；改为运营在场馆配置里直接给**图上标记百分比**（`map_marker_x/y`，0-100 相对图片左上角，**成对守卫**，与场馆经纬度同一「半截不入库」口径）。非精确口径不变：文案仍明示「位置示意图，非精确地图」。
+
+落地内容：
+
+- 契约：`venue` 三新列；`VenueView` / `SessionVenueView` / api-client `SessionVenueView` 透出 `mapImageUrl` / `mapMarkerX` / `mapMarkerY`（随既有 geo 继承链路：场次场馆覆盖 → 父活动场馆 → null）；`mapImageUrl` 经 `StorageUrlValidator` 域白名单（拒绝 → 400 `VALIDATION_FAILED`）
+- 运营面：`PUT /api/v1/admin/venues/{venueCode}` 全量覆盖（缺省即清空；半截坐标 / 半截标记 / 越界一律 400，未知场馆 404 `VENUE_NOT_FOUND`）；admin「场次配置」视图增场馆配置卡片（地理 + 示意图 + 标记，全量覆盖口径在表单上方明示）
+- web：`GeoRow` 升级「图片 + 标记 + 文字行」——图片 `onError` 回落文字行；标记半截或越界不渲染；无图行为与现状完全一致；根节点保持 `<span>`（GeoRow 在 `<Link>` 内，须为 phrasing content）
+- 测试：VenueGeoModuleTests 12→17、AdminApiTests 7→9、前端 geo-image 4 例 + GeoRow 6 例 + admin 契约 8 例；后端全套 verify 298 例、前端 328 例全绿

@@ -9,6 +9,9 @@ public interface EventFacade {
 
     VenueView createVenue(CreateVenueCommand command);
 
+    /** 场馆地理与地图配置（V26）：全量覆盖（null 即清空），未知场馆 404 VENUE_NOT_FOUND */
+    VenueView updateVenue(String venueCode, UpdateVenueCommand command);
+
     VenueView venue(String venueCode);
 
     /** 运营场馆列表（按 id 升序）：场次配置按场馆挑选 */

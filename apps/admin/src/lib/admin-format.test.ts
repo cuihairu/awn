@@ -12,9 +12,12 @@ import {
   minorToYuan,
   orderBadgeClass,
   orderStatusZh,
+  parseBounded,
   parseYuanToFen,
   succeededPayments,
   validateRefundYuan,
+  validateVenueForm,
+  type VenueFormInput,
 } from './admin-format'
 import type { AdminOrder } from './admin-client'
 
@@ -161,5 +164,70 @@ describe('refund execution helpers', () => {
     expect(validateRefundYuan('abc', 10000)).toContain('大于 0')
     // 无裁决金额（不该出现）时只做非零校验
     expect(validateRefundYuan('120', null)).toBeNull()
+  })
+})
+
+describe('venue config helpers', () => {
+  const form = (overrides: Partial<VenueFormInput> = {}): VenueFormInput => ({
+    name: '北京工人体育场',
+    city: '北京',
+    address: '朝阳工人体育场北路',
+    latitude: '39.9308',
+    longitude: '116.4435',
+    mapImageUrl: 'https://assets.awn.site/venues/gongti.png',
+    mapMarkerX: '62',
+    mapMarkerY: '40',
+    ...overrides,
+  })
+
+  it('parses bounded numbers, treating blank as absent and out-of-range as invalid', () => {
+    expect(parseBounded(' 39.93 ', -90, 90)).toBe(39.93)
+    expect(parseBounded('', -90, 90)).toBeNull()
+    expect(parseBounded('abc', -90, 90)).toBeNull()
+    expect(parseBounded('-91', -90, 90)).toBeNull()
+    expect(parseBounded('101', 0, 100)).toBeNull()
+    // 边界值合法
+    expect(parseBounded('-90', -90, 90)).toBe(-90)
+    expect(parseBounded('0', 0, 100)).toBe(0)
+    expect(parseBounded('100', 0, 100)).toBe(100)
+  })
+
+  it('accepts a fully filled venue form', () => {
+    expect(validateVenueForm(form())).toBeNull()
+  })
+
+  it('requires the venue name', () => {
+    expect(validateVenueForm(form({ name: '  ' }))).toContain('场馆名称必填')
+  })
+
+  it('rejects half coordinates and out-of-range values', () => {
+    expect(validateVenueForm(form({ longitude: '' }))).toContain('成对')
+    expect(validateVenueForm(form({ latitude: '' }))).toContain('成对')
+    expect(validateVenueForm(form({ latitude: '91' }))).toContain('-90 到 90')
+    expect(validateVenueForm(form({ longitude: '-181' }))).toContain('-180 到 180')
+    expect(validateVenueForm(form({ longitude: 'abc' }))).toContain('-180 到 180')
+  })
+
+  it('rejects half map markers and out-of-range percentages', () => {
+    expect(validateVenueForm(form({ mapMarkerY: '' }))).toContain('成对')
+    expect(validateVenueForm(form({ mapMarkerX: '' }))).toContain('成对')
+    expect(validateVenueForm(form({ mapMarkerX: '-1' }))).toContain('0 到 100')
+    expect(validateVenueForm(form({ mapMarkerY: '101' }))).toContain('0 到 100')
+  })
+
+  it('accepts optional fields left blank (full-coverage PUT sends null)', () => {
+    expect(
+      validateVenueForm(
+        form({
+          city: '',
+          address: '',
+          latitude: '',
+          longitude: '',
+          mapImageUrl: '',
+          mapMarkerX: '',
+          mapMarkerY: '',
+        }),
+      ),
+    ).toBeNull()
   })
 })
