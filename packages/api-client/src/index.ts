@@ -838,3 +838,17 @@ export async function withdrawDispute(
     body: JSON.stringify({ userId }),
   }).then((res) => readJson<DisputeView>(res))
 }
+
+/**
+ * 裁决结论与卖家申辩只存在于运营面（/api/v1/admin/disputes/**，X-Admin-Token）。
+ * 此客户端面向买卖双方页面，不提供裁决入口，仅导出类型供运营台消费。
+ */
+export type DisputeResolution = 'REJECTED' | 'REFUND_APPROVED' | 'REDELIVER_APPROVED'
+
+/** 卖家申辩（裁决依据，提交时间正序；不进买家面争议响应） */
+export interface DisputeSellerResponseView {
+  disputeNo: string
+  sellerNo: string
+  content: string
+  createdAt: string
+}

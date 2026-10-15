@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   availableRatio,
+  disputeBadgeClass,
+  disputeReasonZh,
+  disputeResolutionZh,
+  disputeStatusZh,
   eventStatusZh,
   filterOrdersByStatus,
   formatAdminTime,
@@ -67,6 +71,36 @@ describe('admin-format 展示口径', () => {
     expect(filterOrdersByStatus(orders, 'ALL')).toHaveLength(3)
     expect(filterOrdersByStatus(orders, 'PAID').map((o) => o.orderNo)).toEqual(['B', 'C'])
     expect(filterOrdersByStatus(orders, 'REFUNDED')).toHaveLength(0)
+  })
+
+  it('maps dispute statuses to zh labels with fallback', () => {
+    expect(disputeStatusZh('OPEN')).toBe('待受理')
+    expect(disputeStatusZh('UNDER_REVIEW')).toBe('受理中')
+    expect(disputeStatusZh('RESOLVED')).toBe('已裁决')
+    expect(disputeStatusZh('WITHDRAWN')).toBe('已撤回')
+    expect(disputeStatusZh('SOMETHING_NEW')).toBe('未知状态')
+  })
+
+  it('maps dispute statuses to badge modifier classes', () => {
+    expect(disputeBadgeClass('OPEN')).toBe('badge--warning')
+    expect(disputeBadgeClass('UNDER_REVIEW')).toBe('badge--info')
+    expect(disputeBadgeClass('RESOLVED')).toBe('badge--success')
+    expect(disputeBadgeClass('WITHDRAWN')).toBe('')
+  })
+
+  it('maps dispute reasons to zh labels with fallback', () => {
+    expect(disputeReasonZh('NOT_DELIVERED')).toBe('未交付')
+    expect(disputeReasonZh('TICKET_INVALID')).toBe('票券无效')
+    expect(disputeReasonZh('DESCRIPTION_MISMATCH')).toBe('与描述不符')
+    expect(disputeReasonZh('OTHER')).toBe('其他')
+    expect(disputeReasonZh('SOMETHING_NEW')).toBe('未知原因')
+  })
+
+  it('maps dispute resolutions to zh labels with fallback', () => {
+    expect(disputeResolutionZh('REJECTED')).toBe('裁决：不支持')
+    expect(disputeResolutionZh('REFUND_APPROVED')).toBe('裁决：退款')
+    expect(disputeResolutionZh('REDELIVER_APPROVED')).toBe('裁决：重新交付')
+    expect(disputeResolutionZh('SOMETHING_NEW')).toBe('未知结论')
   })
 })
 

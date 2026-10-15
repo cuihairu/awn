@@ -131,4 +131,66 @@ describe('admin client', () => {
       ],
     })
   })
+
+  it('lists recent disputes with the admin token', async () => {
+    const fetchMock = mockFetchOnce([])
+    await adminApi.disputes('secret-token')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/disputes')
+    expect(init.method).toBeUndefined()
+    expect(init.headers['x-admin-token']).toBe('secret-token')
+  })
+
+  it('accepts a dispute with an encoded dispute number', async () => {
+    const fetchMock = mockFetchOnce({ disputeNo: 'DSP 1', status: 'UNDER_REVIEW' })
+    const view = await adminApi.acceptDispute('t', 'DSP 1')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/disputes/DSP%201/accept')
+    expect(init.method).toBe('POST')
+    expect(init.headers['x-admin-token']).toBe('t')
+    expect(view.status).toBe('UNDER_REVIEW')
+  })
+
+  it('adjudicates a dispute with actor, resolution and note', async () => {
+    const fetchMock = mockFetchOnce({ disputeNo: 'DSP-1', status: 'RESOLVED' })
+    const view = await adminApi.adjudicateDispute('t', 'DSP-1', {
+      actor: 'admin-1',
+      resolution: 'REFUND_APPROVED',
+      note: '证据充分，支持退款',
+    })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/disputes/DSP-1/adjudicate')
+    expect(init.method).toBe('POST')
+    expect(init.headers['content-type']).toBe('application/json')
+    expect(JSON.parse(String(init.body))).toEqual({
+      actor: 'admin-1',
+      resolution: 'REFUND_APPROVED',
+      note: '证据充分，支持退款',
+    })
+    expect(view.status).toBe('RESOLVED')
+  })
+
+  it('lists seller responses of a dispute for adjudication', async () => {
+    const fetchMock = mockFetchOnce([
+      { disputeNo: 'DSP-1', sellerNo: 'SEL-1', content: '已交付凭证', createdAt: '2026-10-15T09:00:00Z' },
+    ])
+    const responses = await adminApi.disputeSellerResponses('t', 'DSP 1')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/admin/disputes/DSP%201/seller-responses')
+    expect(init.headers['x-admin-token']).toBe('t')
+    expect(responses[0].sellerNo).toBe('SEL-1')
+    expect(responses[0].content).toBe('已交付凭证')
+  })
+
+  it('rejects with ApiError when dispute state machine conflicts', async () => {
+    mockFetchOnce(
+      { code: 'DISPUTE_CONFLICT', message: 'dispute is not open for seller responses' },
+      { ok: false, status: 409, statusText: 'Conflict' },
+    )
+    await expect(adminApi.acceptDispute('t', 'DSP-1')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 409,
+      code: 'DISPUTE_CONFLICT',
+    })
+  })
 })

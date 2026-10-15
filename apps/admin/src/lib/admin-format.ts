@@ -1,8 +1,10 @@
 import type { AdminOrder, AdminOrderStatus, PoolBalance } from './admin-client'
+import type { DisputeReason, DisputeResolution, DisputeStatus } from '@awn/api-client'
 
 /**
  * 运营台展示层纯函数（无 React、无请求依赖）。
  * 金额为最小货币单位整数；文案与元展示在此维护，不发明后端没有的状态。
+ * 争议文案与买家面（apps/web/lib/disputes.ts）同口径，两端看到同一套措辞。
  */
 
 export const ORDER_STATUS_ZH: Record<AdminOrderStatus, string> = {
@@ -84,4 +86,48 @@ export function filterOrdersByStatus(
   tab: 'ALL' | AdminOrderStatus,
 ): AdminOrder[] {
   return tab === 'ALL' ? orders : orders.filter((order) => order.status === tab)
+}
+
+export const DISPUTE_STATUS_ZH: Record<DisputeStatus, string> = {
+  OPEN: '待受理',
+  UNDER_REVIEW: '受理中',
+  RESOLVED: '已裁决',
+  WITHDRAWN: '已撤回',
+}
+
+export function disputeStatusZh(status: string): string {
+  return DISPUTE_STATUS_ZH[status as DisputeStatus] ?? '未知状态'
+}
+
+/** 状态角标：待受理警示 / 受理中提示（待裁决）/ 已裁决成功；已撤回用默认样式 */
+export const DISPUTE_STATUS_BADGE: Record<DisputeStatus, string> = {
+  OPEN: 'badge--warning',
+  UNDER_REVIEW: 'badge--info',
+  RESOLVED: 'badge--success',
+  WITHDRAWN: '',
+}
+
+export function disputeBadgeClass(status: string): string {
+  return DISPUTE_STATUS_BADGE[status as DisputeStatus] ?? ''
+}
+
+export const DISPUTE_REASON_ZH: Record<DisputeReason, string> = {
+  NOT_DELIVERED: '未交付',
+  TICKET_INVALID: '票券无效',
+  DESCRIPTION_MISMATCH: '与描述不符',
+  OTHER: '其他',
+}
+
+export function disputeReasonZh(reason: string): string {
+  return DISPUTE_REASON_ZH[reason as DisputeReason] ?? '未知原因'
+}
+
+export const DISPUTE_RESOLUTION_ZH: Record<DisputeResolution, string> = {
+  REJECTED: '裁决：不支持',
+  REFUND_APPROVED: '裁决：退款',
+  REDELIVER_APPROVED: '裁决：重新交付',
+}
+
+export function disputeResolutionZh(resolution: string): string {
+  return DISPUTE_RESOLUTION_ZH[resolution as DisputeResolution] ?? '未知结论'
 }

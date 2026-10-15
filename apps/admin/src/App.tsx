@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnomaliesView } from './views/AnomaliesView'
+import { DisputesView } from './views/DisputesView'
 import { EventsView } from './views/EventsView'
 import { InventoryView } from './views/InventoryView'
 import { OrdersView } from './views/OrdersView'
@@ -9,12 +10,13 @@ import { ThemeSwitcher } from './components/ThemeSwitcher'
 
 /**
  * 运营台骨架：侧边导航（hash 路由）+ 令牌输入（X-Admin-Token，localStorage 记忆）。
- * 六视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
+ * 七视图全部走 /api/v1/admin（契约 docs/api/contracts.md「运营接口」）；
  * 令牌由 AdminAuthFilter 校验，默认值见 application.yml（AWN_ADMIN_TOKEN）。
  */
 
 const VIEWS = [
   { key: 'orders', label: '订单' },
+  { key: 'disputes', label: '争议' },
   { key: 'inventory', label: '库存' },
   { key: 'events', label: '活动发布' },
   { key: 'sessions', label: '场次配置' },
@@ -56,6 +58,8 @@ export default function App() {
     <p className="state state--error">请先在右上角填入 X-Admin-Token（开发默认 awn-admin-dev-token）。</p>
   ) : view === 'orders' ? (
     <OrdersView token={token} />
+  ) : view === 'disputes' ? (
+    <DisputesView token={token} />
   ) : view === 'inventory' ? (
     <InventoryView token={token} />
   ) : view === 'events' ? (

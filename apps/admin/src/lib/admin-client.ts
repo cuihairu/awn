@@ -1,4 +1,10 @@
-import { ApiError, type SessionVenueView } from '@awn/api-client'
+import {
+  ApiError,
+  type DisputeResolution,
+  type DisputeSellerResponseView,
+  type DisputeView,
+  type SessionVenueView,
+} from '@awn/api-client'
 
 /**
  * 运营接口客户端（契约 docs/api/contracts.md「运营接口」）。
@@ -122,6 +128,13 @@ export interface SeatCreatePayload {
   positions: { section: string; row: string; seat: string }[]
 }
 
+/** 裁决请求：actor 必填（审计），resolution + note 必填（后端校验） */
+export interface DisputeAdjudicatePayload {
+  actor: string
+  resolution: DisputeResolution
+  note: string
+}
+
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -190,4 +203,23 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  disputes: (token: string) => request<DisputeView[]>('/disputes', token),
+
+  acceptDispute: (token: string, disputeNo: string) =>
+    request<DisputeView>(`/disputes/${encodeURIComponent(disputeNo)}/accept`, token, {
+      method: 'POST',
+    }),
+
+  adjudicateDispute: (token: string, disputeNo: string, payload: DisputeAdjudicatePayload) =>
+    request<DisputeView>(`/disputes/${encodeURIComponent(disputeNo)}/adjudicate`, token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  disputeSellerResponses: (token: string, disputeNo: string) =>
+    request<DisputeSellerResponseView[]>(
+      `/disputes/${encodeURIComponent(disputeNo)}/seller-responses`,
+      token,
+    ),
 }

@@ -146,6 +146,44 @@ code {
   color: var(--awn-ink-2);
 }
 
+/* ── 争议详情展开面板 ─────────────────────────────────────── */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+}
+
+.detail p {
+  margin: 0;
+}
+
+.detail ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--awn-border);
+  border-radius: 10px;
+  max-width: 520px;
+}
+
+.detail-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--awn-ink-2);
+}
+
 /* ── 卡片与表格 ─────────────────────────────────────────── */
 
 .card {
