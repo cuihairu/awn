@@ -4,6 +4,7 @@ import {
   cancelOrder,
   createOrder,
   createPayment,
+  createRefund,
   getFulfillment,
   getOrder,
   listPayments,
@@ -271,5 +272,61 @@ describe('order reads and payment', () => {
     const fulfillment = await getFulfillment('ORD-1')
     expect(callOf(fetchMock).url).toBe(`${API_BASE}/orders/ORD-1/fulfillment`)
     expect(fulfillment.status).toBe('PENDING_SELLER')
+  })
+})
+
+describe('createRefund', () => {
+  it('posts the refund body with the idempotency key in the header only', async () => {
+    const refund = {
+      refundNo: 'REF-1',
+      paymentNo: 'PAY-1',
+      orderNo: 'ORD-1',
+      channelRefundNo: null,
+      status: 'PENDING',
+      currency: 'CNY',
+      amount: 10000,
+      reason: '争议裁决退款',
+    }
+    const fetchMock = mockFetchOnce(refund)
+
+    const view = await createRefund('ORD-1', 'key-refund-1', {
+      paymentNo: 'PAY-1',
+      amount: 10000,
+      reason: '争议裁决退款',
+    })
+
+    const { url, init, headers, body } = callOf(fetchMock)
+    expect(url).toBe(`${API_BASE}/orders/ORD-1/refunds`)
+    expect(init.method).toBe('POST')
+    expect(headers['idempotency-key']).toBe('key-refund-1')
+    // 幂等键只走 header；金额为最小货币单位整数，客户端不传渠道（渠道取支付单）
+    expect(body).toEqual({ paymentNo: 'PAY-1', amount: 10000, reason: '争议裁决退款' })
+    expect(body).not.toHaveProperty('idempotencyKey')
+    expect(view.refundNo).toBe('REF-1')
+  })
+
+  it('reads the refund back on idempotent replay', async () => {
+    const fetchMock = mockFetchOnce({
+      refundNo: 'REF-1',
+      paymentNo: 'PAY-1',
+      orderNo: 'ORD-1',
+      channelRefundNo: null,
+      status: 'PENDING',
+      currency: 'CNY',
+      amount: 10000,
+      reason: '争议裁决退款',
+    })
+    const first = await createRefund('ORD-1', 'key-refund-1', {
+      paymentNo: 'PAY-1',
+      amount: 10000,
+      reason: '争议裁决退款',
+    })
+    const replay = await createRefund('ORD-1', 'key-refund-1', {
+      paymentNo: 'PAY-1',
+      amount: 10000,
+      reason: '争议裁决退款',
+    })
+    expect(replay.refundNo).toBe(first.refundNo)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })

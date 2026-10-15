@@ -182,5 +182,8 @@ CREATE INDEX ix_dispute_seller_responses_dispute
 
 ## 余留
 
-- 裁决 REFUND_APPROVED 后的退款执行联动（目前管理员手动走既有退款端点）；
+- 退款执行联动已收口（2026-10-15）：裁决不动钱不变，运营台争议队列在裁决退款的详情内
+  提供执行入口——GET `/orders/{orderNo}/payments` 取成功支付单，金额预填裁决金额，
+  POST `/orders/{orderNo}/refunds`（幂等键随内容变化换新，可退余额由服务端守卫，
+  超额 409 `REFUND_CONFLICT`）。后端无退款列表端点，重复执行靠余额守卫拦截。
 - 争议时效（超时自动升级 / 关闭）待运营口径明确后补。

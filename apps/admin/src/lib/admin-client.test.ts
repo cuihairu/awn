@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adminApi } from './admin-client'
+import { adminApi, newIdempotencyKey } from './admin-client'
 
 /**
  * 运营客户端契约：鉴权头 X-Admin-Token 必带；
@@ -192,5 +192,77 @@ describe('admin client', () => {
       status: 409,
       code: 'DISPUTE_CONFLICT',
     })
+  })
+})
+
+describe('refund execution channel', () => {
+  it('lists order payments through the public trade endpoint', async () => {
+    const fetchMock = mockFetchOnce([
+      {
+        paymentNo: 'PAY-1',
+        orderNo: 'ORD-1',
+        channel: 'sandbox',
+        channelTxnNo: null,
+        status: 'SUCCEEDED',
+        currency: 'CNY',
+        amount: 10000,
+        paidAt: null,
+        retryable: false,
+      },
+    ])
+    const payments = await adminApi.orderPayments('ORD 1')
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined]
+    // 退款执行走公开交易端点（非 /admin 前缀），不要求运营令牌
+    expect(url).toBe('/api/v1/orders/ORD%201/payments')
+    expect(init).toBeUndefined()
+    expect(payments[0].status).toBe('SUCCEEDED')
+  })
+
+  it('creates a refund with the idempotency key header and minor-unit body', async () => {
+    const fetchMock = mockFetchOnce({
+      refundNo: 'REF-1',
+      paymentNo: 'PAY-1',
+      orderNo: 'ORD-1',
+      channelRefundNo: null,
+      status: 'PENDING',
+      currency: 'CNY',
+      amount: 10000,
+      reason: '争议 DSP-1 裁决退款',
+    })
+    const refund = await adminApi.createOrderRefund('ORD-1', 'key-1', {
+      paymentNo: 'PAY-1',
+      amount: 10000,
+      reason: '争议 DSP-1 裁决退款',
+    })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/v1/orders/ORD-1/refunds')
+    expect(init.method).toBe('POST')
+    expect(init.headers['idempotency-key']).toBe('key-1')
+    expect(init.headers['content-type']).toBe('application/json')
+    expect(JSON.parse(String(init.body))).toEqual({
+      paymentNo: 'PAY-1',
+      amount: 10000,
+      reason: '争议 DSP-1 裁决退款',
+    })
+    expect(refund.refundNo).toBe('REF-1')
+  })
+
+  it('rejects a refund failure with the backend error code', async () => {
+    mockFetchOnce(
+      { code: 'REFUND_CONFLICT', message: 'refundable limit exceeded' },
+      { ok: false, status: 409, statusText: 'Conflict' },
+    )
+    await expect(
+      adminApi.createOrderRefund('ORD-1', 'key-2', {
+        paymentNo: 'PAY-1',
+        amount: 999999,
+        reason: 'r',
+      }),
+    ).rejects.toMatchObject({ name: 'ApiError', status: 409, code: 'REFUND_CONFLICT' })
+  })
+
+  it('generates unique idempotency keys', () => {
+    const keys = new Set(Array.from({ length: 50 }, () => newIdempotencyKey()))
+    expect(keys.size).toBe(50)
   })
 })

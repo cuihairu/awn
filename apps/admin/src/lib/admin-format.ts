@@ -1,5 +1,5 @@
 import type { AdminOrder, AdminOrderStatus, PoolBalance } from './admin-client'
-import type { DisputeReason, DisputeResolution, DisputeStatus } from '@awn/api-client'
+import type { DisputeReason, DisputeResolution, DisputeStatus, PaymentView } from '@awn/api-client'
 
 /**
  * 运营台展示层纯函数（无 React、无请求依赖）。
@@ -130,4 +130,36 @@ export const DISPUTE_RESOLUTION_ZH: Record<DisputeResolution, string> = {
 
 export function disputeResolutionZh(resolution: string): string {
   return DISPUTE_RESOLUTION_ZH[resolution as DisputeResolution] ?? '未知结论'
+}
+
+/* ------------------------------------------------------------------ *
+ * 退款执行（裁决 REFUND_APPROVED 后走既有退款端点，裁决本身不动钱）
+ * ------------------------------------------------------------------ */
+
+/** 元输入 → 最小货币单位整数；非法输入（负数 / 超两位小数 / 非数字）返回 null 不猜值 */
+export function parseYuanToFen(input: string): number | null {
+  const text = input.trim()
+  if (!/^\d+(\.\d{1,2})?$/.test(text)) return null
+  const [yuan, decimals = ''] = text.split('.')
+  const padded = decimals.padEnd(2, '0')
+  return Number(yuan) * 100 + Number(padded)
+}
+
+/** 可执行退款的支付单：只认渠道已确认收款（SUCCEEDED）的单，其余状态发起必被 409 拒 */
+export function succeededPayments(payments: PaymentView[]): PaymentView[] {
+  return payments.filter((payment) => payment.status === 'SUCCEEDED')
+}
+
+/**
+ * 退款金额自检（元输入 vs 裁决上限，最小货币单位）：金额合法且不超上限返回 null，
+ * 否则返回首条原因。上限为 null（无裁决金额，不该出现的形态）时只做非零校验；
+ * 真正的可退余额由服务端守卫（超额 409 REFUND_CONFLICT）。
+ */
+export function validateRefundYuan(input: string, capMinor: number | null): string | null {
+  const amount = parseYuanToFen(input)
+  if (amount === null || amount <= 0) return '退款金额需大于 0 且不超过裁决金额。'
+  if (capMinor != null && amount > capMinor) {
+    return `退款金额不超过裁决金额 ¥${minorToYuan(capMinor)}。`
+  }
+  return null
 }

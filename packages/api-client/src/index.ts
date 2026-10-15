@@ -149,6 +149,19 @@ export interface PaymentView {
   retryable: boolean
 }
 
+/** 退款单视图（POST /orders/{orderNo}/refunds 的响应；同键重放返回原退款单） */
+export interface RefundView {
+  refundNo: string
+  paymentNo: string
+  orderNo: string
+  channelRefundNo: string | null
+  status: string
+  currency: string
+  /** 最小货币单位整数；服务端按支付单可退余额守卫，超额 → 409 REFUND_CONFLICT */
+  amount: number
+  reason: string
+}
+
 export async function createOrder(
   payload: OrderCreatePayload,
   init?: RequestInit,
@@ -224,6 +237,29 @@ export async function listPayments(
   return fetch(`${API_BASE}/orders/${orderNo}/payments`, init).then((res) =>
     readJson<PaymentView[]>(res),
   )
+}
+
+/**
+ * 发起退款（争议裁决后的执行通道）：幂等键必填（走 Idempotency-Key 头）；
+ * 金额为最小货币单位整数，服务端按支付单可退余额守卫（超额 → 409 REFUND_CONFLICT）；
+ * 支付单必须属于该订单（跨订单按不存在处理 404）。
+ */
+export async function createRefund(
+  orderNo: string,
+  idempotencyKey: string,
+  payload: { paymentNo: string; amount: number; reason: string },
+  init?: RequestInit,
+): Promise<RefundView> {
+  return fetch(`${API_BASE}/orders/${encodeURIComponent(orderNo)}/refunds`, {
+    ...init,
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'idempotency-key': idempotencyKey,
+      ...(init?.headers ?? {}),
+    },
+    body: JSON.stringify(payload),
+  }).then((res) => readJson<RefundView>(res))
 }
 
 /** 可用支付渠道编码（由后端已注册网关决定）；渠道编码不硬编码在各端，换渠道前先读本清单 */

@@ -1,8 +1,12 @@
 import {
   ApiError,
+  createRefund,
+  listPayments,
   type DisputeResolution,
   type DisputeSellerResponseView,
   type DisputeView,
+  type PaymentView,
+  type RefundView,
   type SessionVenueView,
 } from '@awn/api-client'
 
@@ -156,6 +160,15 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
   return body as T
 }
 
+/** 退款执行幂等键：每次提交内容变化后换新键（同键不同内容会被后端判冲突） */
+export function newIdempotencyKey(): string {
+  const cryptoRef = globalThis.crypto
+  if (cryptoRef && typeof cryptoRef.randomUUID === 'function') {
+    return cryptoRef.randomUUID()
+  }
+  return `awn-refund-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export const adminApi = {
   orders: (token: string) => request<AdminOrder[]>('/orders', token),
   events: (token: string) => request<AdminEventRow[]>('/events', token),
@@ -222,4 +235,18 @@ export const adminApi = {
       `/disputes/${encodeURIComponent(disputeNo)}/seller-responses`,
       token,
     ),
+
+  /**
+   * 退款执行通道（公开交易端点，非 /admin 前缀，不要求运营令牌）：
+   * 争议裁决 REFUND_APPROVED 后按既有退款流执行——裁决本身不动钱，此处只是
+   * 把「查支付单 → 发起退款」收进争议队列，口径与 POST /orders/{orderNo}/refunds 一致。
+   */
+  orderPayments: (orderNo: string): Promise<PaymentView[]> =>
+    listPayments(encodeURIComponent(orderNo)),
+
+  createOrderRefund: (
+    orderNo: string,
+    idempotencyKey: string,
+    payload: { paymentNo: string; amount: number; reason: string },
+  ): Promise<RefundView> => createRefund(orderNo, idempotencyKey, payload),
 }

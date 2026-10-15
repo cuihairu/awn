@@ -12,6 +12,9 @@ import {
   minorToYuan,
   orderBadgeClass,
   orderStatusZh,
+  parseYuanToFen,
+  succeededPayments,
+  validateRefundYuan,
 } from './admin-format'
 import type { AdminOrder } from './admin-client'
 
@@ -115,3 +118,48 @@ const baseOrder: AdminOrder = {
   expiresAt: null,
   items: [],
 }
+
+describe('refund execution helpers', () => {
+  it('parses yuan input to minor units, rejecting malformed text', () => {
+    expect(parseYuanToFen('388')).toBe(38800)
+    expect(parseYuanToFen(' 388.5 ')).toBe(38850)
+    expect(parseYuanToFen('0.05')).toBe(5)
+    // 非法输入（负数 / 三位小数 / 空串 / 文字）不猜值，返回 null
+    expect(parseYuanToFen('-1')).toBeNull()
+    expect(parseYuanToFen('1.234')).toBeNull()
+    expect(parseYuanToFen('')).toBeNull()
+    expect(parseYuanToFen('abc')).toBeNull()
+  })
+
+  it('keeps only succeeded payments as refund sources', () => {
+    const payment = (status: string) => ({
+      paymentNo: `P-${status}`,
+      orderNo: 'ORD-1',
+      channel: 'sandbox',
+      channelTxnNo: null,
+      status,
+      currency: 'CNY',
+      amount: 10000,
+      paidAt: null,
+      retryable: false,
+    })
+    const sources = succeededPayments([
+      payment('SUCCEEDED'),
+      payment('FAILED'),
+      payment('PENDING'),
+      payment('SUCCEEDED'),
+    ])
+    expect(sources.map((p) => p.paymentNo)).toEqual(['P-SUCCEEDED', 'P-SUCCEEDED'])
+  })
+
+  it('validates the refund amount against the adjudicated cap', () => {
+    // 裁决上限 ¥100.00
+    expect(validateRefundYuan('100', 10000)).toBeNull()
+    expect(validateRefundYuan('0.01', 10000)).toBeNull()
+    expect(validateRefundYuan('100.01', 10000)).toContain('不超过')
+    expect(validateRefundYuan('0', 10000)).toContain('大于 0')
+    expect(validateRefundYuan('abc', 10000)).toContain('大于 0')
+    // 无裁决金额（不该出现）时只做非零校验
+    expect(validateRefundYuan('120', null)).toBeNull()
+  })
+})
