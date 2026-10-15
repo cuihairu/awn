@@ -604,6 +604,79 @@ export async function renderCampaign(
 }
 
 /* ------------------------------------------------------------------ *
+ * 专场列表与内容（docs/api/contracts.md「专场列表与内容接口」）
+ * 公开面只含已发布专场：草稿 / 已撤回 / 已归档不出现在列表里，
+ * 内容端点与渲染同口径，未发布专场一律 404（不泄露草稿）。
+ * ------------------------------------------------------------------ */
+
+export interface CampaignView {
+  id: number
+  campaignCode: string
+  title: string
+  subtitle: string | null
+  status: string
+  currentRevisionId: number | null
+}
+
+/** 须知条目：区块 props 的 ruleDocumentId 按 id 匹配 */
+export interface CampaignRuleView {
+  id: number
+  title: string
+  /** 纯文本，段落以空行分隔 */
+  content: string
+}
+
+/** 常见问题条目：区块 props 的 faqId 按 id 匹配 */
+export interface CampaignFaqView {
+  id: number
+  question: string
+  answer: string
+}
+
+export type CampaignAssetType = 'IMAGE' | 'VIDEO' | 'BANNER' | 'THUMBNAIL'
+
+/** 素材条目：区块 props 的 assetIds 按 id 匹配；altText 缺失时前端出占位块 */
+export interface CampaignAssetView {
+  id: number
+  assetType: CampaignAssetType
+  url: string
+  altText: string | null
+  displayOrder: number
+}
+
+/** 公开专场列表（只含 PUBLISHED，按最近变更倒序） */
+export async function listCampaigns(init?: RequestInit): Promise<CampaignView[]> {
+  return fetch(`${API_BASE}/campaigns`, init).then((res) => readJson<CampaignView[]>(res))
+}
+
+export async function getCampaignRules(
+  campaignCode: string,
+  init?: RequestInit,
+): Promise<CampaignRuleView[]> {
+  return fetch(`${API_BASE}/campaigns/${campaignCode}/rules`, init).then((res) =>
+    readJson<CampaignRuleView[]>(res),
+  )
+}
+
+export async function getCampaignFaq(
+  campaignCode: string,
+  init?: RequestInit,
+): Promise<CampaignFaqView[]> {
+  return fetch(`${API_BASE}/campaigns/${campaignCode}/faq`, init).then((res) =>
+    readJson<CampaignFaqView[]>(res),
+  )
+}
+
+export async function getCampaignAssets(
+  campaignCode: string,
+  init?: RequestInit,
+): Promise<CampaignAssetView[]> {
+  return fetch(`${API_BASE}/campaigns/${campaignCode}/assets`, init).then((res) =>
+    readJson<CampaignAssetView[]>(res),
+  )
+}
+
+/* ------------------------------------------------------------------ *
  * 排队 / 候补（docs/api/contracts.md 排队 / 候补）
  * 排队只登记意愿：不占库存、不预生成订单；递补由后端 Worker 按池 FIFO 驱动，
  * 为队首原子预留并生成待支付订单（与普通下单同源）。

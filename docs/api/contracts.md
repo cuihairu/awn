@@ -71,9 +71,13 @@ GET /api/v1/products/{productId}
 GET /api/v1/products/{productId}/availability
 GET /api/v1/sessions/{sessionId}/products
 GET /api/v1/sessions/{sessionId}/seatmap
+GET /api/v1/campaigns
 GET /api/v1/campaigns/{campaignCode}
 GET /api/v1/campaigns/{campaignCode}/published
 GET /api/v1/campaigns/{campaignCode}/render
+GET /api/v1/campaigns/{campaignCode}/rules
+GET /api/v1/campaigns/{campaignCode}/faq
+GET /api/v1/campaigns/{campaignCode}/assets
 
 POST /api/v1/orders
 GET  /api/v1/orders/{orderId}
@@ -120,6 +124,29 @@ GET /api/v1/works/{workId}
 活动发布（`DRAFT` → `PUBLISHED`）是运营动作，经 `X-Admin-Token` 鉴权暴露：`POST /api/v1/admin/events/{eventCode}/publish`（见「运营接口」）；仅草稿可发布，重复发布 → 409 `CONFLICT`，未知活动 → 404 `EVENT_NOT_FOUND`。
 
 公共商品接口的库存摘要为展示口径（当前直查数据库，未接缓存），**下单时必须重新验证**。商品详情、可售摘要与场次商品列表均透出 `poolCode`（未建池为 `null`，按未开售处理）：`POST /orders` 数量行需要它，未建池商品无法拼出合法订单行。
+
+## 专场列表与内容接口
+
+专场是运营配置的聚合页：区块配置走 `POST /campaigns/{code}/draft` + 发布版本快照（不可变 revision），
+须知 / 常见问题 / 素材三类内容走本节的独立内容端点。前端不拼内容、不造内容，查到什么渲染什么。
+
+- `GET /api/v1/campaigns`：公开专场列表，**只含 `PUBLISHED`**（草稿 / 已撤回 / 已归档一律不出现），
+  按最近变更倒序（发布与草稿改动都会刷新该时间戳）。条目为专场视图
+  （`campaignCode` / `title` / `subtitle` / `status` / `currentRevisionId`），列表项不再重复渲染配置。
+- `GET /api/v1/campaigns/{campaignCode}/rules`：须知条目 `[{"id","title","content"}]`，
+  按运营录入顺序（`display_order`，同序按 id）。`content` 为纯文本，段落以空行分隔。
+- `GET /api/v1/campaigns/{campaignCode}/faq`：常见问题 `[{"id","question","answer"}]`，同一排序口径。
+- `GET /api/v1/campaigns/{campaignCode}/assets`：素材 `[{"id","assetType","url","altText","displayOrder"}]`，
+  `assetType` 为 `IMAGE` / `VIDEO` / `BANNER` / `THUMBNAIL`，`altText` 可为 `null`。
+- 可见性：三个内容端点与 `/render` 同口径，只读**已发布**专场；专场未知或未发布 → 404
+  `CAMPAIGN_NOT_FOUND`，草稿内容不泄露（与活动 / 场次 / 图鉴的公开读一致）。
+
+引用型 ID 收口：区块 props 里的 `ruleDocumentId` / `faqId` / `assetIds` 按上述列表的 `id` 匹配解析，
+匹配不到即视为查不到（标记待接入，不渲染空白区块）；内联展示型 props（`rules` 文本数组 /
+`entries` 问答对 / `images` 条目）优先于引用。
+
+素材红线：`url` 只能指向有授权来源或明确标注的占位图，**不得由内容端点生成人像或用 logo 代餐**；
+`altText` 缺失时前端出占位块。
 
 ## 交易接口
 
@@ -221,6 +248,13 @@ POST /api/v1/campaigns/{campaignCode}/validate
 POST /api/v1/campaigns/{campaignCode}/publish
 POST /api/v1/campaigns/{campaignCode}/unpublish
 
+POST   /api/v1/campaigns/{campaignCode}/rules
+DELETE /api/v1/campaigns/{campaignCode}/rules/{ruleId}
+POST   /api/v1/campaigns/{campaignCode}/faq
+DELETE /api/v1/campaigns/{campaignCode}/faq/{faqId}
+POST   /api/v1/campaigns/{campaignCode}/assets
+DELETE /api/v1/campaigns/{campaignCode}/assets/{assetId}
+
 POST /api/v1/admin/inventory/adjustments
 
 GET  /api/v1/admin/orders
@@ -251,6 +285,13 @@ POST   /api/v1/admin/works/{workId}/cast
 ```
 
 专场管理写操作与运营接口同权（`X-Admin-Token`），公开读 GET 放行。
+
+专场内容配置（须知 / 常见问题 / 素材）同权：`POST /campaigns/{code}/rules`（体 `{"title","content"}`）、
+`POST /campaigns/{code}/faq`（体 `{"question","answer"}`）、`POST /campaigns/{code}/assets`
+（体 `{"assetType","url","altText","displayOrder"}`，`assetType` 取 `CampaignAsset` 白名单值），
+成功返回 201 与条目视图；`DELETE` 对应条目，成功返回 200 空体。删除按**归属专场**匹配
+（`DELETE /campaigns/{code}/assets/{assetId}` 只删本专场条目），他专场条目不受理；
+专场未知 → 404 `CAMPAIGN_NOT_FOUND`，素材类型不在白名单 → 400 `VALIDATION_FAILED`。
 
 图鉴运营写操作同权（`X-Admin-Token`）：建人物 / 作品草稿、发布（`DRAFT` → `PUBLISHED` 守卫，重复发布 → 409 `CONFLICT`）、给作品绑定人物身份（`roleType` / `roleName` / `billingOrder`，重复绑定 → 409）。绑定与发布校验未知资源 → 404 `PERSON_NOT_FOUND` / `WORK_NOT_FOUND`。
 

@@ -6,6 +6,11 @@ import site.awn.campaign.domain.CampaignAsset;
 import java.util.List;
 
 public interface CampaignAssetRepository extends JpaRepository<CampaignAsset, Long> {
-    List<CampaignAsset> findByCampaignIdOrderByDisplayOrderAsc(Long campaignId);
+    /** 公开读与运营配置同口径：按录入顺序取（同序按 id 稳定） */
+    List<CampaignAsset> findByCampaignIdOrderByDisplayOrderAscIdAsc(Long campaignId);
+
     void deleteByCampaignId(Long campaignId);
+
+    /** 删除只认归属专场，避免按 id 删掉他专场的素材 */
+    void deleteByCampaignIdAndId(Long campaignId, Long id);
 }

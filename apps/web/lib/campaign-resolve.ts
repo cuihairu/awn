@@ -1,4 +1,11 @@
-import { ApiError, type ProductListItem, type SessionView } from '@awn/api-client'
+import {
+  ApiError,
+  type CampaignAssetView,
+  type CampaignFaqView,
+  type CampaignRuleView,
+  type ProductListItem,
+  type SessionView,
+} from '@awn/api-client'
 import type { CampaignSection, CampaignSectionType } from '@awn/campaign-renderer'
 import { formatEventDateTime } from './event-labels'
 
@@ -10,10 +17,10 @@ import { formatEventDateTime } from './event-labels'
  * 页面按引用查公开只读 API 组装展示数据，查不到就明确标记待接入，
  * 既不渲染空白区块，也不为后端没有的数据源造假内容。
  *
- * 须知 / 常见问题 / 图片三类没有公开数据源可查：只认内联展示型 props
+ * 须知 / 常见问题 / 素材三类已有公开内容端点（docs/api/contracts.md「专场列表与内容接口」）：
+ * 引用型 ID 按列表条目 id 匹配，匹配不到即视为查不到；内联展示型 props
  * （rules 文本数组 / entries 问答对 / images 含 alt 条目，口径与 @awn/campaign-renderer
- * 和小程序 sections 子集一致）；引用型 ID（ruleDocumentId / faqId / assetIds）没有
- * 可查端点，统一待接入，等后端补内容形态后再切换。
+ * 和小程序 sections 子集一致）优先于引用，两种形态都能渲染。
  */
 
 export interface SectionResolution {
@@ -30,6 +37,9 @@ export interface SectionResolution {
 export interface CampaignDataApi {
   listEventSessions(eventId: string): Promise<SessionView[]>
   getSessionProducts(sessionId: string): Promise<ProductListItem[]>
+  getCampaignRules?(campaignCode: string): Promise<CampaignRuleView[]>
+  getCampaignFaq?(campaignCode: string): Promise<CampaignFaqView[]>
+  getCampaignAssets?(campaignCode: string): Promise<CampaignAssetView[]>
 }
 
 function idsOf(props: Record<string, unknown>, key: string): string[] {
@@ -65,8 +75,12 @@ function itemsOf(props: Record<string, unknown>, key: string): Record<string, un
   return value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
 }
 
-/** 须知模块：后端尚未落地规则文档接口，只认内联的展示型 rules 文本数组。 */
-function resolveRulePanel(section: CampaignSection): SectionResolution {
+/** 须知模块：内联 rules 文本数组优先；否则按 ruleDocumentId 查内容端点，正文按空行分段。 */
+async function resolveRulePanel(
+  section: CampaignSection,
+  api: CampaignDataApi,
+  campaignCode?: string,
+): Promise<SectionResolution> {
   const rules = textsOf(section.props, 'rules').filter((rule) => rule.length > 0)
   if (rules.length > 0) {
     return { ...section, status: 'ready', props: { ...section.props, rules } }
@@ -74,11 +88,31 @@ function resolveRulePanel(section: CampaignSection): SectionResolution {
   if (section.props['rules'] !== undefined) {
     return pending(section, '须知条目格式不符（rules 需为非空文本数组）')
   }
-  return pending(section, '须知内容未接入（规则文档接口未落地）')
+  const ruleId = idOf(section.props, 'ruleDocumentId')
+  if (!ruleId) {
+    return pending(section, '须知内容未接入（未配置 rules 或 ruleDocumentId）')
+  }
+  const documents = await campaignContent(api.getCampaignRules, campaignCode)
+  const referenced = documents.find((document) => String(document.id) === ruleId)
+  if (!referenced) {
+    return pending(section, `须知内容未接入（ruleDocumentId ${ruleId} 无对应条目）`)
+  }
+  const paragraphs = referenced.content
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph.length > 0)
+  if (paragraphs.length === 0) {
+    return pending(section, `须知内容未接入（ruleDocumentId ${ruleId} 条目正文为空）`)
+  }
+  return { ...section, status: 'ready', props: { ...section.props, rules: paragraphs } }
 }
 
 /** 常见问题模块：条目为 {question, answer} 文本对，与 @awn/campaign-renderer 口径一致。 */
-function resolveFaq(section: CampaignSection): SectionResolution {
+async function resolveFaq(
+  section: CampaignSection,
+  api: CampaignDataApi,
+  campaignCode?: string,
+): Promise<SectionResolution> {
   const entries = itemsOf(section.props, 'entries')
     .map((entry) => ({
       question: typeof entry['question'] === 'string' ? entry['question'] : '',
@@ -91,11 +125,30 @@ function resolveFaq(section: CampaignSection): SectionResolution {
   if (section.props['entries'] !== undefined) {
     return pending(section, '常见问题条目格式不符（entries 需含 question / answer 文本）')
   }
-  return pending(section, '常见问题内容未接入（FAQ 接口未落地）')
+  // 引用型：faqId 单条 / faqIds 多条，按引用顺序取对应条目
+  const referenced = [idOf(section.props, 'faqId'), ...idsOf(section.props, 'faqIds')].filter(
+    (id) => id.length > 0,
+  )
+  if (referenced.length === 0) {
+    return pending(section, '常见问题内容未接入（未配置 entries 或 faqId）')
+  }
+  const documents = await campaignContent(api.getCampaignFaq, campaignCode)
+  const resolved = referenced
+    .map((id) => documents.find((entry) => String(entry.id) === id))
+    .filter((entry): entry is CampaignFaqView => entry !== undefined)
+    .map((entry) => ({ question: entry.question, answer: entry.answer }))
+  if (resolved.length === 0) {
+    return pending(section, '常见问题内容未接入（faqId 无对应条目）')
+  }
+  return { ...section, status: 'ready', props: { ...section.props, entries: resolved } }
 }
 
 /** 图片模块：条目为 {src, alt}，src 缺失时渲染层按 alt 出占位块（素材红线）。 */
-function resolveImageGallery(section: CampaignSection): SectionResolution {
+async function resolveImageGallery(
+  section: CampaignSection,
+  api: CampaignDataApi,
+  campaignCode?: string,
+): Promise<SectionResolution> {
   const images = itemsOf(section.props, 'images')
     .map((image) => ({
       src: typeof image['src'] === 'string' ? image['src'] : '',
@@ -108,7 +161,40 @@ function resolveImageGallery(section: CampaignSection): SectionResolution {
   if (section.props['images'] !== undefined) {
     return pending(section, '图片素材格式不符（images 需为非空数组且含 alt 文本）')
   }
-  return pending(section, '图片素材未接入（素材公开接口未落地）')
+  const assetIds = idsOf(section.props, 'assetIds')
+  if (assetIds.length === 0) {
+    return pending(section, '图片素材未接入（未配置 images 或 assetIds）')
+  }
+  const assets = await campaignContent(api.getCampaignAssets, campaignCode)
+  const resolved = assetIds
+    .map((id) => assets.find((asset) => String(asset.id) === id))
+    .filter((asset): asset is CampaignAssetView => asset !== undefined)
+    // 无 alt 的素材不出图（素材红线：不用生成图顶替，也不留空图）
+    .filter((asset) => (asset.altText ?? '').length > 0)
+    .map((asset) => ({ src: asset.url, alt: asset.altText as string }))
+  if (resolved.length === 0) {
+    return pending(section, '图片素材未接入（assetIds 无对应条目或素材缺 alt）')
+  }
+  return { ...section, status: 'ready', props: { ...section.props, images: resolved } }
+}
+
+/**
+ * 内容端点读取：未注入端点或缺专场码一律按查不到处理；404 同样按查不到
+ * （引用未必是真实条目 id），网络类异常照常抛出（与引用型活动查询同口径）。
+ */
+async function campaignContent<T>(
+  load: ((campaignCode: string) => Promise<T[]>) | undefined,
+  campaignCode: string | undefined,
+): Promise<T[]> {
+  if (!load || !campaignCode) {
+    return []
+  }
+  try {
+    return await load(campaignCode)
+  } catch (error) {
+    fallback(error)
+    return []
+  }
 }
 
 /** eventList：按引用活动查场次，组装场次卡片数据。 */
@@ -164,17 +250,22 @@ function fallback(error: unknown): never[] {
   throw error
 }
 
-/** 按 section 类型解析为展示型 props；无公开数据源的模块明确标记待接入。 */
+/**
+ * 按 section 类型解析为展示型 props；无公开数据源的模块明确标记待接入。
+ * campaignCode 用于查询须知 / 常见问题 / 素材内容端点（引用型 ID 按条目 id 匹配）。
+ */
 export async function resolveSections(
   sections: CampaignSection[],
   api: CampaignDataApi,
+  campaignCode?: string,
 ): Promise<SectionResolution[]> {
-  return Promise.all(sections.map((section) => resolveOne(section, api)))
+  return Promise.all(sections.map((section) => resolveOne(section, api, campaignCode)))
 }
 
 async function resolveOne(
   section: CampaignSection,
   api: CampaignDataApi,
+  campaignCode?: string,
 ): Promise<SectionResolution> {
   switch (section.type) {
     case 'eventList':
@@ -190,11 +281,11 @@ async function resolveOne(
     case 'videoEmbed':
       return { ...section, status: 'ready', props: section.props }
     case 'rulePanel':
-      return resolveRulePanel(section)
+      return resolveRulePanel(section, api, campaignCode)
     case 'faq':
-      return resolveFaq(section)
+      return resolveFaq(section, api, campaignCode)
     case 'imageGallery':
-      return resolveImageGallery(section)
+      return resolveImageGallery(section, api, campaignCode)
     case 'priceTrend':
       return pending(section, '价格趋势未接入（情报接口未接入专场）')
     case 'ticketComparison':

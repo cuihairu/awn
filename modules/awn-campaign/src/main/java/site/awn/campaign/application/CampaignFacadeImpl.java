@@ -5,10 +5,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.awn.campaign.api.AddAssetCommand;
 import site.awn.campaign.api.AddEventCommand;
+import site.awn.campaign.api.AddFaqCommand;
 import site.awn.campaign.api.AddProductCommand;
+import site.awn.campaign.api.AddRuleCommand;
+import site.awn.campaign.api.CampaignAssetView;
 import site.awn.campaign.api.CampaignConfig;
 import site.awn.campaign.api.CampaignFacade;
+import site.awn.campaign.api.CampaignFaqView;
 import site.awn.campaign.api.CampaignRevisionView;
+import site.awn.campaign.api.CampaignRuleView;
 import site.awn.campaign.api.CampaignView;
 import site.awn.campaign.api.CreateCampaignCommand;
 import site.awn.campaign.api.RenderedPageView;
@@ -19,16 +24,20 @@ import site.awn.campaign.domain.CampaignAsset;
 import site.awn.campaign.domain.CampaignConfigValidationException;
 import site.awn.campaign.domain.CampaignConfigValidator;
 import site.awn.campaign.domain.CampaignEvent;
+import site.awn.campaign.domain.CampaignFaq;
 import site.awn.campaign.domain.CampaignNotFoundException;
 import site.awn.campaign.domain.CampaignProduct;
 import site.awn.campaign.domain.CampaignRevision;
 import site.awn.campaign.domain.CampaignRevisionNotFoundException;
+import site.awn.campaign.domain.CampaignRuleDocument;
 import site.awn.campaign.domain.CampaignStatus;
 import site.awn.campaign.infrastructure.CampaignAssetRepository;
 import site.awn.campaign.infrastructure.CampaignEventRepository;
+import site.awn.campaign.infrastructure.CampaignFaqRepository;
 import site.awn.campaign.infrastructure.CampaignProductRepository;
 import site.awn.campaign.infrastructure.CampaignRepository;
 import site.awn.campaign.infrastructure.CampaignRevisionRepository;
+import site.awn.campaign.infrastructure.CampaignRuleDocumentRepository;
 
 import java.util.List;
 
@@ -40,6 +49,8 @@ public class CampaignFacadeImpl implements CampaignFacade {
     private final CampaignEventRepository campaignEvents;
     private final CampaignProductRepository campaignProducts;
     private final CampaignAssetRepository campaignAssets;
+    private final CampaignRuleDocumentRepository campaignRules;
+    private final CampaignFaqRepository campaignFaqs;
     private final CampaignConfigValidator configValidator;
     private final CampaignTemplateRenderer renderer;
     private final ObjectMapper objectMapper;
@@ -49,6 +60,8 @@ public class CampaignFacadeImpl implements CampaignFacade {
                               CampaignEventRepository campaignEvents,
                               CampaignProductRepository campaignProducts,
                               CampaignAssetRepository campaignAssets,
+                              CampaignRuleDocumentRepository campaignRules,
+                              CampaignFaqRepository campaignFaqs,
                               CampaignConfigValidator configValidator,
                               CampaignTemplateRenderer renderer,
                               ObjectMapper objectMapper) {
@@ -57,6 +70,8 @@ public class CampaignFacadeImpl implements CampaignFacade {
         this.campaignEvents = campaignEvents;
         this.campaignProducts = campaignProducts;
         this.campaignAssets = campaignAssets;
+        this.campaignRules = campaignRules;
+        this.campaignFaqs = campaignFaqs;
         this.configValidator = configValidator;
         this.renderer = renderer;
         this.objectMapper = objectMapper;
@@ -75,6 +90,54 @@ public class CampaignFacadeImpl implements CampaignFacade {
         return campaigns.findByCampaignCode(campaignCode)
                 .map(this::toView)
                 .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignView> publicCampaigns() {
+        // 公开面只看 PUBLISHED：草稿、已撤回、已归档都不出现。
+        // 排序用 campaigns.updated_at（发布与草稿改动都会刷新它），同值按 id 稳定。
+        return campaigns.findByStatusOrderByUpdatedAtDescIdDesc(CampaignStatus.PUBLISHED).stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignRuleView> publicRules(String campaignCode) {
+        Campaign campaign = requirePublished(campaignCode);
+        return campaignRules.findByCampaignIdOrderByDisplayOrderAscIdAsc(campaign.getId()).stream()
+                .map(rule -> new CampaignRuleView(rule.getId(), rule.getTitle(), rule.getContent()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignFaqView> publicFaq(String campaignCode) {
+        Campaign campaign = requirePublished(campaignCode);
+        return campaignFaqs.findByCampaignIdOrderByDisplayOrderAscIdAsc(campaign.getId()).stream()
+                .map(faq -> new CampaignFaqView(faq.getId(), faq.getQuestion(), faq.getAnswer()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampaignAssetView> publicAssets(String campaignCode) {
+        Campaign campaign = requirePublished(campaignCode);
+        return campaignAssets.findByCampaignIdOrderByDisplayOrderAscIdAsc(campaign.getId()).stream()
+                .map(asset -> new CampaignAssetView(asset.getId(), asset.getAssetType().name(),
+                        asset.getUrl(), asset.getAltText(), asset.getDisplayOrder()))
+                .toList();
+    }
+
+    /** 内容公开读与渲染同口径：只读已发布专场，未知或未发布一律按不存在处理 */
+    private Campaign requirePublished(String campaignCode) {
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+        if (campaign.getStatus() != CampaignStatus.PUBLISHED) {
+            throw new CampaignNotFoundException(campaignCode);
+        }
+        return campaign;
     }
 
     @Override
@@ -255,19 +318,82 @@ public class CampaignFacadeImpl implements CampaignFacade {
 
     @Override
     @Transactional
-    public void addAsset(String campaignCode, AddAssetCommand command) {
+    public CampaignAssetView addAsset(String campaignCode, AddAssetCommand command) {
         Campaign campaign = campaigns.findByCampaignCode(campaignCode)
                 .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
 
         CampaignAsset.AssetType assetType = CampaignAsset.AssetType.valueOf(command.assetType());
-        CampaignAsset asset = new CampaignAsset(campaign.getId(), assetType, command.url(), command.altText(), command.displayOrder());
-        campaignAssets.save(asset);
+        CampaignAsset asset = new CampaignAsset(campaign.getId(), assetType, requireText(command.url(), "url"),
+                command.altText(), order(command.displayOrder()));
+        CampaignAsset saved = campaignAssets.save(asset);
+        return new CampaignAssetView(saved.getId(), saved.getAssetType().name(), saved.getUrl(),
+                saved.getAltText(), saved.getDisplayOrder());
     }
 
     @Override
     @Transactional
     public void removeAsset(String campaignCode, Long assetId) {
-        campaignAssets.deleteById(assetId);
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+
+        campaignAssets.deleteByCampaignIdAndId(campaign.getId(), assetId);
+    }
+
+    @Override
+    @Transactional
+    public CampaignRuleView addRule(String campaignCode, AddRuleCommand command) {
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+
+        CampaignRuleDocument rule = new CampaignRuleDocument(campaign.getId(),
+                requireText(command.title(), "title"), requireText(command.content(), "content"),
+                order(command.displayOrder()));
+        CampaignRuleDocument saved = campaignRules.save(rule);
+        return new CampaignRuleView(saved.getId(), saved.getTitle(), saved.getContent());
+    }
+
+    @Override
+    @Transactional
+    public void removeRule(String campaignCode, Long ruleId) {
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+
+        campaignRules.deleteByCampaignIdAndId(campaign.getId(), ruleId);
+    }
+
+    @Override
+    @Transactional
+    public CampaignFaqView addFaq(String campaignCode, AddFaqCommand command) {
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+
+        CampaignFaq faq = new CampaignFaq(campaign.getId(),
+                requireText(command.question(), "question"), requireText(command.answer(), "answer"),
+                order(command.displayOrder()));
+        CampaignFaq saved = campaignFaqs.save(faq);
+        return new CampaignFaqView(saved.getId(), saved.getQuestion(), saved.getAnswer());
+    }
+
+    @Override
+    @Transactional
+    public void removeFaq(String campaignCode, Long faqId) {
+        Campaign campaign = campaigns.findByCampaignCode(campaignCode)
+                .orElseThrow(() -> new CampaignNotFoundException(campaignCode));
+
+        campaignFaqs.deleteByCampaignIdAndId(campaign.getId(), faqId);
+    }
+
+    /** 内容字段非空校验：空串与纯空白都不算内容，避免公开面出现空条目 */
+    private String requireText(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required");
+        }
+        return value;
+    }
+
+    /** 排序缺省为 0（按录入顺序追加在末尾） */
+    private int order(Integer displayOrder) {
+        return displayOrder == null ? 0 : displayOrder;
     }
 
     private CampaignView toView(Campaign c) {

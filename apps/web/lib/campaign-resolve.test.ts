@@ -1,12 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError, type ProductListItem, type SessionView } from '@awn/api-client'
+import {
+  ApiError,
+  type CampaignAssetView,
+  type CampaignFaqView,
+  type CampaignRuleView,
+  type ProductListItem,
+  type SessionView,
+} from '@awn/api-client'
 import type { CampaignSection } from '@awn/campaign-renderer'
 import { resolveSections, type CampaignDataApi } from './campaign-resolve'
 
 /**
  * 专场模块解析层契约（docs/architecture/campaign-rendering.md）：
- * 后端存引用型 props（eventIds / ruleDocumentId / faqId），渲染器读展示型
- * （sessions / tiers / paragraphs）；解析层按引用查公开 API 组装，
+ * 后端存引用型 props（eventIds / ruleDocumentId / faqId / assetIds），渲染器读展示型
+ * （sessions / tiers / paragraphs / rules / entries / images）；解析层按引用查公开 API 组装，
  * 查不到就标记待接入，不渲染空白区块也不造假内容。
  */
 
@@ -44,6 +51,26 @@ const fakeApi = (overrides: Partial<CampaignDataApi> = {}): CampaignDataApi => (
   getSessionProducts: vi.fn(async () => [product]),
   ...overrides,
 })
+
+const rule: CampaignRuleView = { id: 11, title: '购票须知', content: '实名一票一证\n\n逾期不退' }
+const faq: CampaignFaqView = { id: 21, question: '可以退票吗？', answer: '未出票可退。' }
+const otherFaq: CampaignFaqView = { id: 22, question: '如何取票？', answer: '开演前 1 小时取票。' }
+const asset: CampaignAssetView = {
+  id: 31,
+  assetType: 'IMAGE',
+  url: 'https://cdn.example.com/a.jpg',
+  altText: '主舞台示意',
+  displayOrder: 1,
+}
+
+/** 注入了内容端点的假接口（须知 / 常见问题 / 素材各一条） */
+const contentApi = (overrides: Partial<CampaignDataApi> = {}): CampaignDataApi =>
+  fakeApi({
+    getCampaignRules: vi.fn(async () => [rule]),
+    getCampaignFaq: vi.fn(async () => [faq, otherFaq]),
+    getCampaignAssets: vi.fn(async () => [asset]),
+    ...overrides,
+  })
 
 describe('resolveSections', () => {
   it('resolves eventList references into session cards', async () => {
@@ -107,11 +134,135 @@ describe('resolveSections', () => {
         section({ type: 'priceTrend', props: { eventId: '1' } }),
       ],
       fakeApi(),
+      'CAMP-1',
     )
     expect(resolutions.map((r) => r.status)).toEqual(['pending', 'pending', 'pending', 'pending'])
     for (const resolution of resolutions) {
       expect(resolution.reason).toBeTruthy()
     }
+  })
+
+  it('resolves ruleDocumentId against the campaign rules endpoint', async () => {
+    const api = contentApi()
+    const [resolved] = await resolveSections(
+      [section({ type: 'rulePanel', props: { ruleDocumentId: '11' } })],
+      api,
+      'CAMP-1',
+    )
+    expect(resolved.status).toBe('ready')
+    // 正文按空行分段，渲染器读的是 rules 文本数组
+    expect(resolved.props['rules']).toEqual(['实名一票一证', '逾期不退'])
+    expect(api.getCampaignRules).toHaveBeenCalledWith('CAMP-1')
+  })
+
+  it('resolves faqId and faqIds to question/answer entries', async () => {
+    const [single, multiple] = await resolveSections(
+      [
+        section({ type: 'faq', props: { faqId: '21' } }),
+        section({ type: 'faq', props: { faqIds: ['22', '21'] } }),
+      ],
+      contentApi(),
+      'CAMP-1',
+    )
+    expect(single.status).toBe('ready')
+    expect(single.props['entries']).toEqual([{ question: '可以退票吗？', answer: '未出票可退。' }])
+    // 多条按引用顺序取，不按列表顺序
+    expect(multiple.props['entries']).toEqual([
+      { question: '如何取票？', answer: '开演前 1 小时取票。' },
+      { question: '可以退票吗？', answer: '未出票可退。' },
+    ])
+  })
+
+  it('resolves assetIds to image entries in reference order', async () => {
+    const api = contentApi({
+      getCampaignAssets: vi.fn(async () => [
+        asset,
+        { ...asset, id: 32, url: 'https://cdn.example.com/b.jpg', altText: '看台示意' },
+        // 缺 alt 的素材不出图（素材红线）
+        { ...asset, id: 33, altText: null },
+      ]),
+    })
+    const [resolved] = await resolveSections(
+      [section({ type: 'imageGallery', props: { assetIds: ['32', '33', '31'] } })],
+      api,
+      'CAMP-1',
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['images']).toEqual([
+      { src: 'https://cdn.example.com/b.jpg', alt: '看台示意' },
+      { src: 'https://cdn.example.com/a.jpg', alt: '主舞台示意' },
+    ])
+  })
+
+  it('keeps reference lookups pending when the ids do not match any entry', async () => {
+    const resolutions = await resolveSections(
+      [
+        section({ type: 'rulePanel', props: { ruleDocumentId: '999' } }),
+        section({ type: 'faq', props: { faqId: '999' } }),
+        section({ type: 'imageGallery', props: { assetIds: ['999'] } }),
+      ],
+      contentApi(),
+      'CAMP-1',
+    )
+    expect(resolutions.map((r) => r.status)).toEqual(['pending', 'pending', 'pending'])
+    expect(resolutions[0].reason).toContain('999')
+    expect(resolutions[1].reason).toContain('faqId')
+    expect(resolutions[2].reason).toContain('assetIds')
+  })
+
+  it('treats content endpoint failures as not found but propagates network errors', async () => {
+    const notFound = contentApi({
+      getCampaignRules: vi.fn(async () => {
+        throw new ApiError(404, 'CAMPAIGN_NOT_FOUND', 'campaign not found: 404')
+      }),
+    })
+    const [resolved] = await resolveSections(
+      [section({ type: 'rulePanel', props: { ruleDocumentId: '11' } })],
+      notFound,
+      'CAMP-1',
+    )
+    expect(resolved.status).toBe('pending')
+
+    const broken = contentApi({
+      getCampaignAssets: vi.fn(async () => {
+        throw new Error('network down')
+      }),
+    })
+    await expect(
+      resolveSections(
+        [section({ type: 'imageGallery', props: { assetIds: ['31'] } })],
+        broken,
+        'CAMP-1',
+      ),
+    ).rejects.toThrow('network down')
+  })
+
+  it('keeps content sections pending when neither inline props nor references are set', async () => {
+    const resolutions = await resolveSections(
+      [
+        section({ type: 'rulePanel', props: {} }),
+        section({ type: 'faq', props: {} }),
+        section({ type: 'imageGallery', props: {} }),
+      ],
+      contentApi(),
+      'CAMP-1',
+    )
+    expect(resolutions.map((r) => r.status)).toEqual(['pending', 'pending', 'pending'])
+    expect(resolutions.map((r) => r.reason)).toEqual([
+      '须知内容未接入（未配置 rules 或 ruleDocumentId）',
+      '常见问题内容未接入（未配置 entries 或 faqId）',
+      '图片素材未接入（未配置 images 或 assetIds）',
+    ])
+  })
+
+  it('does not query content endpoints without a campaign code', async () => {
+    const api = contentApi()
+    const [resolved] = await resolveSections(
+      [section({ type: 'rulePanel', props: { ruleDocumentId: '11' } })],
+      api,
+    )
+    expect(api.getCampaignRules).not.toHaveBeenCalled()
+    expect(resolved.status).toBe('pending')
   })
 
   it('passes through rulePanel with inline display-ready rules', async () => {

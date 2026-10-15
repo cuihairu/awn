@@ -51,6 +51,21 @@ describe('mp-api 端点契约', () => {
     expect(calls[1].url).toBe('/api/v1/campaigns/CAMP-1/render')
   })
 
+  it('targets the public campaign list and content endpoints', async () => {
+    const { calls, transport } = recordingTransport([])
+    setTransport(transport)
+    await mpApi.listCampaigns()
+    await mpApi.getCampaignRules('CAMP-1')
+    await mpApi.getCampaignFaq('CAMP-1')
+    await mpApi.getCampaignAssets('CAMP-1')
+    expect(calls.map((call) => call.url)).toEqual([
+      '/api/v1/campaigns',
+      '/api/v1/campaigns/CAMP-1/rules',
+      '/api/v1/campaigns/CAMP-1/faq',
+      '/api/v1/campaigns/CAMP-1/assets',
+    ])
+  })
+
   it('creates payments with channel only (amount is server-decided)', async () => {
     const { calls, transport } = recordingTransport({ paymentNo: 'PAY-1' })
     setTransport(transport)

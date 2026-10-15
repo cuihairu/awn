@@ -106,6 +106,40 @@ export interface RenderedPage {
   sections: RenderedSection[]
 }
 
+/** 公开专场条目（列表只含已发布专场） */
+export interface CampaignView {
+  id: number
+  campaignCode: string
+  title: string
+  subtitle: string | null
+  status: string
+  currentRevisionId: number | null
+}
+
+/** 须知条目：区块 props 的 ruleDocumentId 按 id 匹配 */
+export interface CampaignRuleView {
+  id: number
+  title: string
+  /** 纯文本，段落以空行分隔 */
+  content: string
+}
+
+/** 常见问题条目：区块 props 的 faqId 按 id 匹配 */
+export interface CampaignFaqView {
+  id: number
+  question: string
+  answer: string
+}
+
+/** 素材条目：区块 props 的 assetIds 按 id 匹配 */
+export interface CampaignAssetView {
+  id: number
+  assetType: 'IMAGE' | 'VIDEO' | 'BANNER' | 'THUMBNAIL'
+  url: string
+  altText: string | null
+  displayOrder: number
+}
+
 /* ---------------- 端点 ---------------- */
 
 export const mpApi = {
@@ -126,9 +160,24 @@ export const mpApi = {
   getSessionProducts: (sessionId: string) =>
     call<ProductListItem[]>({ url: `/api/v1/sessions/${sessionId}/products`, method: 'GET' }),
 
+  /** 公开专场列表（只含已发布专场，按最近变更倒序） */
+  listCampaigns: () => call<CampaignView[]>({ url: '/api/v1/campaigns', method: 'GET' }),
+
   /** 已发布专场渲染页（只读已发布版本，草稿不影响线上） */
   renderCampaign: (campaignCode: string) =>
     call<RenderedPage>({ url: `/api/v1/campaigns/${campaignCode}/render`, method: 'GET' }),
+
+  /** 须知条目（只读已发布专场；未发布 → 404） */
+  getCampaignRules: (campaignCode: string) =>
+    call<CampaignRuleView[]>({ url: `/api/v1/campaigns/${campaignCode}/rules`, method: 'GET' }),
+
+  /** 常见问题条目（只读已发布专场；未发布 → 404） */
+  getCampaignFaq: (campaignCode: string) =>
+    call<CampaignFaqView[]>({ url: `/api/v1/campaigns/${campaignCode}/faq`, method: 'GET' }),
+
+  /** 素材条目（只读已发布专场；未发布 → 404） */
+  getCampaignAssets: (campaignCode: string) =>
+    call<CampaignAssetView[]>({ url: `/api/v1/campaigns/${campaignCode}/assets`, method: 'GET' }),
 
   /** 创建订单（必须带 Idempotency-Key；金额由服务端重算） */
   createOrder: (idempotencyKey: string, userId: string, lines: OrderLinePayload[]) =>
