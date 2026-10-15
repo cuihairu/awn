@@ -263,6 +263,25 @@ GET /api/v1/works/{workId}
 裁决权限仅运营端（`X-Admin-Token`，见「运营接口」）；`resolution` ∈
 `REFUND_APPROVED / REDELIVER_APPROVED / REJECTED`，裁决人记 `decidedBy` / `decidedAt`。
 
+### 卖家面（挂牌与争议）
+
+交易面当前无认证中间件：卖家以请求体或路径中的 `sellerNo` 声明身份，服务端校验声明者与
+资源归属一致（未知主体一律 404）。卖家与买家一样**没有受理或裁决入口**，裁决只在运营接口。
+设计口径见 `docs/architecture/dispute-handling.md`。
+
+- `POST /api/v1/listings/{listingNo}/delist`：取消挂牌，体 `{"sellerNo"}`，返回挂牌视图。
+  挂牌未知 → 404 `NOT_FOUND`；卖家未知 → 404 `NOT_FOUND`；非归属卖家 → 409 `CONFLICT`；
+  挂牌已 `RESERVED` / `SOLD` / `DELISTED` → 409 `CONFLICT`。
+- `GET /api/v1/sellers/{sellerNo}/disputes`：该卖家挂牌涉及的争议列表（按争议开单时快照的
+  挂牌卖家匹配，创建倒序限 50 条）；卖家未知 → 404 `NOT_FOUND`。
+- `POST /api/v1/disputes/{disputeNo}/seller-response`：提交申辩，体 `{"sellerNo","content"}`，
+  成功 201 与申辩视图 `{"disputeNo","sellerNo","content","createdAt"}`；申辩追加留痕不覆盖。
+  守卫：争议未知 → 404 `DISPUTE_NOT_FOUND`；`content` 空 → 400 `VALIDATION_FAILED`；
+  卖家未知 → 404 `NOT_FOUND`；争议无卖家快照（纯平台库存订单）/ 声明卖家与快照不符 /
+  争议已终态（`RESOLVED` / `WITHDRAWN`）→ 409 `DISPUTE_CONFLICT`。
+
+申辩只在运营端读取（见「运营接口」），不进买家面订单争议列表响应。
+
 ### 幂等键规则
 
 订单创建与退款在模块层强制幂等键（缺失即拒绝）：
@@ -310,6 +329,7 @@ POST   /api/v1/admin/sessions/{sessionCode}/seats
 GET    /api/v1/admin/sessions/{sessionCode}/seats
 
 GET  /api/v1/admin/disputes
+GET  /api/v1/admin/disputes/{disputeNo}/seller-responses
 POST /api/v1/admin/disputes/{disputeNo}/accept
 POST /api/v1/admin/disputes/{disputeNo}/adjudicate
 
@@ -351,7 +371,8 @@ POST   /api/v1/admin/works/{workId}/cast
 /admin/disputes/{disputeNo}/adjudicate`（体 `{"actor","resolution","note"}`，`resolution` ∈
 `REFUND_APPROVED / REDELIVER_APPROVED / REJECTED`）裁决（`UNDER_REVIEW` → `RESOLVED`）。争议单
 不存在 → 404 `DISPUTE_NOT_FOUND`；非法迁移（重复受理 / 重复裁决 / 非在途撤回）→ 409
-`DISPUTE_CONFLICT`。买家侧不得裁决。
+`DISPUTE_CONFLICT`。`GET /admin/disputes/{disputeNo}/seller-responses` 列卖家申辩
+（提交时间正序，裁决依据），争议未知同样 404。买家与卖家侧都不得裁决。
 
 图鉴草稿可编辑（`PUT`，校验口径同创建）与删除（`DELETE`，关系行随外键级联清除）；已发布内容冻结，改动需先 `unpublish`（`PUBLISHED` → `DRAFT`，未发布再撤 → 409），否则 `PUT` / `DELETE` 一律 409 `CONFLICT`。删除 `DELETE` 成功返回 200 空体。
 
