@@ -134,6 +134,7 @@
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
 - [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
+  - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——`ErrorResponse.java:7` 仍为三字段 (code, message, traceId)；其后新增的全部表单（web 结算观演人 / admin 场馆配置 / admin 退款执行 / 铺座）校验均为「自检函数返回首条文案 + 内联提示」单条模式，无任何端消费字段级错误。维持卡点，待真实场景。
 - [x] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据 — 多主题体系交付面 web（5caad72）+ admin（1f3ed6a，ThemeSwitcher.test.tsx + themes.test.ts 随包测试）
   - 已代决（2026-10-14 巡检授权）并落地（5caad72）：web 多主题切换——`@awn/ui` 主题包（11 套主题数据取自 prototypes/theme.css，18 个 `--t-*` 语义令牌 + `--awn-*`→`--t-*` 桥接，既有组件零改名跟随主题；default 桥接值 ≡ 现行品牌令牌，测试断言）；layout 注入全量主题块并固定 `data-theme="default"`（移除原 inline 注入——inline 样式会压过 `[data-theme]` 块）；右下角悬浮切换器（原型 .theme-picker，11 按钮 aria-pressed + localStorage 记忆）；首帧默认主题、水合后按记忆切换（localStorage 仅客户端，闪变代决接受）
   - 已代决（2026-10-14 巡检授权）并落地（1f3ed6a）：admin 同包接入——main.tsx 渲染前同步注入主题块并应用记忆主题（纯 CSR 无闪变）；顺带修复潜在缺陷：admin 此前从未注入 AWN_CSS_VARS，`--awn-*` 全部未定义（页面靠字面色值硬撑）；短标签下沉 `@awn/ui`（AWN_THEME_SHORT_LABELS）两端共用
@@ -172,6 +173,7 @@
 - [ ] 3D 座位图（P2）— 方案已交、S1 已落地（见下方两行）；**卡点：S2 起依赖座位坐标数据，坐标来源与首批场馆名单未拍板（见挂起项），拍板前不动实现**。验收：2D 过目后给出 3D 方案（2D 过目已代决 2026-10-14 巡检授权，3D 维持 P2，不阻塞 2D 实现）
   - 3D 方案已交（docs/design/seatmap-3d-plan.md，2026-10-15）：定位 2D 的视觉增强层（交互/无障碍仍走 2D 路径）；分四阶段——S1 视角增强（无坐标无新依赖，CSS 3D 变换现有 SVG 网格）、S2 坐标可选化契约（SeatView 可选 x/y，null 回退网格）、S3 真 3D 原型（three.js 程序化，参考 Fi-Stadium InstancedMesh+Raycaster 思路，吸收思想不引代码）、S4 L1/L2 选区选排（依三问验证）；几何线框占位不违反素材红线；按 todo 口径设计文档不记为已完成，实现未动
   - S1 已落地（2026-10-15）：SeatMap 增「俯视 / 透视」视角切换（aria-pressed 双按钮 + CSS perspective/rotateX 纯变换，不改节点数与交互层）；默认俯视与原 2D 渲染完全一致；prefers-reduced-motion 禁用过渡；选座/键盘交互回归无变化（组件测试 5→7 例，前端全量 190 例绿）；S2 起依赖坐标数据（挂起项拍板后）
+  - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——repo 内无场馆名单、无数据来源拍板记录（venue-seatmaps.md §8 开放项 #1 vendor/自建、#2 许可、#4 首批名单、#7 商业数据、#8 编辑器排班均无裁决）；座位坐标数据未落地（platform_seats 仍只有分区/排/座编号，无 x/y 列）。维持卡点，待拍板。
 
 ---
 
