@@ -42,6 +42,9 @@
 | WAITLIST_CONFLICT | 409 | 候补状态机冲突（重复排队、对已递补席位操作） |
 | PAYMENT_CONFLICT | 409 | 支付状态机冲突（如重复确认已成功的支付） |
 | REFUND_CONFLICT | 409 | 退款状态机冲突或超退 |
+| DISPUTE_NOT_FOUND | 404 | 争议单不存在 |
+| DISPUTE_CONFLICT | 409 | 争议状态机冲突（非下单人、订单状态不可受理、重复受理、非受理人撤回、重复裁决） |
+| SEAT_NOT_FOUND | 404 | 平台座位不存在（座位型订单行引用未知座位） |
 | CONFLICT | 409 | 其他业务冲突（通用） |
 | RATE_LIMITED | 429 | 请求过于频繁（管理面限流，见「鉴权」节） |
 | INTERNAL_ERROR | 500 | 未预期异常 |
@@ -154,7 +157,16 @@ GET /api/v1/works/{workId}
 
 - `POST /api/v1/checkout/quote`：结算报价。请求体与创建订单同构（不含幂等键与用户），
   按订单行同一服务端口径计算金额；**报价不扣减任何库存、不产生订单**，
-  下单时金额重新计算并逐行原子预留。非法行（负行合计 / 双来源 / 非正数量）→ 400 `VALIDATION_FAILED`。
+  下单时金额重新计算并逐行原子预留。非法行（负行合计 / 多来源或缺一来源 / 非正数量 / 座位型行数量非 1）→ 400 `VALIDATION_FAILED`。
+
+订单行来源三选一（`ck_order_item_source` 数据库兜底互斥）：
+
+- **数量型**：`poolCode` 必填 + `quantity`，向库存池原子预留（`reservationNo` 回填）；
+- **凭证型**：`listingNo` 必填且 `quantity` 必须为 1，向挂牌独立票品预留（`unitNo` 回填），不触碰库存池；
+- **座位型**：`seatNo` 必填且 `quantity` 必须为 1，向平台座位（`platform_seats`，逐座状态机）预留，
+  不触碰库存池与挂牌。座位不存在 → 404 `SEAT_NOT_FOUND`；座位不属于订单所引用商品 → 409
+  `INVENTORY_CONFLICT`。取消 / 超时释放座位回 `IN_STOCK`，支付确认转 `SOLD`；
+  并发抢座由守卫条件 UPDATE 裁决，只放行一单（败者 409 `INVENTORY_CONFLICT`）。
 - `GET /api/v1/orders/{orderId}/fulfillment`：订单履约单查询。
   订单未知或未进入履约（未支付）→ 404 `NOT_FOUND`；
   履约单停在 `PENDING_SELLER` 直到卖家交付 + 平台核验（见 `docs/architecture/trading-model.md`）。
@@ -228,6 +240,29 @@ GET /api/v1/works/{workId}
 候补递补生成的订单与普通下单同源（同一库存预留与金额计算口径），金额按候补条目快照的
 `unitPrice` 重算。商品改价不回溯历史候补条目。
 
+### 订单争议（受理与裁决）
+
+买家对已支付订单发起退款 / 重交付诉求，平台裁决。设计口径见 `docs/architecture/dispute-handling.md`：
+**裁决只记结论不动钱**（退款执行走既有退款链路由运营另行发起），受理与裁决都不改订单状态机。
+
+- `POST /api/v1/orders/{orderNo}/disputes`：开争议，体
+  `{"userId","reason","description","evidenceUrl","requestedResolution","requestedAmount"}`，
+  成功 201 + `Location: /api/v1/disputes/{disputeNo}`。`reason` ∈ `NOT_DELIVERED / TICKET_INVALID /
+  DESCRIPTION_MISMATCH / OTHER`，`requestedResolution` ∈ `REFUND / REDELIVER`（未知枚举 400）。
+  `REFUND` 必填 `requestedAmount` 且 ∈ (0, 订单应付]；`REDELIVER` 不得带金额；`description` 必填；
+  `evidenceUrl` 可选但限 `http(s)://` 白名单（非法 400）。守卫失败一律 409 `DISPUTE_CONFLICT`：
+  非下单人、订单状态不在 `PAID / FULFILLING / FULFILLED`、同单已有在途争议（`OPEN` / `UNDER_REVIEW`）。
+- `GET /api/v1/orders/{orderNo}/disputes?userId=`：该用户在该订单上的争议列表；缺 `userId` → 400。
+- `POST /api/v1/disputes/{disputeNo}/withdraw`：受理人撤回（体 `{"userId"}`），`OPEN` / `UNDER_REVIEW`
+  → `WITHDRAWN`。争议单不存在 → 404 `DISPUTE_NOT_FOUND`；非受理人 → 409 `DISPUTE_CONFLICT`。
+
+卖家随争议落库快照：取订单首个凭证型订单行的挂牌 `sellerId` / `listingNo` / `unitNo`；
+数量型与座位型订单行无卖家，字段为 `null`。
+
+状态机：`OPEN → UNDER_REVIEW → RESOLVED`，`OPEN` / `UNDER_REVIEW` 可 `WITHDRAWN`（终态）。
+裁决权限仅运营端（`X-Admin-Token`，见「运营接口」）；`resolution` ∈
+`REFUND_APPROVED / REDELIVER_APPROVED / REJECTED`，裁决人记 `decidedBy` / `decidedAt`。
+
 ### 幂等键规则
 
 订单创建与退款在模块层强制幂等键（缺失即拒绝）：
@@ -271,6 +306,13 @@ GET    /api/v1/admin/events/{eventCode}/sessions
 POST   /api/v1/admin/sessions/{sessionCode}/venue
 DELETE /api/v1/admin/sessions/{sessionCode}/venue
 
+POST   /api/v1/admin/sessions/{sessionCode}/seats
+GET    /api/v1/admin/sessions/{sessionCode}/seats
+
+GET  /api/v1/admin/disputes
+POST /api/v1/admin/disputes/{disputeNo}/accept
+POST /api/v1/admin/disputes/{disputeNo}/adjudicate
+
 POST   /api/v1/admin/stars
 PUT    /api/v1/admin/stars/{personId}
 POST   /api/v1/admin/stars/{personId}/publish
@@ -296,6 +338,20 @@ POST   /api/v1/admin/works/{workId}/cast
 图鉴运营写操作同权（`X-Admin-Token`）：建人物 / 作品草稿、发布（`DRAFT` → `PUBLISHED` 守卫，重复发布 → 409 `CONFLICT`）、给作品绑定人物身份（`roleType` / `roleName` / `billingOrder`，重复绑定 → 409）。绑定与发布校验未知资源 → 404 `PERSON_NOT_FOUND` / `WORK_NOT_FOUND`。
 
 场次场馆配置（巡回赛逐场换城市）经 `X-Admin-Token`：`GET /admin/venues` 列全部场馆；`GET /admin/events/{eventCode}/sessions` 列活动下全状态场次（响应 `geo` 为解析结果：场次场馆覆盖 → 父活动场馆 → `null`）；`POST /admin/sessions/{sessionCode}/venue`（体 `{"venueCode":...}`）挂场馆、`DELETE` 摘场馆回退继承，响应为操作后的解析 geo（无场馆时空体）。未知场次 / 场馆 → 404 `SESSION_NOT_FOUND` / `VENUE_NOT_FOUND`。
+
+铺座（座位运营入口）经 `X-Admin-Token`：`POST /admin/sessions/{sessionCode}/seats`（体
+`{"productCode","positions":[{"section","row","seat"}]}`）一次铺一个商品在同一场次下的座位，
+成功 201 与座位视图列表；**批次整体成功或整体失败**——商品编码经 catalog 校验（未知 → 404
+`NOT_FOUND`）、位置字段必填、同场次同位置重复 → 400 `VALIDATION_FAILED`。`GET
+/admin/sessions/{sessionCode}/seats` 列该场次座位（运营视图含占座订单号 `orderNo`，公开座位图
+剥去该字段）；场次编码不存在时返回空列表（字符串松耦合，不校验场次存在性）。
+
+争议裁决经 `X-Admin-Token`：`GET /admin/disputes` 列争议单（受理人 / 卖家快照 / 状态 / 裁决）；
+`POST /admin/disputes/{disputeNo}/accept` 受理（`OPEN` → `UNDER_REVIEW`）；`POST
+/admin/disputes/{disputeNo}/adjudicate`（体 `{"actor","resolution","note"}`，`resolution` ∈
+`REFUND_APPROVED / REDELIVER_APPROVED / REJECTED`）裁决（`UNDER_REVIEW` → `RESOLVED`）。争议单
+不存在 → 404 `DISPUTE_NOT_FOUND`；非法迁移（重复受理 / 重复裁决 / 非在途撤回）→ 409
+`DISPUTE_CONFLICT`。买家侧不得裁决。
 
 图鉴草稿可编辑（`PUT`，校验口径同创建）与删除（`DELETE`，关系行随外键级联清除）；已发布内容冻结，改动需先 `unpublish`（`PUBLISHED` → `DRAFT`，未发布再撤 → 409），否则 `PUT` / `DELETE` 一律 409 `CONFLICT`。删除 `DELETE` 成功返回 200 空体。
 
