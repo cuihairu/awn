@@ -2,17 +2,22 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { listEvents, type EventView } from '@awn/api-client'
+import { listCampaigns, listEvents, type CampaignView, type EventView } from '@awn/api-client'
+import { CampaignList } from '../components/CampaignList'
 import { eventStatusLabel, formatEventDateTime } from '../lib/event-labels'
 
 /**
  * 发现列表 /（原型 web/home.html）：已发布与已结束活动，按开始时间倒序。
  * 封面为几何占位（素材红线：不使用图像素材）；城市 / 距离排序待后端地理字段落地。
+ * 专场区（GET /api/v1/campaigns，只含 PUBLISHED）：运营配置的活动聚合页，
+ * 与活动目录互相独立——加载互不阻塞，专场失败只降级专场区不影响活动列表。
  */
 export default function HomePage() {
   const [events, setEvents] = useState<EventView[]>([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
+  const [campaigns, setCampaigns] = useState<CampaignView[]>([])
+  const [campaignsFailed, setCampaignsFailed] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -34,12 +39,41 @@ export default function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let alive = true
+    listCampaigns()
+      .then((data) => {
+        if (!alive) return
+        setCampaigns(data)
+        setCampaignsFailed(false)
+      })
+      .catch(() => {
+        if (alive) setCampaignsFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
   return (
     <main className="page">
       <header className="section-head">
         <h1>发现</h1>
         <p className="muted">正在售票与近期结束的活动。</p>
       </header>
+
+      {!campaignsFailed && campaigns.length > 0 && (
+        <section aria-labelledby="home-campaigns-title">
+          <div className="section-head">
+            <h2 id="home-campaigns-title">专场</h2>
+            <p className="muted">运营配置的活动聚合页。</p>
+          </div>
+          <CampaignList campaigns={campaigns} />
+        </section>
+      )}
+      {campaignsFailed && (
+        <p className="state">专场列表加载失败，可稍后刷新重试。</p>
+      )}
 
       {loading && <p className="state">加载中…</p>}
       {failed && (
