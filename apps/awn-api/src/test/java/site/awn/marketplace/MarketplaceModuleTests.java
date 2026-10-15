@@ -151,7 +151,7 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
         assertThat(unit.status()).isEqualTo("IN_STOCK");
 
         // 挂牌下架不隐式改票品状态（票品留在库中）
-        ListingView delisted = marketplace.delist(listing.listingNo());
+        ListingView delisted = marketplace.delist(listing.listingNo(), seller);
         assertThat(delisted.status()).isEqualTo("DELISTED");
         assertThat(marketplace.unitOfListing(listing.listingNo()).status()).isEqualTo("IN_STOCK");
     }
@@ -165,7 +165,7 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
         // 撤下后不可再被凭证行下单：预留守卫只放行 LISTED
         ListingView open = marketplace.createListing(
                 new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
-        assertThat(marketplace.delist(open.listingNo()).status()).isEqualTo("DELISTED");
+        assertThat(marketplace.delist(open.listingNo(), seller).status()).isEqualTo("DELISTED");
         assertThatThrownBy(() -> marketplace.reserveUnitForOrder(open.listingNo()))
                 .isInstanceOf(MarketplaceConflictException.class)
                 .hasMessageContaining("listing cannot be reserved");
@@ -174,25 +174,48 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
         ListingView reserved = marketplace.createListing(
                 new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
         String reservedUnit = marketplace.reserveUnitForOrder(reserved.listingNo());
-        assertThatThrownBy(() -> marketplace.delist(reserved.listingNo()))
+        assertThatThrownBy(() -> marketplace.delist(reserved.listingNo(), seller))
                 .isInstanceOf(MarketplaceConflictException.class)
                 .hasMessageContaining("reserved listing cannot be delisted");
         // 订单取消释放回 LISTED 后方可撤
         assertThat(marketplace.releaseUnitForOrder(reservedUnit)).isTrue();
-        assertThat(marketplace.delist(reserved.listingNo()).status()).isEqualTo("DELISTED");
+        assertThat(marketplace.delist(reserved.listingNo(), seller).status()).isEqualTo("DELISTED");
 
         // 已成交不可撤
         ListingView sold = marketplace.createListing(
                 new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
         String soldUnit = marketplace.reserveUnitForOrder(sold.listingNo());
         marketplace.confirmUnitForOrder(soldUnit);
-        assertThatThrownBy(() -> marketplace.delist(sold.listingNo()))
+        assertThatThrownBy(() -> marketplace.delist(sold.listingNo(), seller))
                 .isInstanceOf(MarketplaceConflictException.class)
                 .hasMessageContaining("sold listing cannot be delisted");
 
         // 未知挂牌 → NotFound
-        assertThatThrownBy(() -> marketplace.delist("LST-none"))
+        assertThatThrownBy(() -> marketplace.delist("LST-none", seller))
                 .isInstanceOf(MarketplaceNotFoundException.class);
+    }
+
+    @Test
+    void delistRequiresListingOwner() {
+        String seller = registerSeller();
+        SupplyReviewView review = submitReview(seller, null);
+        marketplace.approveSupplyReview(review.reviewNo(), "审核员-1");
+        ListingView listing = marketplace.createListing(
+                new CreateListingCommand(seller, review.reviewNo(), null, 6800, false));
+
+        // 他人挂牌不可撤：声明卖家与挂牌归属不符
+        String other = registerSeller();
+        assertThatThrownBy(() -> marketplace.delist(listing.listingNo(), other))
+                .isInstanceOf(MarketplaceConflictException.class)
+                .hasMessageContaining("does not belong to seller");
+
+        // 未知卖家 → NotFound（不静默按「非本人」放行也不放行为本人）
+        assertThatThrownBy(() -> marketplace.delist(listing.listingNo(), "SEL-none"))
+                .isInstanceOf(MarketplaceNotFoundException.class);
+
+        // 归属卖家可撤
+        assertThat(marketplace.delist(listing.listingNo(), seller).status())
+                .isEqualTo("DELISTED");
     }
 
     @Test
@@ -219,6 +242,8 @@ class MarketplaceModuleTests extends AbstractPostgresIntegrationTest {
     @Test
     void unknownReferencesAreNotFound() {
         assertThatThrownBy(() -> marketplace.sellerOf("SEL-none"))
+                .isInstanceOf(MarketplaceNotFoundException.class);
+        assertThatThrownBy(() -> marketplace.sellerIdOf("SEL-none"))
                 .isInstanceOf(MarketplaceNotFoundException.class);
         assertThatThrownBy(() -> marketplace.listingOf("LST-none"))
                 .isInstanceOf(MarketplaceNotFoundException.class);

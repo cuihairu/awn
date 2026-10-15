@@ -160,10 +160,23 @@ public class MarketplaceFacadeImpl implements MarketplaceFacade {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Long sellerIdOf(String sellerNo) {
+        return sellers.findBySellerNo(sellerNo).map(Seller::getId)
+                .orElseThrow(() -> new MarketplaceNotFoundException("seller not found: " + sellerNo));
+    }
+
+    @Override
     @Transactional
-    public ListingView delist(String listingNo) {
+    public ListingView delist(String listingNo, String sellerNo) {
         Listing listing = listings.findByListingNo(listingNo)
                 .orElseThrow(() -> new MarketplaceNotFoundException("listing not found: " + listingNo));
+        // 归属校验：调用方声明 sellerNo，比对挂牌卖家，不符一律冲突
+        Long sellerId = sellers.findBySellerNo(sellerNo).map(Seller::getId)
+                .orElseThrow(() -> new MarketplaceNotFoundException("seller not found: " + sellerNo));
+        if (!listing.getSellerId().equals(sellerId)) {
+            throw new MarketplaceConflictException("listing does not belong to seller: " + listingNo);
+        }
         listing.delist();
         return toView(listing);
     }

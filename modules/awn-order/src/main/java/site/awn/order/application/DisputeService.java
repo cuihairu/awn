@@ -6,10 +6,13 @@ import site.awn.marketplace.api.ListingView;
 import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.AdjudicateDisputeCommand;
 import site.awn.order.api.DisputeFacade;
+import site.awn.order.api.DisputeSellerResponseView;
 import site.awn.order.api.DisputeView;
 import site.awn.order.api.OpenDisputeCommand;
+import site.awn.order.api.SubmitSellerResponseCommand;
 import site.awn.order.domain.DisputeResolution;
 import site.awn.order.domain.DisputeRequestType;
+import site.awn.order.domain.DisputeSellerResponse;
 import site.awn.order.domain.DisputeStatus;
 import site.awn.order.domain.Order;
 import site.awn.order.domain.OrderDispute;
@@ -19,6 +22,7 @@ import site.awn.order.domain.OrderNotFoundException;
 import site.awn.order.domain.OrderStatus;
 import site.awn.order.domain.DisputeNotFoundException;
 import site.awn.order.infrastructure.OrderDisputeRepository;
+import site.awn.order.infrastructure.OrderDisputeSellerResponseRepository;
 import site.awn.order.infrastructure.OrderItemRepository;
 import site.awn.order.infrastructure.OrderRepository;
 import site.awn.shared.url.StorageUrlValidator;
@@ -43,13 +47,17 @@ public class DisputeService implements DisputeFacade {
     private final OrderRepository orders;
     private final OrderItemRepository orderItems;
     private final OrderDisputeRepository disputes;
+    private final OrderDisputeSellerResponseRepository sellerResponses;
     private final MarketplaceFacade marketplace;
 
     public DisputeService(OrderRepository orders, OrderItemRepository orderItems,
-                          OrderDisputeRepository disputes, MarketplaceFacade marketplace) {
+                          OrderDisputeRepository disputes,
+                          OrderDisputeSellerResponseRepository sellerResponses,
+                          MarketplaceFacade marketplace) {
         this.orders = orders;
         this.orderItems = orderItems;
         this.disputes = disputes;
+        this.sellerResponses = sellerResponses;
         this.marketplace = marketplace;
     }
 
@@ -147,6 +155,49 @@ public class DisputeService implements DisputeFacade {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<DisputeView> disputesOfSeller(String sellerNo) {
+        Long sellerId = marketplace.sellerIdOf(sellerNo);
+        return disputes.findTop50BySellerIdOrderByIdDesc(sellerId).stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public DisputeSellerResponseView submitSellerResponse(SubmitSellerResponseCommand command) {
+        OrderDispute dispute = disputeOf(command.disputeNo());
+        if (command.sellerNo() == null || command.sellerNo().isBlank()) {
+            throw new IllegalArgumentException("sellerNo is required");
+        }
+        if (command.content() == null || command.content().isBlank()) {
+            throw new IllegalArgumentException("seller response content is required");
+        }
+        Long sellerId = marketplace.sellerIdOf(command.sellerNo());
+        if (dispute.getSellerId() == null || !dispute.getSellerId().equals(sellerId)) {
+            throw new OrderDisputeConflictException(
+                    "seller does not match dispute snapshot: " + command.sellerNo());
+        }
+        if (dispute.getStatus() != DisputeStatus.OPEN
+                && dispute.getStatus() != DisputeStatus.UNDER_REVIEW) {
+            throw new OrderDisputeConflictException(
+                    "dispute is not open for seller responses: " + dispute.getStatus());
+        }
+        DisputeSellerResponse response = DisputeSellerResponse.submit(
+                dispute.getDisputeNo(), command.sellerNo(), command.content());
+        return toResponseView(sellerResponses.save(response));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DisputeSellerResponseView> sellerResponsesOf(String disputeNo) {
+        disputeOf(disputeNo);
+        return sellerResponses.findByDisputeNoOrderByCreatedAtAsc(disputeNo).stream()
+                .map(this::toResponseView)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public DisputeView accept(String disputeNo) {
         OrderDispute dispute = disputeOf(disputeNo);
@@ -186,5 +237,10 @@ public class DisputeService implements DisputeFacade {
                 d.getDecidedBy(),
                 d.getDecidedAt(),
                 d.getCreatedAt());
+    }
+
+    private DisputeSellerResponseView toResponseView(DisputeSellerResponse r) {
+        return new DisputeSellerResponseView(r.getDisputeNo(), r.getSellerNo(), r.getContent(),
+                r.getCreatedAt());
     }
 }

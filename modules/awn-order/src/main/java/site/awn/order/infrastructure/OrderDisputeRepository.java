@@ -18,4 +18,7 @@ public interface OrderDisputeRepository extends JpaRepository<OrderDispute, Long
 
     /** 运营后台争议视图：最近争议（新→旧，限 50 条） */
     List<OrderDispute> findTop50ByOrderByIdDesc();
+
+    /** 卖家面争议列表：按开单时快照的挂牌卖家归属（新→旧，限 50 条） */
+    List<OrderDispute> findTop50BySellerIdOrderByIdDesc(Long sellerId);
 }

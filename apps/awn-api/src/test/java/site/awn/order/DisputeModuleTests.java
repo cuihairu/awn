@@ -361,6 +361,124 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     // ------------------------------------------------------------------
+    // 卖家面：查归属争议与申辩
+    // ------------------------------------------------------------------
+
+    @Test
+    void sellerListsDisputesOfOwnListingsOnly() throws Exception {
+        Listed listed = listedWithSeller();
+        OrderView order = paidVoucherOrder(listed.listing());
+        String disputeNo = openDispute(order.orderNo(), "REFUND", 6800L);
+
+        // 卖家按开单时快照的挂牌卖家归属可见
+        mockMvc.perform(get("/api/v1/sellers/" + listed.sellerNo() + "/disputes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].disputeNo").value(disputeNo))
+                .andExpect(jsonPath("$[0].sellerId").value(listed.listing().sellerId().intValue()));
+
+        // 另一卖家看不到
+        String other = marketplace.registerSeller(
+                new CreateSellerCommand(999L, "卖家-其他", null)).sellerNo();
+        mockMvc.perform(get("/api/v1/sellers/" + other + "/disputes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+
+        // 未知卖家 404
+        mockMvc.perform(get("/api/v1/sellers/SEL-none/disputes"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void sellerSubmitsResponseOnlyForOwnInFlightDispute() throws Exception {
+        Listed listed = listedWithSeller();
+        OrderView order = paidVoucherOrder(listed.listing());
+        String disputeNo = openDispute(order.orderNo(), "REFUND", 6800L);
+
+        // 申辩成功：追加留痕
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + listed.sellerNo()
+                                + "\",\"content\":\"已联系买家补票\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sellerNo").value(listed.sellerNo()))
+                .andExpect(jsonPath("$.content").value("已联系买家补票"));
+
+        // 管理面可读（裁决依据）
+        mockMvc.perform(get("/api/v1/admin/disputes/" + disputeNo + "/seller-responses")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].content").value("已联系买家补票"));
+
+        // 非快照卖家申辩拒绝
+        String other = marketplace.registerSeller(
+                new CreateSellerCommand(999L, "卖家-其他", null)).sellerNo();
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + other + "\",\"content\":\"x\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DISPUTE_CONFLICT"));
+
+        // 未知卖家 404
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"SEL-none\",\"content\":\"x\"}"))
+                .andExpect(status().isNotFound());
+
+        // 空内容 400
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + listed.sellerNo() + "\",\"content\":\"  \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        // 未知争议 404
+        mockMvc.perform(post("/api/v1/disputes/DSP-none/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + listed.sellerNo() + "\",\"content\":\"x\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("DISPUTE_NOT_FOUND"));
+    }
+
+    @Test
+    void platformPoolOrderDisputeAcceptsNoSellerResponse() throws Exception {
+        // 纯平台库存订单无卖家快照：无卖家可申辩
+        String pool = pool("dsp-pool2", 3);
+        OrderView order = orderFacade.createOrder(command("dsp-pool2-" + uid(),
+                new OrderLineCommand(pool, "prod-pool", "演出 POOL", "sess-pool", null, 1, 5000, 0, 0)));
+        orderFacade.markPaid(order.orderNo());
+        String disputeNo = openDispute(order.orderNo(), "REFUND", 5000L);
+
+        Listed listed = listedWithSeller();
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + listed.sellerNo() + "\",\"content\":\"x\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DISPUTE_CONFLICT"));
+    }
+
+    @Test
+    void sellerCannotRespondAfterResolution() throws Exception {
+        Listed listed = listedWithSeller();
+        OrderView order = paidVoucherOrder(listed.listing());
+        String disputeNo = openDispute(order.orderNo(), "REFUND", 6800L);
+        mockMvc.perform(post("/api/v1/admin/disputes/" + disputeNo + "/accept")
+                        .header(TOKEN_HEADER, TOKEN))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/admin/disputes/" + disputeNo + "/adjudicate")
+                        .header(TOKEN_HEADER, TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"actor\":\"ops-a\",\"resolution\":\"REJECTED\",\"note\":\"x\"}"))
+                .andExpect(status().isOk());
+
+        // 终态争议不接受申辩
+        mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sellerNo\":\"" + listed.sellerNo() + "\",\"content\":\"x\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DISPUTE_CONFLICT"));
+    }
+
+    // ------------------------------------------------------------------
     // 帮助方法
     // ------------------------------------------------------------------
 
@@ -395,14 +513,23 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
 
     /** 卖家 + 供货审核 + 挂牌（卖家自担） */
     private ListingView listedListing() {
+        return listedWithSeller().listing();
+    }
+
+    /** 挂牌连同归属卖家号（卖家面测试用） */
+    private Listed listedWithSeller() {
         String sellerNo = marketplace.registerSeller(new CreateSellerCommand(
                 (long) (100 + UUID.randomUUID().toString().charAt(0) % 500),
                 "卖家-" + UUID.randomUUID(), null)).sellerNo();
         var review = marketplace.submitSupplyReview(new SubmitSupplyReviewCommand(
                 sellerNo, "prod-" + UUID.randomUUID().toString().substring(0, 8), null,
                 2, 6800, null));
-        return marketplace.createListing(new CreateListingCommand(
+        ListingView listing = marketplace.createListing(new CreateListingCommand(
                 sellerNo, review.reviewNo(), null, 6800, false));
+        return new Listed(listing, sellerNo);
+    }
+
+    private record Listed(ListingView listing, String sellerNo) {
     }
 
     private CreateOrderCommand command(String key, OrderLineCommand... lines) {

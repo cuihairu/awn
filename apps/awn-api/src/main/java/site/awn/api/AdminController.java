@@ -18,6 +18,7 @@ import site.awn.event.api.VenueView;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.order.api.AdjudicateDisputeCommand;
 import site.awn.order.api.DisputeFacade;
+import site.awn.order.api.DisputeSellerResponseView;
 import site.awn.order.api.DisputeView;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderView;
@@ -84,6 +85,12 @@ public class AdminController {
             @RequestBody AdjudicateDisputeRequest request) {
         return disputes.adjudicate(new AdjudicateDisputeCommand(
                 disputeNo, request.actor(), request.resolution(), request.note()));
+    }
+
+    /** 卖家申辩：提交时间正序，裁决依据；不进买家面订单争议响应。 */
+    @GetMapping("/disputes/{disputeNo}/seller-responses")
+    public List<DisputeSellerResponseView> sellerResponsesOfDispute(@PathVariable String disputeNo) {
+        return disputes.sellerResponsesOf(disputeNo);
     }
 
     public record AdjudicateDisputeRequest(String actor, DisputeResolution resolution, String note) {

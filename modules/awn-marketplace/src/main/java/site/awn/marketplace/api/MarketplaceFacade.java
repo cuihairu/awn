@@ -25,7 +25,14 @@ public interface MarketplaceFacade {
 
     ListingView listingOf(String listingNo);
 
-    ListingView delist(String listingNo);
+    /** 卖家数字主键（跨模块归属校验用，争议快照 seller_id 比对）；未知卖家抛 NotFound */
+    Long sellerIdOf(String sellerNo);
+
+    /**
+     * 卖家取消挂牌：调用方声明归属（sellerNo），服务端比对挂牌卖家，不符一律冲突。
+     * 状态守卫不变（RESERVED / SOLD / 已 DELISTED 不可撤）。
+     */
+    ListingView delist(String listingNo, String sellerNo);
 
     TicketUnitView unitOf(String unitNo);
 
