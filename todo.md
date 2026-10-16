@@ -135,6 +135,7 @@
 - [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
 - [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
   - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——`ErrorResponse.java:7` 仍为三字段 (code, message, traceId)；其后新增的全部表单（web 结算观演人 / admin 场馆配置 / admin 退款执行 / 铺座）校验均为「自检函数返回首条文案 + 内联提示」单条模式，无任何端消费字段级错误。维持卡点，待真实场景。
+  - 复核（2026-10-17 PATROL1017D）：仍无新需求立项或字段级错误消费——仓库内 `fieldErrors` 无实现 / 无调用，`ErrorResponse.java:7` 仍为三字段；维持暂缓。
 - [x] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据 — 多主题体系交付面 web（5caad72）+ admin（1f3ed6a，ThemeSwitcher.test.tsx + themes.test.ts 随包测试）
   - 已代决（2026-10-14 巡检授权）并落地（5caad72）：web 多主题切换——`@awn/ui` 主题包（11 套主题数据取自 prototypes/theme.css，18 个 `--t-*` 语义令牌 + `--awn-*`→`--t-*` 桥接，既有组件零改名跟随主题；default 桥接值 ≡ 现行品牌令牌，测试断言）；layout 注入全量主题块并固定 `data-theme="default"`（移除原 inline 注入——inline 样式会压过 `[data-theme]` 块）；右下角悬浮切换器（原型 .theme-picker，11 按钮 aria-pressed + localStorage 记忆）；首帧默认主题、水合后按记忆切换（localStorage 仅客户端，闪变代决接受）
   - 已代决（2026-10-14 巡检授权）并落地（1f3ed6a）：admin 同包接入——main.tsx 渲染前同步注入主题块并应用记忆主题（纯 CSR 无闪变）；顺带修复潜在缺陷：admin 此前从未注入 AWN_CSS_VARS，`--awn-*` 全部未定义（页面靠字面色值硬撑）；短标签下沉 `@awn/ui`（AWN_THEME_SHORT_LABELS）两端共用
@@ -184,6 +185,7 @@
   - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——repo 内无场馆名单、无数据来源拍板记录（venue-seatmaps.md §8 开放项 #1 vendor/自建、#2 许可、#4 首批名单、#7 商业数据、#8 编辑器排班均无裁决）；座位坐标数据未落地（platform_seats 仍只有分区/排/座编号，无 x/y 列）。维持卡点，待拍板。
   - 立项拍板已代决（2026-10-16，FW1016D）：自建 venue-seats（Apache-2.0）、编辑器 AWN 自建，见 venue-seatmaps.md §8；坐标数据落地仍缺 #4 首批场馆名单与人力（点名清单不代决），S2 维持卡点。
   - 三问① 已取证回答（2026-10-16，上海场馆批次）：**公开渠道给不到分区/排/座级别**——4 个上海样本（虹口/浦东/上海体育场/万体馆）公开来源只给场馆级事实（容量/看台数/场地尺寸/年份），看台编号、层数、分区结构、排座编号、内场形状全部未公开；三问①「公开渠道找 5 场馆基础座位图」不成立，需场馆方 CAD/SVG/PDF 供给或采购。样本与证据见 docs/data/venues/ + docs/design/venue-layout-schema.md §2。②③ 仍待名单与人力（不代决）。
+  - 复核（2026-10-17 PATROL1017D）：解锁条件未变——repo 内无场馆方供给文件、无首批名单点名、无商业采购裁决，`platform_seats` 坐标与 `venue_layout` 实现仍未落地；S2 继续维持卡点。
 
 ---
 
