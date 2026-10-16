@@ -471,6 +471,30 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
         assertThat(refundDiff.differences().get(0).kind()).isEqualTo("REFUND");
     }
 
+    @Test
+    void reconciliationReportsPaymentsOnUnregisteredChannel() {
+        // 渠道下线 / 配置缺失后遗留的 PENDING 支付单：对账是只读报告，
+        // 必须把「渠道无法核对」本身报告成差异，而不是让整个对账端点报错
+        OrderView order = newPaidPendingOrder(1, 100);
+        String paymentNo = "pay-ghost-" + UUID.randomUUID();
+        jdbc.update("INSERT INTO payments (payment_no, order_no, channel, status, currency, amount) "
+                        + "VALUES (?, ?, 'ghost-channel', 'PENDING', 'CNY', 100)",
+                paymentNo, order.orderNo());
+        try {
+            PaymentReconciliationReport report = payments.reconcile();
+            assertThat(report.differences())
+                    .as("未注册渠道的遗留支付单必须以差异形式呈现")
+                    .anySatisfy(d -> {
+                        assertThat(d.kind()).isEqualTo("PAYMENT");
+                        assertThat(d.reference()).isEqualTo(paymentNo);
+                        assertThat(d.localStatus()).isEqualTo("PENDING");
+                        assertThat(d.channelStatus()).isEqualTo("UNSUPPORTED");
+                    });
+        } finally {
+            jdbc.update("DELETE FROM payments WHERE payment_no = ?", paymentNo);
+        }
+    }
+
     // ------------------------------------------------------------------
 
     private PaymentCallbackCommand success(PaymentView payment) {

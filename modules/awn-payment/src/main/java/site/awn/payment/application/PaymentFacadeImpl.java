@@ -353,8 +353,17 @@ public class PaymentFacadeImpl implements PaymentFacade {
         // 未终态支付单 ↔ 渠道查询：发现差异只报告不修复
         for (Payment payment : payments.findByStatusIn(List.of(PaymentStatus.PENDING, PaymentStatus.UNKNOWN))) {
             paymentsChecked++;
-            GatewayChannelStatus channelStatus = router.forChannel(payment.getChannel())
-                    .queryCharge(payment.getChannelTxnNo()).status();
+            GatewayChannelStatus channelStatus;
+            try {
+                channelStatus = router.forChannel(payment.getChannel())
+                        .queryCharge(payment.getChannelTxnNo()).status();
+            } catch (PaymentConflictException e) {
+                // 渠道未注册（下线/配置缺失）：「无法核对」本身就是差异，
+                // 报告成 UNSUPPORTED 而不是让整个对账中断（对账是只读报告）
+                differences.add(new PaymentReconciliationReport.ReconciliationDifference(
+                        "PAYMENT", payment.getPaymentNo(), payment.getStatus().name(), "UNSUPPORTED"));
+                continue;
+            }
             if (differs(payment.getStatus().name(), channelStatus)) {
                 differences.add(new PaymentReconciliationReport.ReconciliationDifference(
                         "PAYMENT", payment.getPaymentNo(), payment.getStatus().name(), channelStatus.name()));
@@ -363,8 +372,15 @@ public class PaymentFacadeImpl implements PaymentFacade {
 
         for (Refund refund : refunds.findByStatusIn(List.of(RefundStatus.PENDING, RefundStatus.UNKNOWN))) {
             refundsChecked++;
-            GatewayChannelStatus channelStatus = router.forChannel(channelOf(refund))
-                    .queryRefund(refund.getChannelRefundNo()).status();
+            GatewayChannelStatus channelStatus;
+            try {
+                channelStatus = router.forChannel(channelOf(refund))
+                        .queryRefund(refund.getChannelRefundNo()).status();
+            } catch (PaymentConflictException e) {
+                differences.add(new PaymentReconciliationReport.ReconciliationDifference(
+                        "REFUND", refund.getRefundNo(), refund.getStatus().name(), "UNSUPPORTED"));
+                continue;
+            }
             if (differs(refund.getStatus().name(), channelStatus)) {
                 differences.add(new PaymentReconciliationReport.ReconciliationDifference(
                         "REFUND", refund.getRefundNo(), refund.getStatus().name(), channelStatus.name()));

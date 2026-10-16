@@ -1,5 +1,6 @@
 package site.awn.api;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,6 +115,13 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
     @BeforeEach
     void clearWaitlistEntries() {
         jdbc.update("DELETE FROM waitlist_entries");
+    }
+
+    /** 换渠道重试遗留的 alt-sandbox PENDING 支付单只在本类上下文可查，
+     *  留在库里会让其他类的全库对账扫描（payments.reconcile）扫到不可核对渠道。 */
+    @AfterEach
+    void clearAltChannelPayments() {
+        jdbc.update("DELETE FROM payments WHERE channel = 'alt-sandbox'");
     }
 
     private String uid() {
