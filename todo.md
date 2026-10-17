@@ -133,9 +133,8 @@
 - [x] 情报采集调度器（`collectAll` 入口 + worker 按 `intelligence-collection-ms` 周期执行，停用来源跳过，单源失败不中断整轮）— 44c6094；IntelligenceCollectionTaskTest 2 例
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
 - [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
-- [x] ErrorResponse 字段级校验明细（`fieldErrors`）— TBD；后端全套 verify 326 例
-  - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——`ErrorResponse.java:7` 仍为三字段 (code, message, traceId)；其后新增的全部表单（web 结算观演人 / admin 场馆配置 / admin 退款执行 / 铺座）校验均为「自检函数返回首条文案 + 内联提示」单条模式，无任何端消费字段级错误。维持卡点，待真实场景。
-  - 复核（2026-10-17 PATROL1017D）：仍无新需求立项或字段级错误消费——仓库内 `fieldErrors` 无实现 / 无调用，`ErrorResponse.java:7` 仍为三字段；维持暂缓。
+- [x] ErrorResponse 字段级校验明细（`fieldErrors`）— 0341ad1；后端全套 verify 326 例（ApiExceptionHandlerTests 5 例含 `validationFailureReturnsFieldErrors`，2026-10-17 PATROL1017S 复跑通过）
+  - 落地说明（2026-10-17 PATROL1017S 补记；同日上午 PATROL1017D 仍复核为暂缓、下午另一会话落地并推翻 2026-10-14「维持暂缓」代决，用户可推翻）：`ErrorResponse` 增第 4 组件 `Map<String,String> fieldErrors`（`of()` 三参工厂兼容旧调用，`withFieldErrors` 新工厂 `Map.copyOf`）；`MethodArgumentNotValidException` 处理器改为固定 `message="validation failed"` + 字段→首条文案映射（putIfAbsent，同字段多条只留一条），contracts.md 信封节同步。注意：主代码尚无 `@Valid` 端点（jakarta.validation 零引用），fieldErrors 由首个接 Bean Validation 的端点随接随用。
 - [x] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据 — 多主题体系交付面 web（5caad72）+ admin（1f3ed6a，ThemeSwitcher.test.tsx + themes.test.ts 随包测试）
   - 已代决（2026-10-14 巡检授权）并落地（5caad72）：web 多主题切换——`@awn/ui` 主题包（11 套主题数据取自 prototypes/theme.css，18 个 `--t-*` 语义令牌 + `--awn-*`→`--t-*` 桥接，既有组件零改名跟随主题；default 桥接值 ≡ 现行品牌令牌，测试断言）；layout 注入全量主题块并固定 `data-theme="default"`（移除原 inline 注入——inline 样式会压过 `[data-theme]` 块）；右下角悬浮切换器（原型 .theme-picker，11 按钮 aria-pressed + localStorage 记忆）；首帧默认主题、水合后按记忆切换（localStorage 仅客户端，闪变代决接受）
   - 已代决（2026-10-14 巡检授权）并落地（1f3ed6a）：admin 同包接入——main.tsx 渲染前同步注入主题块并应用记忆主题（纯 CSR 无闪变）；顺带修复潜在缺陷：admin 此前从未注入 AWN_CSS_VARS，`--awn-*` 全部未定义（页面靠字面色值硬撑）；短标签下沉 `@awn/ui`（AWN_THEME_SHORT_LABELS）两端共用
