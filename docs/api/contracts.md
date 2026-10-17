@@ -16,6 +16,9 @@
 
 - `code`：机器可读错误码（下表），客户端据此分支处理；`message`：人可读描述；
   `traceId`：请求追踪 ID，用于日志关联与排障（可能为空）。
+- Bean Validation 失败返回固定 `message: "validation failed"` 与 `fieldErrors`；
+  `fieldErrors` 键为字段名、值为该字段首条校验文案，同一字段多条错误只保留一条。
+  其他错误返回空 `fieldErrors`。
 - 未预期的服务器异常统一返回 `INTERNAL_ERROR` 与固定文案，**不向客户端透出任何内部信息**，
   堆栈只进服务端日志（按 `traceId` 关联）。
 

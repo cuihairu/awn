@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.inventory.domain.InventoryConflictException;
@@ -20,8 +21,12 @@ import site.awn.order.domain.OrderNotFoundException;
 import site.awn.shared.error.ErrorCode;
 import site.awn.support.AbstractPostgresIntegrationTest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,6 +111,23 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void validationFailureReturnsFieldErrors() throws Exception {
+        String body = mockMvc.perform(post("/internal/error/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"", "note":"123456"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.message").value("validation failed"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body)
+                .contains("\"name\":\"must not be blank\"")
+                .contains("\"note\":\"size must be between 0 and 5\"");
+    }
+
+    @Test
     void unexpectedExceptionHidesInternalDetails() throws Exception {
         String body = mockMvc.perform(get("/internal/error/unexpected"))
                 .andExpect(status().isInternalServerError())
@@ -174,8 +196,19 @@ class ApiExceptionHandlerTests extends AbstractPostgresIntegrationTest {
 
         @PostMapping("/internal/error/echo")
         public java.util.Map<String, Object> echo(
-                @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, Object> body) {
+                @RequestBody java.util.Map<String, Object> body) {
             return body;
         }
+
+        @PostMapping("/internal/error/validate")
+        public Map<String, String> validate(@Valid @RequestBody ValidationProbeRequest request) {
+            return Map.of("name", request.name());
+        }
+    }
+
+    record ValidationProbeRequest(
+            @NotBlank String name,
+            @Size(max = 5) String note
+    ) {
     }
 }

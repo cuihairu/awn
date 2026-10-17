@@ -1,5 +1,8 @@
 package site.awn.api;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -208,11 +211,13 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> methodArgumentNotValid(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .findFirst()
-                .orElse("validation failed");
-        return envelope(ErrorCode.VALIDATION_FAILED, message);
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+        String message = "validation failed";
+        return ResponseEntity.status(HttpStatus.valueOf(ErrorCode.VALIDATION_FAILED.httpStatus()))
+                .body(ErrorResponse.withFieldErrors(
+                        ErrorCode.VALIDATION_FAILED, message, TraceId.current(), fieldErrors));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

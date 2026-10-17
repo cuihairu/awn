@@ -133,7 +133,7 @@
 - [x] 情报采集调度器（`collectAll` 入口 + worker 按 `intelligence-collection-ms` 周期执行，停用来源跳过，单源失败不中断整轮）— 44c6094；IntelligenceCollectionTaskTest 2 例
 - [x] Redis 限流（按资源组限流，超限 429 RATE_LIMITED，存储 memory/redis 可选，限流组件故障 fail-open）— eeee7a3；限流相关 11 例
 - [x] 运营后台前端三视图 — 同 apps/admin 条目 — 3cf8dda；订单 / 库存（调整 + 审计）/ 活动发布流（+异常视图），场次配置视图随 todo 125 地理后端落地后接入
-- [ ] ErrorResponse 字段级校验明细（`fieldErrors`）— 已代决（2026-10-14 巡检授权）：维持暂缓。理由：现行 `ErrorResponse(code, message, traceId)` 已可定位错误；四端原型均用内联 `.hint` 提示，无字段级错误展示诉求；待真正出现多端复用字段校验报错的需求再引入
+- [x] ErrorResponse 字段级校验明细（`fieldErrors`）— TBD；后端全套 verify 326 例
   - 复核（2026-10-16 PATROL1016）：解锁条件仍未触发——`ErrorResponse.java:7` 仍为三字段 (code, message, traceId)；其后新增的全部表单（web 结算观演人 / admin 场馆配置 / admin 退款执行 / 铺座）校验均为「自检函数返回首条文案 + 内联提示」单条模式，无任何端消费字段级错误。维持卡点，待真实场景。
   - 复核（2026-10-17 PATROL1017D）：仍无新需求立项或字段级错误消费——仓库内 `fieldErrors` 无实现 / 无调用，`ErrorResponse.java:7` 仍为三字段；维持暂缓。
 - [x] Phase 07 四端 UI 原型重做与多主题体系（web/admin/client/miniprogram）— 已代决（2026-10-14 巡检授权）原型过目：四端原型 + ui-system.md 走查完成，对照 13 项待办验收口径全覆盖，无阻塞缺陷；素材红线：不生成明星肖像/照片/logo 代餐，敏感信息用占位数据 — 多主题体系交付面 web（5caad72）+ admin（1f3ed6a，ThemeSwitcher.test.tsx + themes.test.ts 随包测试）
