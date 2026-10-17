@@ -9,6 +9,7 @@ import {
   getCampaignAssets,
   getCampaignFaq,
   getCampaignRules,
+  getEventPrices,
   getSessionProducts,
   listEventSessions,
   renderCampaign,
@@ -22,14 +23,15 @@ import { toCampaignConfig } from '../../../lib/campaign-config'
  * 只读已发布版本快照（GET /api/v1/campaigns/{code}/render）：未发布 / 未知专场一律 404，
  * 草稿改动不影响线上页面。渲染分两步：
  * 1. toCampaignConfig —— 载荷适配 + 白名单过滤（渲染器自身还有一层拒绝渲染）；
- * 2. resolveSections —— 把后端的引用型 props（eventIds / ruleDocumentId / faqId / assetIds …）
- *    解析成渲染器要读的展示型 props（sessions / tiers / paragraphs / rules …）；
- *    内容端点（须知 / 常见问题 / 素材）按专场码逐个查询，查不到或未配置的内容模块
- *    标记待接入并显式说明，不渲染空白区块也不造假内容。
+ * 2. resolveSections —— 把后端的引用型 props（eventIds / eventId / ruleDocumentId / faqId / assetIds …）
+ *    解析成渲染器要读的展示型 props（sessions / tiers / paragraphs / rules / summary …）；
+ *    内容端点（须知 / 常见问题 / 素材）按专场码逐个查询，价格趋势按引用的活动查公开价格历史，
+ *    查不到或未配置的内容模块标记待接入并显式说明，不渲染空白区块也不造假内容。
  */
 const CAMPAIGN_API = {
   listEventSessions,
   getSessionProducts,
+  getEventPrices,
   getCampaignRules,
   getCampaignFaq,
   getCampaignAssets,

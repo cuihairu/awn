@@ -3,10 +3,12 @@ import {
   type CampaignAssetView,
   type CampaignFaqView,
   type CampaignRuleView,
+  type EventPricePointView,
   type ProductListItem,
   type SessionView,
 } from '@awn/api-client'
 import type { CampaignSection, CampaignSectionType } from '@awn/campaign-renderer'
+import { formatMinor } from './checkout'
 import { formatEventDateTime } from './event-labels'
 
 /**
@@ -21,6 +23,8 @@ import { formatEventDateTime } from './event-labels'
  * 引用型 ID 按列表条目 id 匹配，匹配不到即视为查不到；内联展示型 props
  * （rules 文本数组 / entries 问答对 / images 含 alt 条目，口径与 @awn/campaign-renderer
  * 和小程序 sections 子集一致）优先于引用，两种形态都能渲染。
+ * 价格趋势按 eventId 查公开情报端点（GET /intelligence/events/{eventId}/prices，
+ * 价格历史按观测时间倒序），汇总为渲染器读的 summary 文本；内联 summary 同样优先于引用。
  */
 
 export interface SectionResolution {
@@ -37,6 +41,7 @@ export interface SectionResolution {
 export interface CampaignDataApi {
   listEventSessions(eventId: string): Promise<SessionView[]>
   getSessionProducts(sessionId: string): Promise<ProductListItem[]>
+  getEventPrices?(eventId: string): Promise<EventPricePointView[]>
   getCampaignRules?(campaignCode: string): Promise<CampaignRuleView[]>
   getCampaignFaq?(campaignCode: string): Promise<CampaignFaqView[]>
   getCampaignAssets?(campaignCode: string): Promise<CampaignAssetView[]>
@@ -244,6 +249,62 @@ async function productTiersOf(eventIds: string[], api: CampaignDataApi): Promise
   return tiers.flat().map((product) => ({ name: product.name, price: product.unitPrice }))
 }
 
+/**
+ * 价格趋势模块：内联 summary 优先（运营可手写说明）；否则按引用活动查公开价格历史，
+ * 汇总为渲染器读的 summary 文本（渲染契约只有 title + summary，不发明图表）。
+ */
+async function resolvePriceTrend(section: CampaignSection, api: CampaignDataApi): Promise<SectionResolution> {
+  const inline = section.props['summary']
+  if (typeof inline === 'string' && inline.length > 0) {
+    return { ...section, status: 'ready', props: { ...section.props, summary: inline } }
+  }
+  const eventId = idOf(section.props, 'eventId')
+  if (!eventId) {
+    return pending(section, '价格趋势未接入（未配置 summary 或 eventId）')
+  }
+  let prices: EventPricePointView[] = []
+  try {
+    prices = (await api.getEventPrices?.(eventId)) ?? []
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return pending(section, '引用的活动不存在或未公开')
+    }
+    throw error
+  }
+  if (prices.length === 0) {
+    return pending(section, '引用的活动暂无价格观测数据')
+  }
+  return { ...section, status: 'ready', props: { ...section.props, summary: priceTrendSummary(prices) } }
+}
+
+/**
+ * 价格历史 → 一段事实性汇总：只描述数据本身（最近观测 / 来源 / 条数 / 同币种区间），
+ * 不推算走势。币种随条目下发，混合币种时不给区间（跨币种不可比）。
+ */
+function priceTrendSummary(prices: EventPricePointView[]): string {
+  const latest = prices[0]
+  const details = [formatEventDateTime(latest.observedAt), latest.sourceName]
+    .filter((detail) => detail.length > 0)
+    .join(' · ')
+  const segments = [
+    `最近观测 ${formatMinor(latest.price)} ${latest.currency}`.trimEnd() +
+      (details ? `（${details}）` : ''),
+    `共 ${prices.length} 条记录`,
+  ]
+  const sameCurrency = prices.every((point) => point.currency === latest.currency)
+  if (sameCurrency && prices.length > 1) {
+    const minor = prices
+      .map((point) => point.price)
+      .filter((price) => Number.isFinite(price))
+    const low = Math.min(...minor)
+    const high = Math.max(...minor)
+    if (low !== high) {
+      segments.push(`区间 ${formatMinor(low)}–${formatMinor(high)}`)
+    }
+  }
+  return segments.join('，')
+}
+
 function fallback(error: unknown): never[] {
   // 引用型 ID 未必是真实活动 ID（模板占位或缺失），视为查不到，不中断整页渲染。
   if (error instanceof ApiError) return []
@@ -287,7 +348,7 @@ async function resolveOne(
     case 'imageGallery':
       return resolveImageGallery(section, api, campaignCode)
     case 'priceTrend':
-      return pending(section, '价格趋势未接入（情报接口未接入专场）')
+      return resolvePriceTrend(section, api)
     case 'ticketComparison':
       return pending(section, '票档对比未接入（缺少可对比数据源）')
     case 'channelComparison':

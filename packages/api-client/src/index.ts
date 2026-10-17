@@ -548,6 +548,21 @@ export async function listEvents(init?: RequestInit): Promise<EventView[]> {
   return fetch(`${API_BASE}/events`, init).then((res) => readJson<EventView[]>(res))
 }
 
+/**
+ * 价格点（GET /intelligence/events/{eventId}/prices）：每条可溯源到来源与可信度。
+ * price 为最小货币单位整数；币种随条目下发，不得默认按 CNY 汇总。
+ */
+export interface EventPricePointView {
+  price: number
+  currency: string
+  availability: string
+  sourceNo: string
+  sourceName: string
+  kind: string
+  trustTier: number
+  observedAt: string
+}
+
 export async function getEvent(
   eventId: string,
   init?: RequestInit,
@@ -562,6 +577,15 @@ export async function listEventSessions(
 ): Promise<SessionView[]> {
   return fetch(`${API_BASE}/events/${eventId}/sessions`, init)
     .then((res) => readJson<SessionView[]>(res))
+}
+
+/** 活动下所有场次的价格历史（按观测时间倒序）；活动未知或未公开 → 404 */
+export async function getEventPrices(
+  eventId: string,
+  init?: RequestInit,
+): Promise<EventPricePointView[]> {
+  return fetch(`${API_BASE}/intelligence/events/${eventId}/prices`, init)
+    .then((res) => readJson<EventPricePointView[]>(res))
 }
 
 export async function getSession(

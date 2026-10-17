@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   API_BASE,
   getEvent,
+  getEventPrices,
   getProduct,
   getProductAvailability,
   getSeatmap,
@@ -122,6 +123,40 @@ describe('events / sessions / products', () => {
       name: 'ApiError',
       status: 404,
       code: 'SESSION_NOT_FOUND',
+    })
+  })
+
+  it('reads the price history of an event from the public intelligence face', async () => {
+    const fetchMock = mockFetchOnce([
+      {
+        price: 48000,
+        currency: 'CNY',
+        availability: 'SELLING',
+        sourceNo: 'SRC-1',
+        sourceName: '大麦网',
+        kind: 'PLATFORM',
+        trustTier: 1,
+        observedAt: '2026-11-06T11:00:00Z',
+      },
+    ])
+    const points = await getEventPrices('3')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/intelligence/events/3/prices`,
+      undefined,
+    )
+    expect(points).toHaveLength(1)
+    expect(points[0]).toMatchObject({ price: 48000, sourceName: '大麦网', trustTier: 1 })
+  })
+
+  it('rejects price history read when the event is unknown or not public', async () => {
+    mockFetchOnce(
+      { code: 'EVENT_NOT_FOUND', message: 'event not found: 404' },
+      { ok: false, status: 404, statusText: 'Not Found' },
+    )
+    await expect(getEventPrices('404')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+      code: 'EVENT_NOT_FOUND',
     })
   })
 })

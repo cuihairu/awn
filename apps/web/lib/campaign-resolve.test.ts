@@ -4,6 +4,7 @@ import {
   type CampaignAssetView,
   type CampaignFaqView,
   type CampaignRuleView,
+  type EventPricePointView,
   type ProductListItem,
   type SessionView,
 } from '@awn/api-client'
@@ -38,6 +39,40 @@ const product: ProductListItem = {
   poolCode: 'POOL-1',
   available: 120,
 }
+
+/** 公开价格历史（按观测时间倒序）：后端为「分」口径，币种与来源随条目下发 */
+const pricePoints: EventPricePointView[] = [
+  {
+    price: 48000,
+    currency: 'CNY',
+    availability: 'SELLING',
+    sourceNo: 'SRC-1',
+    sourceName: '大麦网',
+    kind: 'PLATFORM',
+    trustTier: 1,
+    observedAt: '2026-11-06T11:00:00Z',
+  },
+  {
+    price: 52000,
+    currency: 'CNY',
+    availability: 'SELLING',
+    sourceNo: 'SRC-3',
+    sourceName: '官方渠道',
+    kind: 'OFFICIAL',
+    trustTier: 1,
+    observedAt: '2026-11-05T11:00:00Z',
+  },
+  {
+    price: 36000,
+    currency: 'CNY',
+    availability: 'SOLD_OUT',
+    sourceNo: 'SRC-2',
+    sourceName: '猫眼',
+    kind: 'PLATFORM',
+    trustTier: 2,
+    observedAt: '2026-11-04T11:00:00Z',
+  },
+]
 
 const section = (overrides: Partial<CampaignSection> = {}): CampaignSection => ({
   id: 's1',
@@ -91,6 +126,95 @@ describe('resolveSections', () => {
     )
     expect(resolved.status).toBe('ready')
     expect(resolved.props['tiers']).toEqual([{ name: '内场 A 区', price: 168000 }])
+  })
+
+  it('resolves priceTrend references into a summary from the public price history', async () => {
+    const api = fakeApi({ getEventPrices: vi.fn(async () => pricePoints) })
+    const [resolved] = await resolveSections(
+      [section({ type: 'priceTrend', props: { eventId: '1' } })],
+      api,
+    )
+    expect(resolved.status).toBe('ready')
+    expect(api.getEventPrices).toHaveBeenCalledWith('1')
+    expect(resolved.props['summary']).toBe(
+      '最近观测 480.00 CNY（11 月 6 日 19:00 · 大麦网），共 3 条记录，区间 360.00–520.00',
+    )
+  })
+
+  it('prefers an inline summary over the referenced price history', async () => {
+    const api = fakeApi({ getEventPrices: vi.fn(async () => pricePoints) })
+    const [resolved] = await resolveSections(
+      [
+        section({
+          type: 'priceTrend',
+          props: { eventId: '1', summary: '官方渠道放票前价格逐轮上浮' },
+        }),
+      ],
+      api,
+    )
+    expect(resolved.status).toBe('ready')
+    expect(resolved.props['summary']).toBe('官方渠道放票前价格逐轮上浮')
+    expect(api.getEventPrices).not.toHaveBeenCalled()
+  })
+
+  it('omits the range claim when there is one observation or mixed currencies', async () => {
+    const [single, mixed] = await resolveSections(
+      [
+        section({ type: 'priceTrend', props: { eventId: '1' } }),
+        section({ type: 'priceTrend', props: { eventId: '2' } }),
+      ],
+      fakeApi({
+        getEventPrices: vi.fn(async (eventId: string) =>
+          eventId === '1'
+            ? pricePoints.slice(0, 1)
+            : [pricePoints[0], { ...pricePoints[1], currency: 'HKD' }, pricePoints[2]],
+        ),
+      }),
+    )
+    expect(single.status).toBe('ready')
+    expect(single.props['summary']).toBe('最近观测 480.00 CNY（11 月 6 日 19:00 · 大麦网），共 1 条记录')
+    expect(mixed.status).toBe('ready')
+    expect(mixed.props['summary']).not.toContain('区间')
+  })
+
+  it('marks priceTrend pending when the event is unknown or has no observations', async () => {
+    const [notPublic, empty] = await resolveSections(
+      [
+        section({ type: 'priceTrend', props: { eventId: '404' } }),
+        section({ type: 'priceTrend', props: { eventId: '1' } }),
+      ],
+      fakeApi({
+        getEventPrices: vi.fn(async (eventId: string) => {
+          if (eventId === '404') {
+            throw new ApiError(404, 'EVENT_NOT_FOUND', 'event not found: 404')
+          }
+          return []
+        }),
+      }),
+    )
+    expect(notPublic.status).toBe('pending')
+    expect(notPublic.reason).toBe('引用的活动不存在或未公开')
+    expect(empty.reason).toBe('引用的活动暂无价格观测数据')
+  })
+
+  it('keeps priceTrend pending without an inline summary or an event reference', async () => {
+    const [resolved] = await resolveSections(
+      [section({ type: 'priceTrend', props: {} })],
+      fakeApi(),
+    )
+    expect(resolved.status).toBe('pending')
+    expect(resolved.reason).toBe('价格趋势未接入（未配置 summary 或 eventId）')
+  })
+
+  it('propagates network errors from the price endpoint', async () => {
+    const api = fakeApi({
+      getEventPrices: vi.fn(async () => {
+        throw new Error('network down')
+      }),
+    })
+    await expect(
+      resolveSections([section({ type: 'priceTrend', props: { eventId: '1' } })], api),
+    ).rejects.toThrow('network down')
   })
 
   it('maps richText html content onto paragraphs', async () => {
