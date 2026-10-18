@@ -4,8 +4,9 @@
  * 边界（原型已定）：
  * - 座位图 = 空间与编号，库存 = 可售状态，两者不是一个模型；
  *   「可选」仅表示座位数据标记为可售，实际可售以下单时后端原子预留为准。
- * - platform_seats 只有 分区/排/座 编号，没有坐标字段——渲染用程序化网格排布，
- *   不臆造场馆几何（弧形/朝向等需要空间数据源，挂起项调研覆盖）。
+ * - 座位坐标是 S2 契约先行（platform_seats V27 pos_x/pos_y，公开面 x/y 可选）：
+ *   null / 缺省 = 坐标缺失，渲染照旧程序化网格排布；坐标写入路径随数据管线
+ *   （挂起项拍板）落地，落地前恒为 null，有值也不在本层消费（S3 再接）。
  * - 图例与原型一致三态：可选 / 已售不可售（置灰）/ 本次选中；
  *   RESERVED / SOLD / DELIVERED / INVALID 在图上同为不可选，悬停文案区分。
  */
@@ -25,6 +26,9 @@ export interface SeatInput {
   row: string
   seat: string
   status: SeatStatus
+  /** S2 契约先行：可选座位坐标，null / 缺省 = 坐标缺失，回退程序化网格（本层不消费） */
+  x?: number | null
+  y?: number | null
 }
 
 export interface SeatCell {

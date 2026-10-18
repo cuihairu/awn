@@ -74,6 +74,27 @@ describe('groupSeatSections', () => {
     expect(seats.map((cell) => cell.label)).toEqual(['2', '10'])
   })
 
+  it('renders the identical grid when coordinates are null or absent (S2 fallback)', () => {
+    const plain = [
+      seat({ seatNo: 'SEAT-1', section: 'A', row: '1', seat: '1' }),
+      seat({ seatNo: 'SEAT-2', section: 'A', row: '1', seat: '2' }),
+      seat({ seatNo: 'SEAT-3', section: 'B', row: '2', seat: '5' }),
+    ]
+    const withNullCoords = plain.map((s) => ({ ...s, x: null, y: null }))
+
+    expect(groupSeatSections(withNullCoords)).toEqual(groupSeatSections(plain))
+  })
+
+  it('ignores coordinate values until rendering consumes them (S3 pending)', () => {
+    const plain = [
+      seat({ seatNo: 'SEAT-1', section: 'A', row: '1', seat: '1' }),
+      seat({ seatNo: 'SEAT-2', section: 'A', row: '1', seat: '2' }),
+    ]
+    const withCoords = plain.map((s, i) => ({ ...s, x: 12.5 * (i + 1), y: 3.25 * (i + 1) }))
+
+    expect(groupSeatSections(withCoords)).toEqual(groupSeatSections(plain))
+  })
+
   it('returns an empty list for empty input', () => {
     expect(groupSeatSections([])).toEqual([])
   })

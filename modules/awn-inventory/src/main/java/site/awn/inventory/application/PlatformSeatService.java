@@ -153,6 +153,6 @@ public class PlatformSeatService {
     static SeatView toView(PlatformSeat seat) {
         return new SeatView(seat.getSeatNo(), seat.getProductCode(), seat.getSessionCode(),
                 seat.getSectionName(), seat.getRowLabel(), seat.getSeatLabel(),
-                seat.getOrderNo(), seat.getStatus());
+                seat.getOrderNo(), seat.getStatus(), seat.getPosX(), seat.getPosY());
     }
 }

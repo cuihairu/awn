@@ -31,6 +31,7 @@
 
 - 座位坐标可选化：`platform_seats` 增坐标字段或独立坐标表（版本化，随三问验证「可复用、可校验、可版本化」口径设计）。
 - 公开端点 `SeatView` 透出可选 `x`/`y`（或分区几何参数）；**`null` = 坐标缺失，前端回退 S1 网格**，不破坏现有 2D 契约。
+- **落地记录（2026-10-18，S2 契约先行已代决，见 `venue-seatmaps.md` §8 #9）**：V27 `pos_x`/`pos_y` + `SeatView`/公开 `SeatMapItem` 可选 `x`/`y` + 前端 `SeatInput` 可选坐标（null 回退网格，消费逻辑未接）；契约条目进 `docs/api/contracts.md`。3D 渲染（S3）未动。
 
 ### S3 · 真 3D 原型（three.js 程序化，Web 端先行）
 

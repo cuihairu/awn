@@ -50,6 +50,14 @@ public class PlatformSeat {
     @Column(name = "status", nullable = false)
     private SeatStatus status;
 
+    /** 座位坐标（S2 契约先行，V27）：可选，null = 缺失，前端回退网格；写入路径随数据管线落地 */
+    @Column(name = "pos_x")
+    private Double posX;
+
+    /** 座位坐标（S2 契约先行，V27）：与 posX 成对，成对缺失或成对写入 */
+    @Column(name = "pos_y")
+    private Double posY;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -121,5 +129,13 @@ public class PlatformSeat {
 
     public SeatStatus getStatus() {
         return status;
+    }
+
+    public Double getPosX() {
+        return posX;
+    }
+
+    public Double getPosY() {
+        return posY;
     }
 }

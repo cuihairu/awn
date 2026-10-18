@@ -123,7 +123,7 @@ GET /api/v1/works/{workId}
 
 - `GET /api/v1/events` 仅返回 `PUBLISHED` / `COMPLETED` 活动，按开始时间倒序；
 - `GET /api/v1/events/{eventId}` 与 `GET /api/v1/sessions/{sessionId}` 对未知资源、以及父活动未发布（草稿）的场次一律 404，不泄露草稿内容；
-- `GET /api/v1/sessions/{sessionId}/seatmap` 返回场次座位图条目（`seatNo` / `productCode` / `section` / `row` / `seat` / `status`），可见性与场次详情同口径（父活动未公开 → 404 `SESSION_NOT_FOUND`）；`status` 为逐座状态机 `IN_STOCK` / `RESERVED` / `SOLD` / `DELIVERED` / `INVALID`，占座订单号不进公开面；图上「可选」仅为数据标记，实际可售以下单时后端原子预留为准；
+- `GET /api/v1/sessions/{sessionId}/seatmap` 返回场次座位图条目（`seatNo` / `productCode` / `section` / `row` / `seat` / `status`），可见性与场次详情同口径（父活动未公开 → 404 `SESSION_NOT_FOUND`）；`status` 为逐座状态机 `IN_STOCK` / `RESERVED` / `SOLD` / `DELIVERED` / `INVALID`，占座订单号不进公开面；图上「可选」仅为数据标记，实际可售以下单时后端原子预留为准；条目另带可选座位坐标 `x` / `y`（S2 契约先行，`platform_seats` V27 `pos_x`/`pos_y`）：**null = 坐标缺失，前端回退现有网格渲染**；坐标写入路径随数据管线（挂起项拍板后）另行落地，此前恒为 null；
 - 场次公开读（详情与列表）响应带 `geo`（场馆派生：场次指定场馆优先，未指定继承父活动场馆；无任何场馆为 `null`）。坐标缺失为 `null` 是正常态，客户端不得按 (0,0) 或占位坐标兜底；`geo` 另带位置示意图三字段（`mapImageUrl` / `mapMarkerX` / `mapMarkerY`，可各自缺省）：`mapImageUrl` 是运营提供的**非精确示意图**（首方静态图，域白名单校验，不接第三方地图 SDK），`mapMarkerX`/`mapMarkerY` 为图上标记位置（相对图片左上角的百分比 0-100，**成对出现**，与图片可各自缺省）；示意图没有地理范围，经纬度与图上位置无换算关系，客户端不得自行猜标记位置；图加载失败回退文字行，不报错占位；
 - `GET /api/v1/intelligence/events/{eventId}/prices` 返回该活动下**所有场次**的价格历史（按观测时间倒序，每条可溯源）；活动未知或未公开 → 404；场次无价格数据时返回空数组。
 
@@ -382,7 +382,7 @@ POST   /api/v1/admin/works/{workId}/cast
 成功 201 与座位视图列表；**批次整体成功或整体失败**——商品编码经 catalog 校验（未知 → 404
 `NOT_FOUND`）、位置字段必填、同场次同位置重复 → 400 `VALIDATION_FAILED`。`GET
 /admin/sessions/{sessionCode}/seats` 列该场次座位（运营视图含占座订单号 `orderNo`，公开座位图
-剥去该字段）；场次编码不存在时返回空列表（字符串松耦合，不校验场次存在性）。
+剥去该字段；视图同样携带可选坐标 `x` / `y`，语义同公开面——null = 缺失）；场次编码不存在时返回空列表（字符串松耦合，不校验场次存在性）。
 
 争议裁决经 `X-Admin-Token`：`GET /admin/disputes` 列争议单（受理人 / 卖家快照 / 状态 / 裁决）；
 `POST /admin/disputes/{disputeNo}/accept` 受理（`OPEN` → `UNDER_REVIEW`）；`POST

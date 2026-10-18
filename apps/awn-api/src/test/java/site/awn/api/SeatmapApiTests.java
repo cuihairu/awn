@@ -80,6 +80,20 @@ class SeatmapApiTests extends AbstractPostgresIntegrationTest {
                 .andExpect(jsonPath("$[*].orderNo").doesNotExist());
     }
 
+    /** S2 契约（seatmap-3d-plan.md §3）：公开面透出可选 x/y；坐标缺失显式 null，前端回退网格 */
+    @Test
+    void seatmapExposesExplicitNullCoordinatesUntilDataLands() throws Exception {
+        SessionView session = eventWithSession(uid(), true);
+        String productCode = products.productCode("seat-" + uid());
+        inventory.createSeats(new CreateSeatsCommand(productCode, session.sessionCode(), List.of(
+                new CreateSeatsCommand.SeatPosition("A区", "1", "1"))));
+
+        mvc.perform(get("/api/v1/sessions/{id}/seatmap", session.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].x").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$[0].y").value(org.hamcrest.Matchers.nullValue()));
+    }
+
     @Test
     void seatmapOfPublicSessionWithoutSeatsIsEmpty() throws Exception {
         SessionView session = eventWithSession(uid(), true);

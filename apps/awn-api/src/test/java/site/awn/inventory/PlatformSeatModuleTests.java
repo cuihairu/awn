@@ -70,6 +70,20 @@ class PlatformSeatModuleTests extends AbstractPostgresIntegrationTest {
                         created.stream().map(SeatView::seatNo).toList());
     }
 
+    /** S2 契约先行（seatmap-3d-plan.md §3）：视图带可选 x/y，坐标未落地恒为 null，前端回退网格 */
+    @Test
+    void seatViewsExposeNullCoordinatesUntilDataLands() {
+        String productCode = products.productCode("seat-" + uid());
+        String sessionCode = "sess-" + uid();
+
+        List<SeatView> created = inventory.createSeats(
+                new CreateSeatsCommand(productCode, sessionCode, positions(2)));
+
+        assertThat(created).allMatch(seat -> seat.x() == null && seat.y() == null);
+        assertThat(inventory.seatsOfSession(sessionCode))
+                .allMatch(seat -> seat.x() == null && seat.y() == null);
+    }
+
     @Test
     void createSeatsValidatesProductAndRejectsDuplicatePosition() {
         String sessionCode = "sess-" + uid();

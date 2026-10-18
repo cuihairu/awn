@@ -623,7 +623,7 @@ export async function getProductAvailability(
 /** 逐座状态机（座位图 status 取值，与库存模块 SeatStatus 一致） */
 export type SeatStatus = 'IN_STOCK' | 'RESERVED' | 'SOLD' | 'DELIVERED' | 'INVALID'
 
-/** 座位图条目：只含编号与状态（占座订单号不进公开面） */
+/** 座位图条目：只含编号、状态与可选坐标（占座订单号不进公开面） */
 export interface SeatMapItem {
   seatNo: string
   productCode: string
@@ -631,6 +631,9 @@ export interface SeatMapItem {
   row: string
   seat: string
   status: SeatStatus
+  /** 可选座位坐标（S2 契约先行）：null = 坐标缺失，前端回退现有网格渲染 */
+  x: number | null
+  y: number | null
 }
 
 /** 场次座位图（公开只读）：可见性与场次详情同口径，父活动未公开 → 404 */

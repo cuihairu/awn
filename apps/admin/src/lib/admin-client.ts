@@ -140,6 +140,9 @@ export interface AdminSeat {
   seat: string
   orderNo: string | null
   status: 'IN_STOCK' | 'RESERVED' | 'SOLD' | 'DELIVERED' | 'INVALID'
+  /** S2 契约先行：可选座位坐标，坐标写入路径落地前恒为 null（运营视图暂不展示） */
+  x?: number | null
+  y?: number | null
 }
 
 /** 铺座批次：一次铺一个商品在同一场次下的座位（整体成功或整体失败） */
