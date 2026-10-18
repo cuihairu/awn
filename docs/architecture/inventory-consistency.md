@@ -39,7 +39,7 @@ sequenceDiagram
 
     U->>O: 创建订单 + 幂等键
     O->>DB: 开启事务
-    O->>DB: 金额算术与行级校验（商品存在性校验未实现，见 trading-model G1）
+    O->>DB: 金额算术与行级校验（目录 / 挂牌核价、池↔商品一致性，见 trading-model）
     O->>I: 原子预留库存
     I->>DB: 条件 UPDATE
     DB-->>I: 成功 / 库存不足

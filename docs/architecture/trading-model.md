@@ -136,7 +136,7 @@ sequenceDiagram
 
     == 超时兜底 ==
     WK->>ORD: OrderTimeoutTask（每单独立事务）
-    Note over ORD: T18 PENDING_PAYMENT→EXPIRED，赢者释放库存；不查支付状态，UNKNOWN 同样被释放（未防护，G6）
+    Note over ORD: T18 PENDING_PAYMENT→EXPIRED，赢者释放库存；不查支付状态，UNKNOWN 同样被释放（查实成功后走 G6 补偿：告警 + 原路幂等退款）
 ```
 
 事务边界口径：

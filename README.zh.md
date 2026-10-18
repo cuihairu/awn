@@ -62,7 +62,7 @@
 | 端 | 命令 | 说明 |
 |---|---|---|
 | 文档站 | `pnpm install && pnpm docs:dev` | http://localhost:5173 |
-| API | `./mvnw -pl apps/awn-api spring-boot:run`（需本地 PostgreSQL + Redis） | http://localhost:8080/actuator/health |
+| API | `./mvnw -pl apps/awn-api spring-boot:run`（需本地 PostgreSQL；仅 `AWN_RATELIMIT_STORE=redis` 时才需要 Redis，本地默认进程内限流） | http://localhost:8080/actuator/health |
 | 网页端 | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | 管理后台 | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | 小程序 | `pnpm --filter @awn/miniprogram dev:weapp` | 微信开发者工具导入 `apps/miniprogram` |

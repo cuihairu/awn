@@ -6,7 +6,7 @@
 Docker Compose
 ├── reverse-proxy（Caddy，80/443）
 ├── web（Next.js，3000）
-├── admin（Vite 静态，5174）
+├── admin（Vite 静态构建，容器内 caddy file-server :80，经反代 /admin 路径；本地开发 `pnpm --filter @awn/admin dev` 才是 5174）
 ├── awn-api（8080，仅 127.0.0.1:18080 暴露）
 ├── awn-worker（无端口映射，actuator 8081 仅容器内）
 ├── postgresql（无端口映射）
@@ -21,9 +21,11 @@ Docker Compose
 | 变量 | 用途 |
 |------|------|
 | `AWN_DB_PASSWORD` | PostgreSQL 密码（api/worker 共用） |
-| `AWN_ADMIN_TOKEN` | 运营接口令牌（生产必须覆盖开发默认值） |
+| `AWN_ADMIN_TOKEN` | 运营接口令牌（**必填**，Compose 以 `:?` 强制，缺失拒绝启动） |
+| `AWN_API_TOKEN_SECRET` | 买家 / 卖家 Bearer token 的 HMAC 密钥（**必填**，至少 32 字节） |
 | `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | 对象存储凭证 |
 | `AWN_INTEL_PASSWORD` | 情报库角色密码（与 `init-intel.sql` 占位同步） |
+| `AWN_RATELIMIT_STORE` | 管理面限流存储（可选；Compose 默认 `redis`，本地/测试默认 `memory`） |
 
 前端可以独立构建与部署；API 和 Worker 共享后端代码，但使用不同启动配置和任务开关。
 

@@ -113,8 +113,20 @@ GET  /api/v1/waitlist
 
 POST /api/v1/checkout/quote
 
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+
+POST /api/v1/orders/{orderNo}/disputes
+GET  /api/v1/orders/{orderNo}/disputes
+POST /api/v1/disputes/{disputeNo}/withdraw
+POST /api/v1/disputes/{disputeNo}/seller-response
+GET  /api/v1/sellers/{sellerNo}/disputes
+
+POST /api/v1/listings/{listingNo}/delist
+
 GET /api/v1/events
 GET /api/v1/events/{eventId}
+GET /api/v1/events/{eventId}/sessions
 GET /api/v1/sessions/{sessionId}
 GET /api/v1/intelligence/events/{eventId}/prices
 

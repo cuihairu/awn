@@ -62,7 +62,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | Target | Command | Notes |
 |---|---|---|
 | Docs site | `pnpm install && pnpm docs:dev` | http://localhost:5173 |
-| API | `./mvnw -pl apps/awn-api spring-boot:run` (needs local PostgreSQL + Redis) | http://localhost:8080/actuator/health |
+| API | `./mvnw -pl apps/awn-api spring-boot:run` (needs local PostgreSQL; Redis only when `AWN_RATELIMIT_STORE=redis`, the local default is in-memory) | http://localhost:8080/actuator/health |
 | Web | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | Admin | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | Miniprogram | `pnpm --filter @awn/miniprogram dev:weapp` | Import `apps/miniprogram` into WeChat DevTools |

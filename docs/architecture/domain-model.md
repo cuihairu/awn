@@ -40,15 +40,22 @@ flowchart TD
 | 活动 / 场馆 | `venue`、`event`、`session`（V4） |
 | 商品 / 票档 | `ticket_category`、`product`（V4） |
 | 库存 | `inventory_pool`、`inventory_balance`、`inventory_reservation`、`inventory_transaction`（V2） |
-| 专场 | `campaigns`、`campaign_revisions`、`campaign_events`、`campaign_products`、`campaign_assets`（V5） |
+| 平台座位 | `platform_seats`（V17；V27 加可空 `pos_x`/`pos_y` 坐标列，契约先行） |
+| 专场 | `campaigns`、`campaign_revisions`、`campaign_events`、`campaign_products`、`campaign_assets`（V5）；内容端点表 `campaign_rule_documents`、`campaign_faqs`（V21） |
 | 订单 | `orders`、`order_items`（V3；幂等键内联于 `orders.idempotency_key`） |
+| 订单争议 | `order_disputes`（V22）、`order_dispute_seller_responses`（V24） |
+| 观演人实名 | `order_attendees`（V25） |
+| 候补 | `waitlist_entries`（V20） |
 | 支付 / 退款 | `payments`、`refunds`（V6；退款幂等键内联于 `refunds.idempotency_key`） |
 | 履约 | `fulfillments`、`delivery_records`（V7） |
 | marketplace | `sellers`、`supply_reviews`、`listings`、`ticket_units`（V7） |
+| 身份 | `identity_users`、`identity_user_roles`（V15） |
+| 优惠券 | `coupon_templates`、`coupons`（V14） |
+| 明星图鉴 | `persons`、`works`、`person_works`（V18） |
 | 事件与收件 | `outbox_messages`（V3）、`inbox_messages`（V6） |
 | 审计与告警 | `audit_logs`、`alerts`（V8） |
 | 情报 | `intelligence.data_sources`、`intelligence.raw_observations`、`intelligence.normalized_observations`、`intelligence.price_history`（V8，独立 schema） |
-| 通知 | 暂无表（notification 模块当前仅适配外部通道） |
+| 通知 | `notification_messages`（V13，站内信；邮件 / 短信通道未接入） |
 
 ## 库存余额模型
 

@@ -66,6 +66,9 @@ flowchart TB
         PAYMENT["payment"]
         FULFILL["fulfillment"]
         MARKET["marketplace"]
+        PROMO["promotion"]
+        NOTIF["notification"]
+        STAR["star"]
         INTELAPI["intelligence"]
         ADMINMOD["admin / audit"]
     end

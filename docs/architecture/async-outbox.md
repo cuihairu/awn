@@ -43,11 +43,14 @@ Worker 进程与 API 共享同一代码包，只启用后台任务：
 
 - 处理订单超时。
 - 扫描并释放已到期的库存预留（带 TTL 的预留过期后回补库存；幂等由预留状态机守卫保证）。
-- 执行库存、支付和退款对账。
+- 执行库存、支付和退款对账（支付与退款共用 `payment-reconciliation` 一个任务；退款未知核实走 `payment-unknown-resolution`）。
 - 分发并重试 Outbox 事件，按处理器路由到履约等下游。
+- 候补递补（`waitlist-promotion`，默认关闭）与情报采集（`intelligence-collection`）。
 - 告警并处理超过重试上限的事件（转入 FAILED 并告警，无独立死信存储）。
 
-未实现：邮件 / 短信通道接入（`notification` 模块已落地站内信：`ORDER_CREATED` / `ORDER_PAID` 事件经 Outbox 投递，通道失败记 FAILED 不回滚订单；`EMAIL` / `SMS` 通道为显式未接入占位。`awn.worker.tasks.notification-dispatch` 仍为无任务认领的死配置）。
+配置开关：`awn.worker.tasks.<task>` 逐个开关 + `awn.worker.intervals.<task>-ms` 间隔；Worker 进程另受 `awn.worker.enabled` 总闸控制（API 进程为 false）。当前有 8 个任务类：`order-timeout`、`inventory-expiry`、`inventory-reconciliation`、`payment-reconciliation`、`payment-unknown-resolution`、`outbox-dispatch`、`intelligence-collection`、`waitlist-promotion`。
+
+未实现：邮件 / 短信通道接入（`notification` 模块已落地站内信：`ORDER_CREATED` / `ORDER_PAID` 事件经 Outbox 投递，通道失败记 FAILED 不回滚订单；`EMAIL` / `SMS` 通道为显式未接入占位）。两处无任务认领的死配置：`awn.worker.tasks.notification-dispatch`（站内信走 Outbox 消费者，不是独立 Worker 任务）与 `awn.worker.tasks.refund-reconciliation`（退款对账由 `payment-reconciliation` 一并执行）。
 
 多个 Worker 实例竞争处理任务时，需要通过**行锁、条件更新或明确的任务租约**保证不会产生重复业务副作用。
 

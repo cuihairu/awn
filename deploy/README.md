@@ -1,6 +1,6 @@
 # deploy/ — 部署编排
 
-单机 docker compose 拓扑，覆盖 Phase 00 目标形态；Kubernetes 化属于后续演进（见 docs/implementation-plan.md Phase 05）。
+单机 docker compose 拓扑；Kubernetes 化属于后续演进（当前不引入编排层，见 docs/architecture/system-overview.md「部署」行）。
 
 ```
 caddy :80/:443 ──┬─ web:3000        网页端（Next.js）
@@ -53,4 +53,4 @@ docker compose exec postgresql psql -U awn_app -d awn -tAc \
 - **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。受限交易角色 `awn_trading` 已由 `V12__trading_role.sql` 建立（仅业务表读写、无 CREATE、情报 schema 零权限，验证见 `TradingRoleIsolationTests`）。生产收紧路径：用独立管理员账号执行初始化，api/worker 改连 `awn_trading`，Flyway 以管理员账号执行，并替换 `awn_trading` 与 `awn_intel` 的占位密码。
 - **买家 / 卖家鉴权**：`POST /api/v1/auth/register` 与 `/login` 返回一小时 Bearer token；订单、支付、退款、履约、候补、争议和卖家端点按 token subject 做归属校验。生产必须配置 `AWN_API_TOKEN_SECRET`（至少 32 字节）与 `AWN_ADMIN_TOKEN`；`prod` profile 不接受缺省值。
 - **Outbox 分发**：由 awn-worker 的 `outbox-dispatch` 任务轮询，无 Kafka 依赖（docs/architecture/async-outbox.md）。
-- **幂等**：所有写接口要求 `Idempotency-Key`，Worker 任务自身也按任务周期幂等（docs/architecture/payment-state-machine.md）。
+- **幂等**：创建订单与退款要求 `Idempotency-Key`，支付创建按订单串行化并拒绝已有在途 / 成功支付（docs/api/contracts.md「幂等键规则」）；Worker 任务自身也按任务周期幂等（docs/architecture/payment-state-machine.md）。

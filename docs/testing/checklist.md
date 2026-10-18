@@ -47,4 +47,4 @@ Testcontainers 检测到显式版本后不再回退到 1.32。
 - 恶意 HTML 或脚本不能执行。
 - 草稿发布不会修改既有历史版本。
 - 同一商品在不同专场展示时仍共用库存。
-- 专场下线不影响已经创建的订单（**未实现**：无 unpublish 测试）。
+- 专场下线不影响已经创建的订单（**部分覆盖**：unpublish 已实现，撤回后退出公开面有测试断言 `CampaignModuleTests.publicListShowsPublishedCampaignsOnly`；「不影响已创建订单」仍无直接断言）。
