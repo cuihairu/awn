@@ -27,6 +27,8 @@ spring:
     url: ${AWN_MIGRATE_DB_URL:${spring.datasource.url}}
     user: ${AWN_MIGRATE_DB_USER:${spring.datasource.username}}
     password: ${AWN_MIGRATE_DB_PASSWORD:${spring.datasource.password}}
+    # V29 的 awn_trading 密码占位符在 FlywayPlaceholderConfig 注入
+    #（Spring 绑定 Map 值不解析 ${}，不能写在 YAML 里）
   data:
     redis:
       host: ${AWN_REDIS_HOST:localhost}
