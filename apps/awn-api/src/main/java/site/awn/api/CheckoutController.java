@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import site.awn.api.auth.AuthenticatedUser;
 import site.awn.fulfillment.api.FulfillmentFacade;
 import site.awn.fulfillment.api.FulfillmentView;
 import site.awn.order.api.OrderFacade;
@@ -45,7 +47,8 @@ public class CheckoutController {
 
     /** 订单履约单查询；无履约单（订单未知 / 未支付进入履约）→ 404 统一错误信封 */
     @GetMapping("/api/v1/orders/{orderId}/fulfillment")
-    public FulfillmentView fulfillment(@PathVariable String orderId) {
+    public FulfillmentView fulfillment(@PathVariable String orderId, HttpServletRequest request) {
+        AuthenticatedUser.requireOwner(orders.ownerOf(orderId), AuthenticatedUser.userId(request));
         return fulfillments.fulfillmentOf(orderId);
     }
 }

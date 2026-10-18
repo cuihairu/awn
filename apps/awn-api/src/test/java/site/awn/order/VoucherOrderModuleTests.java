@@ -62,10 +62,35 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Autowired JdbcTemplate jdbc;
 
+    /** 审核整改 P0（luna-review 表一）：凭证型行单价 = 挂牌权威价，请求方改价即拒 */
+    @Test
+    void rejectsListingPriceTampering() {
+        ListingView listing = listedListing();
+        var line = new OrderLineCommand(null, listing.listingNo(), listing.productCode(),
+                "演出 V", null, null, 1, 1, 0, 0);
+
+        assertThatThrownBy(() -> orderFacade.createOrder(command("vchr-tamper-" + uid(), line)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unit price mismatch");
+    }
+
+    /** 审核整改 P0：凭证型行商品必须与挂牌商品一致（写错商品编码不得成交） */
+    @Test
+    void rejectsProductMismatchedWithListing() {
+        ListingView listing = listedListing();
+        String otherProduct = products.productCode("ord-vchr-other");
+        var line = new OrderLineCommand(null, listing.listingNo(), otherProduct,
+                "演出 W", null, null, 1, listing.unitPrice(), 0, 0);
+
+        assertThatThrownBy(() -> orderFacade.createOrder(command("vchr-mix-" + uid(), line)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("belongs to product");
+    }
+
     @Test
     void voucherOrderReservesListingUnitWithoutTouchingInventoryPool() {
         ListingView listing = listedListing();
-        var line = voucherLine(listing.listingNo(), "prod-voucher", "莫文蔚演唱会 看台");
+        var line = voucherLine(listing, "莫文蔚演唱会 看台");
 
         OrderView order = orderFacade.createOrder(command("vchr-" + uid(), line));
 
@@ -82,16 +107,16 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
         assertThat(marketplace.unitOfListing(listing.listingNo()).status()).isEqualTo("RESERVED");
 
         // 凭证型行不占库存池（同商品同场次若有池，可用量不受影响）
-        String pool = pool("vchr", 3);
-        assertThat(inventory.balanceOf(pool).reservedQuantity()).isZero();
-        assertThat(inventory.balanceOf(pool).available()).isEqualTo(3);
+        PoolRef otherPool = pool("vchr", 3);
+        assertThat(inventory.balanceOf(otherPool.poolCode()).reservedQuantity()).isZero();
+        assertThat(inventory.balanceOf(otherPool.poolCode()).available()).isEqualTo(3);
 
         assertThat(outbox.countByEventTypeAndAggregateId("ORDER_CREATED", order.orderNo())).isEqualTo(1);
     }
 
     @Test
     void voucherOrderRollsBackEntirelyWhenListingUnknown() {
-        var line = voucherLine("LST-none", "prod-rollback", "演出 X");
+        var line = new OrderLineCommand(null, "LST-none", products.productCode("prod-rollback"), "演出 X", null, null, 1, 6800, 0, 0);
         // 测试库跨用例持久：用增量断言，不用全局计数
         long ordersBefore = orders.count();
         long outboxBefore = outbox.count();
@@ -108,7 +133,7 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     void cancelReleasesVoucherListingUnit() {
         ListingView listing = listedListing();
         OrderView order = orderFacade.createOrder(
-                command("vchr-cancel-" + uid(), voucherLine(listing.listingNo(), "prod-c", "演出 C")));
+                command("vchr-cancel-" + uid(), voucherLine(listing, "演出 C")));
 
         assertThat(orderFacade.cancel(order.orderNo())).isTrue();
         assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.CANCELLED);
@@ -126,7 +151,7 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     void markPaidConfirmsVoucherListingUnit() {
         ListingView listing = listedListing();
         OrderView order = orderFacade.createOrder(
-                command("vchr-pay-" + uid(), voucherLine(listing.listingNo(), "prod-p", "演出 P")));
+                command("vchr-pay-" + uid(), voucherLine(listing, "演出 P")));
 
         assertThat(orderFacade.markPaid(order.orderNo())).isTrue();
         assertThat(orderFacade.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.PAID);
@@ -144,7 +169,7 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     @Test
     void onlyOneBuyerWinsWhenRacingForTheSameListing() throws Exception {
         ListingView listing = listedListing();
-        var line = voucherLine(listing.listingNo(), "prod-race", "演出 R");
+        var line = voucherLine(listing, "演出 R");
         long ordersBefore = orders.count();
 
         int threads = 6;
@@ -194,7 +219,7 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     void timeoutReleaseAlsoFreesVoucherListingUnit() {
         ListingView listing = listedListing();
         OrderView order = orderFacade.createOrder(
-                command("vchr-exp-" + uid(), voucherLine(listing.listingNo(), "prod-e", "演出 E")));
+                command("vchr-exp-" + uid(), voucherLine(listing, "演出 E")));
 
         // 直接把订单推过支付截止期，再交给超时任务释放
         jdbc.update("UPDATE orders SET expires_at = now() - interval '1 minute' WHERE order_no = ?",
@@ -230,7 +255,7 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     void voucherOrderItemKeepsSingleInventoryPathAtDatabaseLevel() {
         ListingView listing = listedListing();
         OrderView order = orderFacade.createOrder(
-                command("vchr-db-" + uid(), voucherLine(listing.listingNo(), "prod-db", "演出 DB")));
+                command("vchr-db-" + uid(), voucherLine(listing, "演出 DB")));
 
         // 落库形态：listing_no/unit_no 有值，reservation_no 为空
         Integer voucherPath = jdbc.queryForObject(
@@ -252,9 +277,9 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
     @Test
     void mixedOrderReservesPoolAndVoucherUnit() {
         ListingView listing = listedListing();
-        String pool = pool("vchr-mix", 4);
-        var poolLine = new OrderLineCommand(pool, "prod-mix", "演出 M", "sess-mix", null, 2, 5000, 0, 0);
-        var voucherLine = voucherLine(listing.listingNo(), "prod-mix-v", "演出 M 看台");
+        PoolRef ref = pool("vchr-mix", 4);
+        var poolLine = new OrderLineCommand(ref.poolCode(), ref.productCode(), "演出 M", "sess-mix", null, 2, 10000, 0, 0);
+        var voucherLine = voucherLine(listing, "演出 M 看台");
 
         OrderView order = orderFacade.createOrder(command("vchr-mix-" + uid(), poolLine, voucherLine));
 
@@ -262,15 +287,17 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
         assertThat(order.items().get(0).reservationNo()).isNotBlank();
         assertThat(order.items().get(1).listingNo()).isEqualTo(listing.listingNo());
 
-        assertThat(inventory.balanceOf(pool).reservedQuantity()).isEqualTo(2);
+        assertThat(inventory.balanceOf(ref.poolCode()).reservedQuantity()).isEqualTo(2);
         assertThat(marketplace.unitOfListing(listing.listingNo()).status())
                 .isEqualTo(TicketUnitStatus.RESERVED.name());
     }
 
     // ------------------------------------------------------------------
 
-    private OrderLineCommand voucherLine(String listingNo, String product, String name) {
-        return new OrderLineCommand(null, listingNo, product, name, null, null, 1, 6800, 0, 0);
+    /** 凭证型行：商品编码与单价取自挂牌（卖家定价为权威价，审核整改 P0） */
+    private OrderLineCommand voucherLine(ListingView listing, String name) {
+        return new OrderLineCommand(null, listing.listingNo(), listing.productCode(),
+                name, null, null, 1, listing.unitPrice(), 0, 0);
     }
 
     /** 卖家 + 供货审核 + 挂牌（卖家自担，无需平台保证即可交易） */
@@ -289,11 +316,16 @@ class VoucherOrderModuleTests extends AbstractPostgresIntegrationTest {
         return new CreateOrderCommand(key, 42L, "CNY", List.of(lines));
     }
 
-    private String pool(String productPrefix, int total) {
+    /** 池 + 其真实商品（核价契约后行 productId 必须用池的商品编码） */
+    private record PoolRef(String poolCode, String productCode) {
+    }
+
+    private PoolRef pool(String productPrefix, int total) {
+        String productCode = products.productCode(productPrefix);
         String poolCode = "pool-" + UUID.randomUUID().toString().substring(0, 12);
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(productPrefix),
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + UUID.randomUUID().toString().substring(0, 6), total));
-        return poolCode;
+        return new PoolRef(poolCode, productCode);
     }
 
     private static String uid() {

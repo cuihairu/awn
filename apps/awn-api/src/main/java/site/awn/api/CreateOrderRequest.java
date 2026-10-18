@@ -3,9 +3,8 @@ package site.awn.api;
 import java.util.List;
 
 /**
- * 创建订单请求（POST /api/v1/orders）。快照字段（商品名/票档）由调用方传入，
- * 与模块层 {@code CreateOrderCommand} 同语义：Phase 02 商品 API 落地前防止客户端伪造快照。
- * 金额由服务端在模块层计算，客户端不得传总价。
+ * 创建订单请求（POST /api/v1/orders）。调用方提供商品标识、数量和展示快照；金额字段会与目录 / 挂牌权威价格核对。
+ * {@code userId} 为兼容旧客户端保留，服务端忽略该值并从已验证的 bearer token 取用户身份。
  */
 public record CreateOrderRequest(
         Long userId,

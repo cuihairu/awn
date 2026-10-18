@@ -166,7 +166,7 @@ sequenceDiagram
 | 13 | 退款不超额度、支付单全额/部分判定 | `sumOccupiedByPaymentNo` 守卫 | `PaymentModuleTests`（退款状态机与额度） | — |
 | 14 | 商品上架 → 池已建 → 可售口径一致 | 无（运营手工保证） | — | **G1 / G3 / G5 对应无测试** |
 | 15 | 同商品跨专场共用同一池 | 专场只引用商品（结构保证） | `CampaignModuleTests`（引用关系） | — |
-| 16 | 「库存已释放但事后支付成功」进入异常单处理，不误释放、不假装履约 | 应有专用流程 | — | **G6：流程未实现，无测试** |
+| 16 | 「库存已释放但事后支付成功」进入异常单处理，不误释放、不假装履约 | UNKNOWN 核实 + 终态订单守卫 + 告警与原路退款 | `PaymentFacadeImpl.resolveUnknownPayments` / `PaymentModuleTests` | — |
 | 17 | `total = Σ ADJUST 流水`，计数器与流水累计不漂移 | 建池写 bootstrap ADJUST + 对账 TOTAL_MISMATCH | `InventoryReconciliationTests`（bootstrap 落账 / 漂移被报）、`InventoryStressTests`（压测池对账无差异） | — |
 
 ## 缺口清单（本轮澄清的结论）
@@ -178,7 +178,7 @@ sequenceDiagram
 | G3 | 商品无发布 API（`createProduct` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 公共接口按 PUBLISHED 过滤永远查不到数据，商品无法真正上架 | ✅ 已消除：catalog 发布接口 + 状态守卫测试 |
 | G4 | 供货审核 `quantity` 无额度消耗校验 | 一次 APPROVED 可挂出任意多张 `platform_guaranteed` 票 | ✅ 已消除：挂牌时守卫校验审核额度 |
 | G5 | 支付与退款受理事务内调用渠道（`createPayment` / `requestRefund`） | 真实渠道下长事务持锁，与「外部调用不出长事务」原则冲突 | ✅ 已消除：渠道调用移出事务（先落 CREATED，受理后再 markPending） |
-| G6 | `PAYMENT_UNKNOWN` 只落状态与事件，无消费者、无异常单流程 | 「已释放库存但事后确认支付成功」无补救路径（库存一致性文档要求的异常流程未落地） | ✅ 已消除：PAYMENT_UNKNOWN 消费者 + 异常单处理流程 |
+| G6 | `PAYMENT_UNKNOWN` 核实与异常单处理 | 已关闭：Worker 查实支付结果；订单已 EXPIRED / CANCELLED 时告警并按原路发起全额退款；不恢复库存、不标记履约完成。回归见 `PaymentModuleTests` |
 | G7 | 活动无发布 API（`createEvent` 硬编码 DRAFT，无 DRAFT→PUBLISHED） | 与 G3 同构：公开活动列表按「已发布」过滤永远查不到数据，活动无法进入公开链路 | ✅ 已消除：`Event.publish()` 状态守卫 + `EventFacade.publishEvent`（仅 DRAFT 可发布，其余状态 `EventConflictException`→`CONFLICT`）；管理面 `POST /api/v1/admin/events/{eventCode}/publish` 接入（X-Admin-Token，4203f86）；公开读只暴露 PUBLISHED/COMPLETED，草稿活动的场次详情一并 404 |
 
 不变量覆盖情况：第 1–13、15 条有真实数据库测试兜底；第 14 条（商品上架 → 池已建 → 可售口径一致）依赖运营流程而非代码不变量，无自动化测试，需人工巡检。G1–G7 的逐项 commit 证据见 `todo.md`。

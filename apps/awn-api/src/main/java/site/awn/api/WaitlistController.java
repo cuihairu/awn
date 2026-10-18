@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import site.awn.api.auth.AuthenticatedUser;
 import site.awn.order.api.JoinWaitlistCommand;
 import site.awn.order.api.WaitlistFacade;
 import site.awn.order.api.WaitlistView;
@@ -33,10 +35,12 @@ public class WaitlistController {
 
     /** 加入候补；同用户同池已占用席位 → 409 WAITLIST_CONFLICT，未知池 → 404 */
     @PostMapping("/api/v1/waitlist")
-    public ResponseEntity<WaitlistView> join(@RequestBody JoinWaitlistRequest request) {
+    public ResponseEntity<WaitlistView> join(@RequestBody JoinWaitlistRequest request,
+                                              HttpServletRequest httpRequest) {
+        long userId = requireBuyer(httpRequest);
         WaitlistView entry = waitlist.join(new JoinWaitlistCommand(
                 request.sessionId(), request.poolCode(), request.productId(), request.productName(),
-                request.quantity(), request.unitPrice(), request.currency(), request.userId()));
+                request.quantity(), request.unitPrice(), request.currency(), userId));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .location(java.net.URI.create("/api/v1/waitlist/" + entry.waitlistNo()))
                 .body(entry);
@@ -44,23 +48,32 @@ public class WaitlistController {
 
     /** 候补条目；未知编号 → 404 WAITLIST_NOT_FOUND */
     @GetMapping("/api/v1/waitlist/{waitlistNo}")
-    public WaitlistView waitlist(@PathVariable String waitlistNo) {
-        return waitlist.waitlist(waitlistNo);
+    public WaitlistView waitlist(@PathVariable String waitlistNo, HttpServletRequest request) {
+        long userId = requireBuyer(request);
+        WaitlistView entry = waitlist.waitlist(waitlistNo);
+        AuthenticatedUser.requireOwner(entry.userId(), userId);
+        return entry;
     }
 
-    /** 某用户的候补列表（加入时间倒序）；缺 userId → 400 */
+    /** 当前 token 用户的候补列表（加入时间倒序）；忽略 query 中的 userId。 */
     @GetMapping("/api/v1/waitlist")
-    public List<WaitlistView> mine(@RequestParam(required = false) Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
+    public List<WaitlistView> mine(@RequestParam(required = false) Long userId, HttpServletRequest request) {
+        long authenticatedUserId = requireBuyer(request);
+        // Ignore caller-supplied userId: identity always comes from the verified bearer token.
+        userId = authenticatedUserId;
         return waitlist.waitlistOf(userId);
     }
 
     /** 退出排队；重复取消幂等返回 {@code canceled: false}，已递补或已终态 → 409 */
     @PostMapping("/api/v1/waitlist/{waitlistNo}/cancel")
-    public WaitlistCancelResult cancel(@PathVariable String waitlistNo) {
+    public WaitlistCancelResult cancel(@PathVariable String waitlistNo, HttpServletRequest request) {
+        long userId = requireBuyer(request);
+        AuthenticatedUser.requireOwner(waitlist.waitlist(waitlistNo).userId(), userId);
         return new WaitlistCancelResult(waitlist.cancel(waitlistNo));
+    }
+
+    private long requireBuyer(HttpServletRequest request) {
+        return AuthenticatedUser.userId(request);
     }
 
     public record JoinWaitlistRequest(

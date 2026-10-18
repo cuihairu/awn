@@ -43,10 +43,10 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void seatOrderReservesSeatInSameTransaction() {
-        var seat = seatOfStock("prod-seat-a", 6800);
+        var seat = seatOfStock("prod-seat-a", 10000);
 
         OrderView order = orderFacade.createOrder(command("seat-" + uid(),
-                seatLine(seat.seatNo(), seat.productCode(), 6800)));
+                seatLine(seat.seatNo(), seat.productCode(), 10000)));
 
         assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         assertThat(order.items()).hasSize(1);
@@ -59,6 +59,19 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
         SeatView reserved = inventory.seat(seat.seatNo());
         assertThat(reserved.status().name()).isEqualTo("RESERVED");
         assertThat(reserved.orderNo()).isEqualTo(order.orderNo());
+    }
+
+    /** 审核整改 P0（luna-review 表一）：座位型行单价 = 目录权威价，请求方改价即拒 */
+    @Test
+    void rejectsSeatLinePriceTampering() {
+        var seat = seatOfStock("prod-seat-tamper", 10000);
+        var line = seatLine(seat.seatNo(), seat.productCode(), 1);
+
+        assertThatThrownBy(() -> orderFacade.createOrder(command("seat-tamper-" + uid(), line)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unit price mismatch");
+        // 核价失败不得占座
+        assertThat(inventory.seat(seat.seatNo()).status().name()).isEqualTo("IN_STOCK");
     }
 
     @Test
@@ -93,12 +106,13 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void seatMustBelongToTheOrderedProduct() {
-        var seatA = seatOfStock("prod-seat-b", 6800);
+        var seatA = seatOfStock("prod-seat-b", 10000);
+        String otherProduct = products.productCode("prod-other");
         long ordersBefore = jdbc.queryForObject("SELECT COUNT(*) FROM orders", Long.class);
 
         // 用商品 B 的行去占商品 A 的座位：拒绝且不留残余
         assertThatThrownBy(() -> orderFacade.createOrder(command("seat-mix-" + uid(),
-                seatLine(seatA.seatNo(), "prod-other", 6800))))
+                seatLine(seatA.seatNo(), otherProduct, 10000))))
                 .isInstanceOf(InventoryConflictException.class)
                 .hasMessageContaining("belongs to product");
 
@@ -110,8 +124,9 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
     void unknownSeatLeavesNoResidue() {
         long ordersBefore = jdbc.queryForObject("SELECT COUNT(*) FROM orders", Long.class);
 
+        String productCode = products.productCode("prod-seat-c");
         assertThatThrownBy(() -> orderFacade.createOrder(command("seat-none-" + uid(),
-                seatLine("SEAT-none", "prod-seat-c", 6800))))
+                seatLine("SEAT-none", productCode, 10000))))
                 .isInstanceOf(site.awn.inventory.domain.SeatNotFoundException.class);
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM orders", Long.class)).isEqualTo(ordersBefore);
@@ -119,8 +134,8 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void onlyOneBuyerWinsWhenRacingForTheSameSeat() throws Exception {
-        var seat = seatOfStock("prod-seat-d", 6800);
-        var line = seatLine(seat.seatNo(), seat.productCode(), 6800);
+        var seat = seatOfStock("prod-seat-d", 10000);
+        var line = seatLine(seat.seatNo(), seat.productCode(), 10000);
         long ordersBefore = jdbc.queryForObject("SELECT COUNT(*) FROM orders", Long.class);
 
         int threads = 6;
@@ -166,9 +181,9 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void cancelReleasesSeatBackToInStock() {
-        var seat = seatOfStock("prod-seat-e", 6800);
+        var seat = seatOfStock("prod-seat-e", 10000);
         OrderView order = orderFacade.createOrder(command("seat-cancel-" + uid(),
-                seatLine(seat.seatNo(), seat.productCode(), 6800)));
+                seatLine(seat.seatNo(), seat.productCode(), 10000)));
 
         assertThat(orderFacade.cancel(order.orderNo())).isTrue();
         SeatView released = inventory.seat(seat.seatNo());
@@ -177,15 +192,15 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
         // 释放后的座位可再次被下单
         OrderView again = orderFacade.createOrder(command("seat-again-" + uid(),
-                seatLine(seat.seatNo(), seat.productCode(), 6800)));
+                seatLine(seat.seatNo(), seat.productCode(), 10000)));
         assertThat(inventory.seat(seat.seatNo()).orderNo()).isEqualTo(again.orderNo());
     }
 
     @Test
     void paymentConfirmMarksSeatSold() {
-        var seat = seatOfStock("prod-seat-f", 6800);
+        var seat = seatOfStock("prod-seat-f", 10000);
         OrderView order = orderFacade.createOrder(command("seat-pay-" + uid(),
-                seatLine(seat.seatNo(), seat.productCode(), 6800)));
+                seatLine(seat.seatNo(), seat.productCode(), 10000)));
 
         assertThat(orderFacade.markPaid(order.orderNo())).isTrue();
         SeatView sold = inventory.seat(seat.seatNo());
@@ -200,9 +215,9 @@ class SeatOrderModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void timeoutReleaseAlsoFreesSeat() {
-        var seat = seatOfStock("prod-seat-g", 6800);
+        var seat = seatOfStock("prod-seat-g", 10000);
         OrderView order = orderFacade.createOrder(command("seat-exp-" + uid(),
-                seatLine(seat.seatNo(), seat.productCode(), 6800)));
+                seatLine(seat.seatNo(), seat.productCode(), 10000)));
 
         jdbc.update("UPDATE orders SET expires_at = now() - interval '1 minute' WHERE order_no = ?",
                 order.orderNo());

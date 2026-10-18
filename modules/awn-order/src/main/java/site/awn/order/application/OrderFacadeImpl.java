@@ -29,8 +29,18 @@ public class OrderFacadeImpl implements OrderFacade {
     }
 
     @Override
+    public OrderView createWaitlistPromotionOrder(CreateOrderCommand command) {
+        return writes.createWaitlistPromotionOrder(command);
+    }
+
+    @Override
     public OrderView orderOf(String orderNo) {
         return reads.orderOf(orderNo);
+    }
+
+    @Override
+    public long ownerOf(String orderNo) {
+        return reads.ownerOf(orderNo);
     }
 
     /** 报价：纯计算，不预留库存、不落库 */

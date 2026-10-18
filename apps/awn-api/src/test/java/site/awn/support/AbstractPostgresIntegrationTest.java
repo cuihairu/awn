@@ -2,6 +2,7 @@ package site.awn.support;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -17,6 +18,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *
  * 两种模式下执行的是同一套测试与同一套迁移。
  */
+@Import(TestMockMvcAuthConfiguration.class)
 public abstract class AbstractPostgresIntegrationTest {
 
     private static final String EXTERNAL_URL = System.getenv("AWN_TEST_DB_URL");

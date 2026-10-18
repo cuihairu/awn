@@ -109,7 +109,8 @@ UNKNOWN
 2. Worker 查询支付渠道并对账，把 UNKNOWN 迁移到查实后的状态。
 3. 若库存已合法释放后收到成功回调，回调入口只做去重并置 UNKNOWN，不确认迁移、不重复扣减。
 
-未实现（缺口见 trading-model G6）：
+已实现（G6）：
 
-1. 订单侧没有核实态，也没有 UNKNOWN 拦截——超时释放只按 `待支付 + 到期` 扫描，不查支付状态，UNKNOWN 支付的订单到期即释放。
-2. 异常订单处理流程（按供货情况、支付事实执行补救或退款）尚未实现。
+1. Worker 查询 UNKNOWN 支付单对应渠道；查实失败则迁移 FAILED，结果仍未知或查询失败则保留 UNKNOWN 等待下轮。
+2. 查实成功后按支付状态守卫迁移；若订单已 EXPIRED / CANCELLED，记录 CRITICAL 告警并按原渠道发起全额退款，不恢复库存、不伪装履约。
+3. 同一支付单的异常退款使用确定性幂等键，重复核实不会重复退款。详见 `PaymentFacadeImpl.resolveUnknownPayments` / `handleOrderReleasedAfterSuccess` 与 `PaymentModuleTests`。

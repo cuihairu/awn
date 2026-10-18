@@ -81,7 +81,7 @@ class WaitlistModuleTests extends AbstractPostgresIntegrationTest {
 
     private WaitlistView join(Pool pool, long userId, int quantity) {
         return waitlist.join(new JoinWaitlistCommand(pool.sessionId(), pool.poolCode(),
-                pool.productCode(), "候补测试票", quantity, 1000L, "CNY", userId));
+                pool.productCode(), "候补测试票", quantity, 10000L, "CNY", userId));
     }
 
     @Test
@@ -132,6 +132,17 @@ class WaitlistModuleTests extends AbstractPostgresIntegrationTest {
                 .isInstanceOf(PoolNotFoundException.class);
     }
 
+    /** 审核整改 P0（luna-review 表一）：排队价即递补建单价，必须等于目录价 */
+    @Test
+    void rejectsJoinPriceDeviatingFromCatalog() {
+        Pool pool = pool(2);
+
+        assertThatThrownBy(() -> waitlist.join(new JoinWaitlistCommand(pool.sessionId(),
+                pool.poolCode(), pool.productCode(), "候补测试票", 1, 9999L, "CNY", userId())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unit price mismatch");
+    }
+
     @Test
     void nonPositiveQuantityIsRejected() {
         Pool pool = pool(2);
@@ -159,7 +170,7 @@ class WaitlistModuleTests extends AbstractPostgresIntegrationTest {
 
         var order = orders.orderOf(promoted.orderNo());
         assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-        assertThat(order.payAmount()).isEqualTo(2000L);
+        assertThat(order.payAmount()).isEqualTo(20000L);
         assertThat(order.payExpiresInSeconds()).isPositive();
         assertThat(order.items()).singleElement()
                 .satisfies(item -> assertThat(item.productId()).isEqualTo(pool.productCode()));
@@ -169,12 +180,27 @@ class WaitlistModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void promotionUsesCatalogPriceSnapshotAcceptedWhenJoining() {
+        Pool pool = pool(2);
+        WaitlistView entry = join(pool, userId(), 2);
+        jdbc.update("UPDATE product SET unit_price = 12000 WHERE product_code = ?", pool.productCode());
+
+        WaitlistPromotionResult result = waitlist.promoteAvailable(Instant.now());
+
+        assertThat(result.promoted()).isEqualTo(1);
+        assertThat(result.failed()).isEmpty();
+        WaitlistView promoted = waitlist.waitlist(entry.waitlistNo());
+        assertThat(promoted.status()).isEqualTo("PROMOTED");
+        assertThat(orders.orderOf(promoted.orderNo()).payAmount()).isEqualTo(20000L);
+    }
+
+    @Test
     void promotionKeepsWaitingWhenInventoryIsStillShort() {
         Pool pool = pool(1);
         // 唯一的库存被正常下单占用
         orders.createOrder(new CreateOrderCommand("wl-busy-" + uid(), userId(), "CNY", List.of(
                 new OrderLineCommand(pool.poolCode(), pool.productCode(), "候补测试票",
-                        pool.sessionId(), null, 1, 1000L, 0, 0))));
+                        pool.sessionId(), null, 1, 10000L, 0, 0))));
         WaitlistView entry = join(pool, userId());
 
         WaitlistPromotionResult result = waitlist.promoteAvailable(Instant.now());

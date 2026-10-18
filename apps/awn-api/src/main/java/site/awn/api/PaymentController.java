@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import site.awn.api.auth.AuthenticatedUser;
 import site.awn.order.api.OrderFacade;
 import site.awn.order.api.OrderView;
 import site.awn.payment.api.CreatePaymentCommand;
@@ -42,7 +44,8 @@ public class PaymentController {
     @PostMapping("/api/v1/orders/{orderId}/payments")
     public ResponseEntity<PaymentView> createPayment(
             @PathVariable String orderId,
-            @RequestBody CreatePaymentRequest request) {
+            @RequestBody CreatePaymentRequest request, HttpServletRequest httpRequest) {
+        requireBuyerOwner(orderId, httpRequest);
         OrderView order = orders.orderOf(orderId);
         PaymentView payment = payments.createPayment(new CreatePaymentCommand(
                 order.orderNo(), request.channel(), order.currency(), order.payAmount()));
@@ -53,7 +56,8 @@ public class PaymentController {
 
     /** 订单的支付历史（创建顺序）；订单不存在 → 404，未支付返回空列表 */
     @GetMapping("/api/v1/orders/{orderId}/payments")
-    public List<PaymentView> payments(@PathVariable String orderId) {
+    public List<PaymentView> payments(@PathVariable String orderId, HttpServletRequest request) {
+        requireBuyerOwner(orderId, request);
         orders.orderOf(orderId);
         return payments.paymentsOfOrder(orderId);
     }
@@ -72,7 +76,10 @@ public class PaymentController {
     @PostMapping("/api/v1/payments/{paymentNo}/retry")
     public ResponseEntity<PaymentView> retryPayment(
             @PathVariable String paymentNo,
-            @RequestBody(required = false) CreatePaymentRequest request) {
+            @RequestBody(required = false) CreatePaymentRequest request, HttpServletRequest httpRequest) {
+        long userId = requireBuyer(httpRequest);
+        PaymentView source = payments.payment(paymentNo);
+        AuthenticatedUser.requireOwner(orders.ownerOf(source.orderNo()), userId);
         PaymentView payment = payments.retryPayment(paymentNo, request == null ? null : request.channel());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .location(java.net.URI.create("/api/v1/payments/" + payment.paymentNo()))
@@ -87,10 +94,11 @@ public class PaymentController {
     public ResponseEntity<RefundView> requestRefund(
             @PathVariable String orderId,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @RequestBody RequestRefundRequest request) {
+            @RequestBody RequestRefundRequest request, HttpServletRequest httpRequest) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Idempotency-Key header is required");
         }
+        requireBuyerOwner(orderId, httpRequest);
         orders.orderOf(orderId);
         // 支付单必须属于该订单：跨订单退款一律按不存在处理
         PaymentView payment = payments.payment(request.paymentNo());
@@ -102,5 +110,13 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .location(java.net.URI.create("/api/v1/orders/" + orderId + "/refunds"))
                 .body(refund);
+    }
+
+    private void requireBuyerOwner(String orderId, HttpServletRequest request) {
+        AuthenticatedUser.requireOwner(orders.ownerOf(orderId), requireBuyer(request));
+    }
+
+    private long requireBuyer(HttpServletRequest request) {
+        return AuthenticatedUser.userId(request);
     }
 }

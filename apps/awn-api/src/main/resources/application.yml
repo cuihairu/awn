@@ -44,6 +44,9 @@ awn:
   admin:
     # 运营接口令牌（生产环境必须通过环境变量覆盖）
     token: ${AWN_ADMIN_TOKEN:awn-admin-dev-token}
+  api:
+    # 本地开发默认值；prod profile 强制通过环境变量提供独立密钥。
+    token-secret: ${AWN_API_TOKEN_SECRET:awn-local-development-token-secret-change-before-production}
   ratelimit:
     # 管理面限流存储：memory（默认，进程内）| redis（生产多实例共享额度）
     store: ${AWN_RATELIMIT_STORE:memory}

@@ -163,7 +163,7 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void oneFulfillmentPerOrderSurvivesEventRedelivery() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -184,7 +184,7 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
 
     /** 建单 → 支付成功 → 事件闭环（订单 PAID） */
     private void paidOrder() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         lastOrderNo = order.orderNo();
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
@@ -203,12 +203,14 @@ class FulfillmentModuleTests extends AbstractPostgresIntegrationTest {
         for (int i = 0; i < 60 && dispatcher.dispatchDue(Instant.now()) > 0; i++) { }
     }
 
-    private OrderView newPaidPendingOrder(int quantity, long unitPrice) {
+    /** 待支付订单：目录价 10000（核价契约后行单价必须等于目录价） */
+    private OrderView newPaidPendingOrder(int quantity) {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix), "sess-" + suffix, quantity * 5));
-        var line = new OrderLineCommand(poolCode, "prod-" + suffix, "履约测试演出",
-                "sess-" + suffix, null, quantity, unitPrice, 0, 0);
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode, "sess-" + suffix, quantity * 5));
+        var line = new OrderLineCommand(poolCode, productCode, "履约测试演出",
+                "sess-" + suffix, null, quantity, 10000, 0, 0);
         return orderFacade.createOrder(new CreateOrderCommand("ful-" + suffix, 42L, "CNY", List.of(line)));
     }
 }

@@ -21,6 +21,7 @@ import site.awn.order.api.OrderView;
 import site.awn.order.domain.OrderStatus;
 import site.awn.support.AbstractPostgresIntegrationTest;
 import site.awn.support.CatalogProductFactory;
+import site.awn.api.auth.ApiTokenService;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
     @Autowired CatalogProductFactory products;
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbc;
+    @Autowired ApiTokenService apiTokens;
 
     // ------------------------------------------------------------------
     // 买家面：开单
@@ -85,6 +87,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
         OrderView order = paidVoucherOrder(listing);
 
         mockMvc.perform(post("/api/v1/orders/" + order.orderNo() + "/disputes")
+                        .header("Authorization", bearer(999L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"userId\":999,\"reason\":\"OTHER\",\"description\":\"x\","
                                 + "\"requestedResolution\":\"REFUND\",\"requestedAmount\":100}"))
@@ -97,7 +100,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
         // 待支付订单无争议基础
         ListingView listing = listedListing();
         OrderView pending = orderFacade.createOrder(
-                command("dsp-pend-" + uid(), voucherLine(listing.listingNo(), "prod-dp", "演出 DP")));
+                command("dsp-pend-" + uid(), voucherLine(listing, "演出 DP")));
         mockMvc.perform(post("/api/v1/orders/" + pending.orderNo() + "/disputes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"userId\":42,\"reason\":\"OTHER\",\"description\":\"x\","
@@ -203,10 +206,10 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reason").value("DESCRIPTION_MISMATCH"))
                 .andExpect(jsonPath("$[0].requestedAmount").doesNotExist());
-        // 非本人查询拒绝
+        // 查询参数不能冒充身份；服务端只使用 token subject
         mockMvc.perform(get("/api/v1/orders/" + order.orderNo() + "/disputes").param("userId", "999"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("DISPUTE_CONFLICT"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     // ------------------------------------------------------------------
@@ -221,6 +224,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
 
         // 非开单人撤回拒绝
         mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/withdraw")
+                        .header("Authorization", bearer(999L))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"userId\":999}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DISPUTE_CONFLICT"));
@@ -333,9 +337,9 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void platformPoolOrderDisputeHasNoSellerSnapshot() throws Exception {
-        String pool = pool("dsp-pool", 3);
+        PoolRef ref = pool("dsp-pool", 3);
         OrderView order = orderFacade.createOrder(command("dsp-pool-" + uid(),
-                new OrderLineCommand(pool, "prod-pool", "演出 POOL", "sess-pool", null, 1, 5000, 0, 0)));
+                new OrderLineCommand(ref.poolCode(), ref.productCode(), "演出 POOL", "sess-pool", null, 1, 10000, 0, 0)));
         orderFacade.markPaid(order.orderNo());
 
         mockMvc.perform(post("/api/v1/orders/" + order.orderNo() + "/disputes")
@@ -379,7 +383,8 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
         // 另一卖家看不到
         String other = marketplace.registerSeller(
                 new CreateSellerCommand(999L, "卖家-其他", null)).sellerNo();
-        mockMvc.perform(get("/api/v1/sellers/" + other + "/disputes"))
+        mockMvc.perform(get("/api/v1/sellers/" + other + "/disputes")
+                        .header("Authorization", bearer(999L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
 
@@ -413,6 +418,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
         String other = marketplace.registerSeller(
                 new CreateSellerCommand(999L, "卖家-其他", null)).sellerNo();
         mockMvc.perform(post("/api/v1/disputes/" + disputeNo + "/seller-response")
+                        .header("Authorization", bearer(999L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sellerNo\":\"" + other + "\",\"content\":\"x\"}"))
                 .andExpect(status().isConflict())
@@ -442,9 +448,9 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
     @Test
     void platformPoolOrderDisputeAcceptsNoSellerResponse() throws Exception {
         // 纯平台库存订单无卖家快照：无卖家可申辩
-        String pool = pool("dsp-pool2", 3);
+        PoolRef ref = pool("dsp-pool2", 3);
         OrderView order = orderFacade.createOrder(command("dsp-pool2-" + uid(),
-                new OrderLineCommand(pool, "prod-pool", "演出 POOL", "sess-pool", null, 1, 5000, 0, 0)));
+                new OrderLineCommand(ref.poolCode(), ref.productCode(), "演出 POOL", "sess-pool", null, 1, 10000, 0, 0)));
         orderFacade.markPaid(order.orderNo());
         String disputeNo = openDispute(order.orderNo(), "REFUND", 5000L);
 
@@ -485,7 +491,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
     /** 已支付凭证订单：卖家挂牌 → 下单 → 支付确认 */
     private OrderView paidVoucherOrder(ListingView listing) {
         OrderView order = orderFacade.createOrder(
-                command("dsp-" + uid(), voucherLine(listing.listingNo(), "prod-d", "演出 D")));
+                command("dsp-" + uid(), voucherLine(listing, "演出 D")));
         orderFacade.markPaid(order.orderNo());
         return orderFacade.orderOf(order.orderNo());
     }
@@ -507,8 +513,10 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
                 String.class, orderNo);
     }
 
-    private OrderLineCommand voucherLine(String listingNo, String product, String name) {
-        return new OrderLineCommand(null, listingNo, product, name, null, null, 1, 6800, 0, 0);
+    /** 凭证型行：商品编码与单价取自挂牌（卖家定价为权威价，审核整改 P0） */
+    private OrderLineCommand voucherLine(ListingView listing, String name) {
+        return new OrderLineCommand(null, listing.listingNo(), listing.productCode(),
+                name, null, null, 1, listing.unitPrice(), 0, 0);
     }
 
     /** 卖家 + 供货审核 + 挂牌（卖家自担） */
@@ -519,7 +527,7 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
     /** 挂牌连同归属卖家号（卖家面测试用） */
     private Listed listedWithSeller() {
         String sellerNo = marketplace.registerSeller(new CreateSellerCommand(
-                (long) (100 + UUID.randomUUID().toString().charAt(0) % 500),
+                42L,
                 "卖家-" + UUID.randomUUID(), null)).sellerNo();
         var review = marketplace.submitSupplyReview(new SubmitSupplyReviewCommand(
                 sellerNo, "prod-" + UUID.randomUUID().toString().substring(0, 8), null,
@@ -536,14 +544,23 @@ class DisputeModuleTests extends AbstractPostgresIntegrationTest {
         return new CreateOrderCommand(key, 42L, "CNY", List.of(lines));
     }
 
-    private String pool(String productPrefix, int total) {
+    /** 池 + 其真实商品（核价契约后行 productId 必须用池的商品编码） */
+    private record PoolRef(String poolCode, String productCode) {
+    }
+
+    private PoolRef pool(String productPrefix, int total) {
+        String productCode = products.productCode(productPrefix);
         String poolCode = "pool-" + UUID.randomUUID().toString().substring(0, 12);
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(productPrefix),
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + UUID.randomUUID().toString().substring(0, 6), total));
-        return poolCode;
+        return new PoolRef(poolCode, productCode);
     }
 
     private static String uid() {
         return UUID.randomUUID().toString().substring(0, 12);
+    }
+
+    private String bearer(long userId) {
+        return "Bearer " + apiTokens.issue(userId);
     }
 }

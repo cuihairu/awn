@@ -1,0 +1,5 @@
+awn:
+  admin:
+    token: ${AWN_ADMIN_TOKEN}
+  api:
+    token-secret: ${AWN_API_TOKEN_SECRET}

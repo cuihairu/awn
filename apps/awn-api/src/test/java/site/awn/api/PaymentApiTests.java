@@ -51,14 +51,15 @@ class PaymentApiTests extends AbstractPostgresIntegrationTest {
         return UUID.randomUUID().toString().substring(0, 12);
     }
 
-    /** 待支付订单：2 × 1000，payAmount = 2000 */
+    /** 待支付订单：2 × 10000，payAmount = 20000（目录价权威，审核整改 P0） */
     private OrderView pendingOrder() {
         String suffix = uid();
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, 10));
-        var line = new OrderLineCommand(poolCode, "prod-" + suffix, "支付接口测试演出",
-                "sess-" + suffix, null, 2, 1000, 0, 0);
+        var line = new OrderLineCommand(poolCode, productCode, "支付接口测试演出",
+                "sess-" + suffix, null, 2, 10000, 0, 0);
         return orders.createOrder(new CreateOrderCommand("pay-api-" + suffix, 42L, "CNY", List.of(line)));
     }
 
@@ -121,16 +122,17 @@ class PaymentApiTests extends AbstractPostgresIntegrationTest {
         PaymentView first = payments.createPayment(
                 new CreatePaymentCommand(orderA.orderNo(), "sandbox", "CNY", orderA.payAmount()));
         PaymentView second = payments.createPayment(
-                new CreatePaymentCommand(orderA.orderNo(), "sandbox", "CNY", orderA.payAmount()));
-        payments.createPayment(
                 new CreatePaymentCommand(orderB.orderNo(), "sandbox", "CNY", orderB.payAmount()));
 
         mvc.perform(get("/api/v1/orders/" + orderA.orderNo() + "/payments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].paymentNo").value(first.paymentNo()))
-                .andExpect(jsonPath("$[1].paymentNo").value(second.paymentNo()))
-                .andExpect(jsonPath("$[0].orderNo").value(orderA.orderNo()))
-                .andExpect(jsonPath("$[1].orderNo").value(orderA.orderNo()));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].orderNo").value(orderA.orderNo()));
+
+        mvc.perform(get("/api/v1/orders/" + orderB.orderNo() + "/payments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].paymentNo").value(second.paymentNo()));
     }
 
     @Test

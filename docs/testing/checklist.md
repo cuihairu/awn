@@ -22,7 +22,7 @@ Testcontainers 检测到显式版本后不再回退到 1.32。
 | 同一独立票品并发购买 | 最多一个有效订单占用（`VoucherOrderModuleTests`：并发抢单守卫只放行一单，a418f39） |
 | 平台座位并发抢占（`PlatformSeatModuleTests`） | 16 线程并发抢座只放行一单，逐座状态机守卫裁决（c7ea49c） |
 | 订单取消与支付确认竞争 | 只有合法状态转换成功 |
-| 支付结果未知 | 不会因为简单超时而错误释放库存（部分覆盖：超时释放后回调置 UNKNOWN 不盲目确认；订单侧拦截未实现，见 trading-model G6） |
+| 支付结果未知 | 超时后回调置 UNKNOWN；Worker 核实渠道结果，已释放订单查实成功时告警并原路幂等退款，不恢复库存（`PaymentModuleTests`） |
 | 库存对账 | 对账覆盖 reserved / sold / total 三类口径，total 漂移产出 `TOTAL_MISMATCH`（`InventoryReconciliationTests`） |
 
 ## 支付与恢复测试

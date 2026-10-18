@@ -81,9 +81,10 @@ class NotificationModuleTests extends AbstractPostgresIntegrationTest {
     void orderEventsDeliverInboxMessagesAndFailureLeavesOrderIntact() {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix), "sess-" + suffix, 10));
-        var line = new OrderLineCommand(poolCode, "prod-" + suffix, "通知测试演出",
-                "sess-" + suffix, null, 1, 300, 0, 0);
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode, "sess-" + suffix, 10));
+        var line = new OrderLineCommand(poolCode, productCode, "通知测试演出",
+                "sess-" + suffix, null, 1, 10000, 0, 0);
         OrderView order = orderFacade.createOrder(
                 new CreateOrderCommand("ntf-" + suffix, 4242L, "CNY", List.of(line)));
 

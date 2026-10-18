@@ -51,16 +51,24 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    private String newPool(int totalQuantity) {
-        String poolCode = "wt-" + uid();
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(poolCode), "sess-" + uid(), totalQuantity));
-        return poolCode;
+    /** 池 + 其真实商品与场次（核价契约后行 productId 必须用池的商品编码） */
+    private record PoolRef(String poolCode, String productCode, String sessionId) {
     }
 
-    private OrderView newOrder(String poolCode, int quantity, long unitPrice) {
+    private PoolRef newPool(int totalQuantity) {
+        String suffix = uid();
+        String productCode = products.productCode(suffix);
+        String poolCode = "wt-" + suffix;
+        String sessionId = "sess-" + uid();
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode, sessionId, totalQuantity));
+        return new PoolRef(poolCode, productCode, sessionId);
+    }
+
+    /** 订单按目录价 10000 建（核价契约后行单价必须等于目录价） */
+    private OrderView newOrder(PoolRef pool, int quantity) {
         return orders.createOrder(new CreateOrderCommand("wt-" + uid(), 4242L, "CNY",
-                List.of(new OrderLineCommand(poolCode, "prod-" + uid(), "演出票·A档",
-                        "sess-" + uid(), "A档", quantity, unitPrice, 0, 0))));
+                List.of(new OrderLineCommand(pool.poolCode(), pool.productCode(), "演出票·A档",
+                        pool.sessionId(), "A档", quantity, 10000, 0, 0))));
     }
 
     private void forceExpired(String orderNo) {
@@ -83,10 +91,10 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
     @Test
     void expiredPendingOrderIsReleasedIdempotently() {
         drainExpiredQueue();
-        String pool = newPool(10);
-        OrderView order = newOrder(pool, 2, 10000);
+        PoolRef pool = newPool(10);
+        OrderView order = newOrder(pool, 2);
 
-        BalanceView before = inventory.balanceOf(pool);
+        BalanceView before = inventory.balanceOf(pool.poolCode());
         assertThat(before.reservedQuantity()).isEqualTo(2);
         assertThat(before.available()).isEqualTo(8);
 
@@ -98,7 +106,7 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
         assertThat(first.failed()).isEmpty();
         assertThat(orders.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.EXPIRED);
 
-        BalanceView after = inventory.balanceOf(pool);
+        BalanceView after = inventory.balanceOf(pool.poolCode());
         assertThat(after.reservedQuantity()).isZero();
         assertThat(after.soldQuantity()).isZero();
         assertThat(after.available()).isEqualTo(10);
@@ -115,8 +123,8 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
     @Test
     void paidOrderWithPastExpiryIsNotReleased() {
         drainExpiredQueue();
-        String pool = newPool(10);
-        OrderView order = newOrder(pool, 3, 5000);
+        PoolRef pool = newPool(10);
+        OrderView order = newOrder(pool, 3);
         assertThat(orders.markPaid(order.orderNo())).isTrue();
 
         forceExpired(order.orderNo());
@@ -125,7 +133,7 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
         assertThat(result.expired()).isZero();
         assertThat(result.failed()).isEmpty();
         assertThat(orders.orderOf(order.orderNo()).status()).isEqualTo(OrderStatus.PAID);
-        BalanceView balance = inventory.balanceOf(pool);
+        BalanceView balance = inventory.balanceOf(pool.poolCode());
         assertThat(balance.soldQuantity()).isEqualTo(3);
         assertThat(balance.reservedQuantity()).isZero();
         assertThat(expiredEvents(order.orderNo())).isZero();
@@ -134,8 +142,8 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
     @Test
     void futureExpiryIsUntouched() {
         drainExpiredQueue();
-        String pool = newPool(5);
-        OrderView order = newOrder(pool, 1, 100);
+        PoolRef pool = newPool(5);
+        OrderView order = newOrder(pool, 1);
 
         OrderTimeoutResult result = orders.releaseExpiredOrders(Instant.now());
 
@@ -148,8 +156,8 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
     @Test
     void disabledTaskRunIsNoOp() {
         drainExpiredQueue();
-        String pool = newPool(5);
-        OrderView order = newOrder(pool, 1, 100);
+        PoolRef pool = newPool(5);
+        OrderView order = newOrder(pool, 1);
         forceExpired(order.orderNo());
 
         // awn.worker.enabled=false：任务方法必须直接返回，不做任何迁移
@@ -165,19 +173,19 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void reconciliationDetectsTamperedCounter() {
-        String pool = newPool(10);
-        OrderView order = newOrder(pool, 2, 3000);
+        PoolRef pool = newPool(10);
+        OrderView order = newOrder(pool, 2);
 
         ReconciliationReport baseline = inventory.reconcile();
-        assertThat(baseline.violations()).noneMatch(v -> v.poolCode().equals(pool));
+        assertThat(baseline.violations()).noneMatch(v -> v.poolCode().equals(pool.poolCode()));
 
         try {
             jdbc.update("UPDATE inventory_balance SET reserved_quantity = reserved_quantity + 3 " +
-                    "WHERE inventory_pool_id = (SELECT id FROM inventory_pool WHERE pool_code = ?)", pool);
+                    "WHERE inventory_pool_id = (SELECT id FROM inventory_pool WHERE pool_code = ?)", pool.poolCode());
 
             ReconciliationReport report = inventory.reconcile();
             List<ReconciliationViolation> ours = report.violations().stream()
-                    .filter(v -> v.poolCode().equals(pool))
+                    .filter(v -> v.poolCode().equals(pool.poolCode()))
                     .toList();
             assertThat(ours).hasSize(1);
             assertThat(ours.get(0).kind()).isEqualTo("RESERVED_MISMATCH");
@@ -185,8 +193,8 @@ class WorkerTasksTests extends AbstractPostgresIntegrationTest {
             assertThat(ours.get(0).actual()).isEqualTo(5);
         } finally {
             jdbc.update("UPDATE inventory_balance SET reserved_quantity = 2 " +
-                    "WHERE inventory_pool_id = (SELECT id FROM inventory_pool WHERE pool_code = ?)", pool);
+                    "WHERE inventory_pool_id = (SELECT id FROM inventory_pool WHERE pool_code = ?)", pool.poolCode());
         }
-        assertThat(inventory.reconcile().violations()).noneMatch(v -> v.poolCode().equals(pool));
+        assertThat(inventory.reconcile().violations()).noneMatch(v -> v.poolCode().equals(pool.poolCode()));
     }
 }

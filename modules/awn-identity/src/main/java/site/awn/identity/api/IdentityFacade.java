@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * identity 模块对外接口：注册、凭据校验（登录）、角色授予与校验。
- * 边界：不直接修改订单和库存；HTTP 会话 / 令牌机制属 API 层后续工作，
+ * 边界：不直接修改订单和库存；HTTP bearer token 由 API 层签发与校验，
  * 本模块只提供凭据验证与角色事实。
  */
 public interface IdentityFacade {

@@ -20,6 +20,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     /** 订单维度支付历史（创建顺序） */
     List<Payment> findByOrderNoOrderByCreatedAtAsc(String orderNo);
 
+    /** 支付创建串行化：同一订单只允许一个事务同时通过「可支付/无在途支付」守卫。 */
+    @Query(value = "SELECT pg_advisory_xact_lock(hashtextextended(:orderNo, 0))", nativeQuery = true)
+    Object lockOrderForPayment(@Param("orderNo") String orderNo);
+
+    /** 退款额度守卫串行化：锁定支付行并与退款单创建保持在同一事务内。 */
+    @Query(value = "SELECT id FROM payments WHERE payment_no = :paymentNo FOR UPDATE", nativeQuery = true)
+    Optional<Long> lockPaymentForRefund(@Param("paymentNo") String paymentNo);
+
     /** 标量读取：绕过持久化上下文，条件更新后读取最新状态 */
     @Query("SELECT p.status FROM Payment p WHERE p.paymentNo = :paymentNo")
     Optional<site.awn.payment.domain.PaymentStatus> statusOf(@Param("paymentNo") String paymentNo);

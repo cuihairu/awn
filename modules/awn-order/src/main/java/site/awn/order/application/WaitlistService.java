@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import site.awn.catalog.api.CatalogFacade;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.domain.InsufficientInventoryException;
 import site.awn.order.api.CreateOrderCommand;
@@ -46,13 +47,15 @@ public class WaitlistService implements WaitlistFacade {
     private final WaitlistRepository waitlists;
     private final InventoryFacade inventory;
     private final OrderFacade orders;
+    private final CatalogFacade catalog;
     private final TransactionTemplate transactions;
 
     WaitlistService(WaitlistRepository waitlists, InventoryFacade inventory,
-                    OrderFacade orders, TransactionTemplate transactions) {
+                    OrderFacade orders, CatalogFacade catalog, TransactionTemplate transactions) {
         this.waitlists = waitlists;
         this.inventory = inventory;
         this.orders = orders;
+        this.catalog = catalog;
         this.transactions = transactions;
     }
 
@@ -69,6 +72,13 @@ public class WaitlistService implements WaitlistFacade {
         }
         // 未知池先拒绝（PoolNotFoundException），再做同用户同池占用判重
         inventory.balanceOf(command.poolCode());
+        // 审核整改 P0（luna-review 表一）：排队价即递补建单价，必须等于目录价——
+        // 请求方自报价在入口拒绝；递补侧 createOrder 还有第二道核价兜底
+        long catalogPrice = catalog.product(command.productId()).unitPrice();
+        if (command.unitPrice() != catalogPrice) {
+            throw new IllegalArgumentException("unit price mismatch for " + command.productId()
+                    + ": server price " + catalogPrice + ", request " + command.unitPrice());
+        }
         String lockKey = "wl-join-" + command.userId() + ":" + command.poolCode();
         WaitlistEntry saved = transactions.execute(status -> {
             waitlists.lockPoolJoin(lockKey);
@@ -199,7 +209,8 @@ public class WaitlistService implements WaitlistFacade {
                 // 并发抢输：其他调度方已占用该席位
                 return false;
             }
-            OrderView order = orders.createOrder(new CreateOrderCommand(
+            // Queue price was checked against the catalog at join time and is an immutable user quote.
+            OrderView order = orders.createWaitlistPromotionOrder(new CreateOrderCommand(
                     "wl-promo-" + head.getWaitlistNo(), head.getUserId(), head.getCurrency(),
                     List.of(new OrderLineCommand(head.getPoolCode(), head.getProductId(),
                             head.getProductName(), head.getSessionId(), null,

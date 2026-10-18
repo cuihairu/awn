@@ -11,6 +11,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import site.awn.campaign.domain.CampaignNotFoundException;
 import site.awn.inventory.domain.SeatNotFoundException;
@@ -223,6 +224,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> typeMismatch(MethodArgumentTypeMismatchException e) {
         return envelope(ErrorCode.VALIDATION_FAILED, "invalid value for " + e.getName());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> accessDenied(ResponseStatusException e) {
+        ErrorCode code = e.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()
+                ? ErrorCode.UNAUTHORIZED : ErrorCode.ACCESS_DENIED;
+        return envelope(code, e.getReason() == null ? "access denied" : e.getReason());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

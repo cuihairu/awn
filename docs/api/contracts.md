@@ -25,6 +25,8 @@
 | code | HTTP | 触发场景 |
 |------|------|----------|
 | VALIDATION_FAILED | 400 | 参数缺失、格式非法、请求体不可解析 |
+| UNAUTHORIZED | 401 | 缺少或无效的买家 / 卖家 Bearer token |
+| ACCESS_DENIED | 403 | token 对应用户不拥有该订单或卖家资料 |
 | PAYMENT_CALLBACK_REJECTED | 400 | 支付回调验签或字段校验失败 |
 | NOT_FOUND | 404 | 资源不存在（通用） |
 | ORDER_NOT_FOUND | 404 | 订单不存在 |
@@ -56,21 +58,28 @@
 
 ## 鉴权
 
+买家 / 卖家身份由 API 层签发的一小时 HMAC Bearer access token 表示：
+
+- `POST /api/v1/auth/register`（`email`、`password`、`displayName`）注册并返回 `accessToken` 与用户资料；
+- `POST /api/v1/auth/login`（`email`、`password`）校验凭据并返回新 token；
+- 订单、支付、退款、履约、候补、争议及卖家端点要求 `Authorization: Bearer <accessToken>`；订单与卖家归属从 token subject 与服务端记录比对，请求体 / 查询参数中的 `userId` 不作为认证依据；
+- token 当前无 refresh / 撤销端点，到期一小时后需重新登录。客户端应只在 HTTPS 下传输。
+
 运营接口要求请求头 `X-Admin-Token`，作用域：
 
 - `/api/v1/admin/**` 全部方法；
 - `/api/v1/campaigns/**` 的非 GET 方法（专场管理写操作）；
 - `/api/v1/campaigns/**` 的 GET 为公开读，无需令牌。
 
-令牌校验失败返回 401，响应体为 `{"code":"UNAUTHORIZED","message":"admin token required"}`（手写 JSON，不含 traceId，`UNAUTHORIZED` 不在错误码表中——属已知偏差，待统一到异常处理器）。
+运营令牌校验失败返回 401，响应体为 `{"code":"UNAUTHORIZED","message":"admin token required"}`（手写 JSON，不含 traceId）。买家 / 卖家 token 失败返回 `UNAUTHORIZED` 错误信封；归属不符返回 `ACCESS_DENIED`。
 
 令牌校验通过后按资源组限流（`/api/v1/{resource}`，默认 100 次/60s）：超限返回 429，响应体为
 `{"code":"RATE_LIMITED","message":"rate limit exceeded, retry later"}`（同样为手写 JSON，不含 traceId）。
 未过鉴权的请求不计入额度；限流组件故障时放行（fail-open），不阻断管理面。
 
-## 公共接口
+## 已暴露 HTTP 接口
 
-以下端点已暴露 HTTP：
+以下端点已暴露 HTTP；是否公开访问以「鉴权」节为准（订单和交易资源要求 Bearer token）：
 
 ```text
 GET /api/v1/products/{productId}
@@ -100,7 +109,7 @@ POST /api/v1/payments/{paymentNo}/retry
 POST /api/v1/waitlist
 GET  /api/v1/waitlist/{waitlistNo}
 POST /api/v1/waitlist/{waitlistNo}/cancel
-GET  /api/v1/waitlist?userId=
+GET  /api/v1/waitlist
 
 POST /api/v1/checkout/quote
 
@@ -158,9 +167,12 @@ GET /api/v1/works/{workId}
 
 以下接口已暴露 HTTP：
 
-- `POST /api/v1/checkout/quote`：结算报价。请求体与创建订单同构（不含幂等键与用户），
-  按订单行同一服务端口径计算金额；**报价不扣减任何库存、不产生订单**，
+- `POST /api/v1/checkout/quote`：结算预览。请求体与创建订单行同构，金额按请求中的行项目计算；
+  **报价不扣减任何库存、不产生订单，也不是下单价格授权**，
   下单时金额重新计算并逐行原子预留。非法行（负行合计 / 多来源或缺一来源 / 非正数量 / 座位型行数量非 1）→ 400 `VALIDATION_FAILED`。
+
+- `POST /api/v1/orders`：需要 Bearer token 与 `Idempotency-Key`。服务端从 token 取下单人，忽略旧请求中的 `userId`；数量 / 座位行单价必须匹配目录价，凭证行必须匹配挂牌价；优惠与费用规则尚未提供前非零值拒绝（400 `VALIDATION_FAILED`）。不匹配的商品 / 库存池或挂牌归属同样拒绝，校验在库存预留前执行。
+- `GET /api/v1/orders/{orderId}`、`POST /api/v1/orders/{orderId}/cancel` 及订单子资源要求 token subject 是订单所有者；订单不存在 404，归属不符 403 `ACCESS_DENIED`。
 
 订单行来源三选一（`ck_order_item_source` 数据库兜底互斥）：
 
@@ -193,7 +205,7 @@ GET /api/v1/works/{workId}
 
 - `POST /api/v1/orders/{orderId}/payments`：为订单发起支付，**金额与币种由服务端取订单应付快照**，
   请求体只携带渠道（`{"channel":"..."}`），客户端传多少金额都不参与计算；
-  订单不存在 → 404 `ORDER_NOT_FOUND`，渠道不支持 → 409 `PAYMENT_CONFLICT`；成功返回 201。
+  仅待支付且未过期订单可支付；同订单已有在途 / 未知 / 成功支付时拒绝重复支付（409 `PAYMENT_CONFLICT`）。订单不存在 → 404 `ORDER_NOT_FOUND`，渠道不支持 → 409 `PAYMENT_CONFLICT`；成功返回 201。
 - `GET /api/v1/orders/{orderId}/payments`：订单的支付历史（创建顺序），未支付返回空数组。
 - `POST /api/v1/orders/{orderId}/refunds`：发起退款，请求体 `{"paymentNo","amount","reason"}`，
   以 `Idempotency-Key` 头判重（同键同请求返回原退款单）；缺失幂等键 → 400，
@@ -232,15 +244,14 @@ GET /api/v1/works/{workId}
 未在支付截止期内支付则该席位过期，库存回到池中、顺延下一位。
 
 - `POST /api/v1/waitlist`：加入候补，请求体
-  `{"sessionId","poolCode","productId","productName","quantity","unitPrice","currency","userId"}`，
-  成功返回 201 与候补条目（`waitlistNo` 为对外稳定标识）。
+  `{"sessionId","poolCode","productId","productName","quantity","unitPrice","currency"}`，
+  成功返回 201 与候补条目（`waitlistNo` 为对外稳定标识）；要求 Bearer token，忽略旧客户端传入的 `userId`。
 - `GET /api/v1/waitlist/{waitlistNo}`：候补条目。`position` 为同池 `WAITING` 条目中的位次（从 1 起），
   非 `WAITING` 状态为 `null`；`orderNo` 与 `payExpiresInSeconds` 仅递补后有值。
 - `POST /api/v1/waitlist/{waitlistNo}/cancel`：退出排队。未知条目 → 404 `WAITLIST_NOT_FOUND`；
   重复取消幂等返回 `false`（`canceled: false`）；已递补或已终态 → 409 `WAITLIST_CONFLICT`
   （已递补的席位走订单取消 `POST /orders/{orderId}/cancel`）。
-- `GET /api/v1/waitlist?userId=`：某用户的候补列表（加入时间倒序）；缺 `userId` → 400
-  `VALIDATION_FAILED`。
+- `GET /api/v1/waitlist`：当前 Bearer token 用户的候补列表（加入时间倒序）；查询参数 `userId`（若传入）不参与身份判定。
 
 候补状态机：
 
@@ -264,14 +275,14 @@ GET /api/v1/works/{workId}
 **裁决只记结论不动钱**（退款执行走既有退款链路由运营另行发起），受理与裁决都不改订单状态机。
 
 - `POST /api/v1/orders/{orderNo}/disputes`：开争议，体
-  `{"userId","reason","description","evidenceUrl","requestedResolution","requestedAmount"}`，
+  `{"reason","description","evidenceUrl","requestedResolution","requestedAmount"}`，旧 `userId` 字段忽略，
   成功 201 + `Location: /api/v1/disputes/{disputeNo}`。`reason` ∈ `NOT_DELIVERED / TICKET_INVALID /
   DESCRIPTION_MISMATCH / OTHER`，`requestedResolution` ∈ `REFUND / REDELIVER`（未知枚举 400）。
   `REFUND` 必填 `requestedAmount` 且 ∈ (0, 订单应付]；`REDELIVER` 不得带金额；`description` 必填；
   `evidenceUrl` 可选但限 `http(s)://` 白名单（非法 400）。守卫失败一律 409 `DISPUTE_CONFLICT`：
   非下单人、订单状态不在 `PAID / FULFILLING / FULFILLED`、同单已有在途争议（`OPEN` / `UNDER_REVIEW`）。
-- `GET /api/v1/orders/{orderNo}/disputes?userId=`：该用户在该订单上的争议列表；缺 `userId` → 400。
-- `POST /api/v1/disputes/{disputeNo}/withdraw`：受理人撤回（体 `{"userId"}`），`OPEN` / `UNDER_REVIEW`
+- `GET /api/v1/orders/{orderNo}/disputes`：当前 token 用户在该订单上的争议列表；忽略 `userId` 查询参数。
+- `POST /api/v1/disputes/{disputeNo}/withdraw`：当前 token 用户撤回（请求体可省略；旧 `userId` 字段忽略），`OPEN` / `UNDER_REVIEW`
   → `WITHDRAWN`。争议单不存在 → 404 `DISPUTE_NOT_FOUND`；非受理人 → 409 `DISPUTE_CONFLICT`。
 
 卖家随争议落库快照：取订单首个凭证型订单行的挂牌 `sellerId` / `listingNo` / `unitNo`；
@@ -283,14 +294,15 @@ GET /api/v1/works/{workId}
 
 ### 卖家面（挂牌与争议）
 
-交易面当前无认证中间件：卖家以请求体或路径中的 `sellerNo` 声明身份，服务端校验声明者与
-资源归属一致（未知主体一律 404）。卖家与买家一样**没有受理或裁决入口**，裁决只在运营接口。
+卖家端点要求 Bearer token，token subject 必须拥有 seller 资料（不符 403 `ACCESS_DENIED`，未知卖家 404）。
+挂牌归属与争议快照仍由服务端校验。卖家与买家一样**没有受理或裁决入口**，裁决只在运营接口。
 设计口径见 `docs/architecture/dispute-handling.md`。
 
 - `POST /api/v1/listings/{listingNo}/delist`：取消挂牌，体 `{"sellerNo"}`，返回挂牌视图。
-  挂牌未知 → 404 `NOT_FOUND`；卖家未知 → 404 `NOT_FOUND`；非归属卖家 → 409 `CONFLICT`；
+  挂牌未知 → 404 `NOT_FOUND`；sellerNo 未知 → 404 `NOT_FOUND`；token 不属于 sellerNo → 403 `ACCESS_DENIED`；
+  token 属于该卖家但挂牌属于其他卖家 → 409 `CONFLICT`；
   挂牌已 `RESERVED` / `SOLD` / `DELISTED` → 409 `CONFLICT`。
-- `GET /api/v1/sellers/{sellerNo}/disputes`：该卖家挂牌涉及的争议列表（按争议开单时快照的
+- `GET /api/v1/sellers/{sellerNo}/disputes`：该卖家挂牌涉及的争议列表（Bearer token 需属于该卖家；按争议开单时快照的
   挂牌卖家匹配，创建倒序限 50 条）；卖家未知 → 404 `NOT_FOUND`。
 - `POST /api/v1/disputes/{disputeNo}/seller-response`：提交申辩，体 `{"sellerNo","content"}`，
   成功 201 与申辩视图 `{"disputeNo","sellerNo","content","createdAt"}`；申辩追加留痕不覆盖。

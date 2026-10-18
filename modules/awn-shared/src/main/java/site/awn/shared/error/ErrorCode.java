@@ -7,6 +7,8 @@ package site.awn.shared.error;
 public enum ErrorCode {
 
     VALIDATION_FAILED(400),
+    UNAUTHORIZED(401),
+    ACCESS_DENIED(403),
     NOT_FOUND(404),
     ORDER_NOT_FOUND(404),
     INVENTORY_POOL_NOT_FOUND(404),

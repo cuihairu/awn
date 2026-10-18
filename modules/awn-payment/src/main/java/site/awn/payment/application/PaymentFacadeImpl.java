@@ -93,8 +93,20 @@ public class PaymentFacadeImpl implements PaymentFacade {
         // 1) 渠道校验先于落库：非法渠道不留孤儿支付单
         PaymentGateway gateway = router.forChannel(command.channel());
 
-        // 2) 事务一：只落 CREATED 支付单（外部调用不出长事务）
+        // 2) 事务一：按订单串行化并在落 CREATED 前检查订单与现存支付单。
+        //    同订单已有在途/成功支付时拒绝；FAILED 历史保留，允许显式重新发起。
         Payment payment = transactions.execute(status -> {
+            payments.lockOrderForPayment(command.orderNo());
+            site.awn.order.api.OrderView order = orders.orderOf(command.orderNo());
+            if (order.status() != site.awn.order.domain.OrderStatus.PENDING_PAYMENT
+                    || (order.expiresAt() != null && !order.expiresAt().isAfter(Instant.now()))) {
+                throw new PaymentConflictException("order is no longer payable: " + order.status());
+            }
+            boolean alreadyActive = payments.findByOrderNoOrderByCreatedAtAsc(command.orderNo()).stream()
+                    .anyMatch(existing -> BLOCKS_NEW_PAYMENT.contains(existing.getStatus()));
+            if (alreadyActive) {
+                throw new PaymentConflictException("order already has an active or successful payment");
+            }
             Payment p = new Payment("PAY-" + UUID.randomUUID(), command.orderNo(),
                     command.channel(), command.currency(), command.amount());
             return payments.saveAndFlush(p);
@@ -263,6 +275,8 @@ public class PaymentFacadeImpl implements PaymentFacade {
 
         // 3) 事务一：累计额度守卫（占用中退款 + 本次 ≤ 支付金额）+ 落 CREATED 退款单
         Refund refund = transactions.execute(status -> {
+            payments.lockPaymentForRefund(payment.getPaymentNo())
+                    .orElseThrow(() -> new PaymentNotFoundException(payment.getPaymentNo()));
             long occupied = refunds.sumOccupiedByPaymentNo(payment.getPaymentNo());
             if (occupied + command.amount() > payment.getAmount()) {
                 throw new RefundConflictException("refund exceeds refundable amount: occupied=" + occupied

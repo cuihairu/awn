@@ -38,7 +38,6 @@ import site.awn.support.CatalogProductFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -110,7 +109,6 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
     @Autowired CatalogProductFactory products;
     @Autowired JdbcTemplate jdbc;
 
-    private static final AtomicLong USER_SEQ = new AtomicLong(500_000L);
 
     @BeforeEach
     void clearWaitlistEntries() {
@@ -128,9 +126,9 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
         return UUID.randomUUID().toString().substring(0, 12);
     }
 
-    /** 候补列表按用户维度聚合，用户编号在全量用例间取唯一值避免相互污染 */
+    /** Test MockMvc bearer token subject shared by the HTTP fixtures. */
     private long userId() {
-        return USER_SEQ.getAndIncrement();
+        return 42L;
     }
 
     private record Fixture(String poolCode, String productCode, String sessionId) {
@@ -147,7 +145,7 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
     private OrderView pendingOrder(Fixture f) {
         return orders.createOrder(new CreateOrderCommand("pf-" + uid(), 42L, "CNY", List.of(
                 new OrderLineCommand(f.poolCode(), f.productCode(), "购买流测试票",
-                        f.sessionId(), null, 2, 1000, 0, 0))));
+                        f.sessionId(), null, 2, 10000, 0, 0))));
     }
 
     private PaymentView failedPayment(OrderView order) {
@@ -268,7 +266,7 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
         long user = userId();
         String body = """
                 {"sessionId":"%s","poolCode":"%s","productId":"%s","productName":"候补测试票",
-                 "quantity":2,"unitPrice":1000,"currency":"CNY","userId":%d}
+                 "quantity":2,"unitPrice":10000,"currency":"CNY","userId":%d}
                 """.formatted(f.sessionId(), f.poolCode(), f.productCode(), user);
 
         String waitlistNo = mvc.perform(post("/api/v1/waitlist")
@@ -303,10 +301,9 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
-    void waitlistListRequiresUserId() throws Exception {
+    void waitlistListUsesAuthenticatedIdentityRatherThanCallerSuppliedUserId() throws Exception {
         mvc.perform(get("/api/v1/waitlist"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -314,13 +311,13 @@ class PurchaseFlowApiTests extends AbstractPostgresIntegrationTest {
         Fixture f = fixture(2);
         long user = userId();
         WaitlistView first = waitlist.join(new JoinWaitlistCommand(f.sessionId(), f.poolCode(),
-                f.productCode(), "候补测试票", 1, 1000, "CNY", user));
+                f.productCode(), "候补测试票", 1, 10000, "CNY", user));
 
         mvc.perform(post("/api/v1/waitlist")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sessionId":"%s","poolCode":"%s","productId":"%s","productName":"候补测试票",
-                                 "quantity":1,"unitPrice":1000,"currency":"CNY","userId":%d}
+                                 "quantity":1,"unitPrice":10000,"currency":"CNY","userId":%d}
                                 """.formatted(f.sessionId(), f.poolCode(), f.productCode(), user)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("WAITLIST_CONFLICT"));

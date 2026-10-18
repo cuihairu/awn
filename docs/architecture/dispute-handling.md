@@ -16,9 +16,8 @@ Phase 05（todo P05）。第三方挂牌交付后，买家可能遇到卖家不�
   重新交付仍走履约面。争议模块不依赖 payment 模块：裁决与资金解耦，
   避免支付单不在 SUCCEEDED 时裁决整体回滚，也让退款重试与争议结论互不干扰。
   管理员裁决 REFUND_APPROVED 后按既有退款流程执行。
-- **买卖双方身份沿用现状。** 交易面当前无认证中间件，买家以请求体 userId、
-  卖家以请求体 / 路径 sellerNo 声明身份，服务端校验声明者与归属一致
-  （`order.userId` / 争议快照 `seller_id`）；认证接入（V15 identity 表已建）后换成真实主体，守卫逻辑不变。
+- **买卖双方身份来自 API bearer token。** 买家身份取签名 token subject，不信任请求体 `userId`；
+  卖家还需通过服务端 seller 记录校验账号归属。领域层的订单 / 挂牌归属守卫仍作为第二道检查。
 - **订单状态机不受争议影响。** 争议是订单旁路记录，不阻塞支付 / 履约 / 退款迁移；
   争议期间订单照常推进。
 
@@ -146,16 +145,16 @@ CREATE INDEX ix_dispute_seller_responses_dispute
 
 买家面：
 
-- `POST /api/v1/orders/{orderNo}/disputes` — 开争议（body：userId / reason / description /
-  evidenceUrl? / requestedResolution / requestedAmount?）→ 201 + DisputeView
-- `GET /api/v1/orders/{orderNo}/disputes?userId=` — 该订单的争议列表（服务端校验订单归属）
-- `POST /api/v1/disputes/{disputeNo}/withdraw` — 撤回（body：userId，须为开单本人）→ DisputeView
+- `POST /api/v1/orders/{orderNo}/disputes` — 开争议（Bearer token subject / reason / description /
+  evidenceUrl? / requestedResolution / requestedAmount?）→ 201 + DisputeView；旧 body `userId` 忽略
+- `GET /api/v1/orders/{orderNo}/disputes` — 当前 token 用户在该订单的争议列表
+- `POST /api/v1/disputes/{disputeNo}/withdraw` — 当前 token 用户撤回；旧 body `userId` 忽略 → DisputeView
 
-卖家面（声明 sellerNo + 服务端归属校验，无裁决入口）：
+卖家面（Bearer token + seller 账号归属校验，无裁决入口）：
 
 - `GET /api/v1/sellers/{sellerNo}/disputes` — 该卖家挂牌涉及的全部争议（按快照 seller_id 匹配，新→旧，限 50 条）
-- `POST /api/v1/disputes/{disputeNo}/seller-response` — 申辩（body：sellerNo / content）→ 201 + 申辩视图
-- `POST /api/v1/listings/{listingNo}/delist` — 取消挂牌（body：sellerNo，须为挂牌归属卖家）
+- `POST /api/v1/disputes/{disputeNo}/seller-response` — 申辩（body：sellerNo / content；token 必须拥有该 seller）→ 201 + 申辩视图
+- `POST /api/v1/listings/{listingNo}/delist` — 取消挂牌（body：sellerNo；token 必须拥有该 seller 且为挂牌归属卖家）
 
 管理面（X-Admin-Token）：
 

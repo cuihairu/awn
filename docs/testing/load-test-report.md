@@ -52,8 +52,8 @@ commit `eb35c32`，代价是写路径吞吐 74 → 48 req/s（运营低频接口
 
 ## 未覆盖
 
-- **下单链路无 HTTP 端点**（`OrderLineCommand` 只在 Facade 层可达），HTTP 级下单压测待接口落地后补；
-  防超卖正确性目前由真实 PG 并发集成测试兜底（`InventoryConcurrencyTests` 24 线程抢 10 张、
+- **HTTP 下单链路未纳入本报告的吞吐测试**（端点已存在，但本报告压测范围只覆盖目录与库存读接口）；
+  防超卖正确性由真实 PG 并发集成测试兜底（`InventoryConcurrencyTests` 24 线程抢 10 张、
   `InventoryStressTests` 混合压测后恒等式成立、超卖为 0）。
 - 支付渠道为 sandbox，无真实渠道延迟；缓存层（Redis）未启用，读路径全量走库。
 

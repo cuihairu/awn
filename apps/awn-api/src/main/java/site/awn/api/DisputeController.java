@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
+import site.awn.api.auth.AuthenticatedUser;
+import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.DisputeFacade;
 import site.awn.order.api.DisputeSellerResponseView;
 import site.awn.order.api.DisputeView;
@@ -29,17 +32,20 @@ import java.util.List;
 public class DisputeController {
 
     private final DisputeFacade disputes;
+    private final MarketplaceFacade marketplace;
 
-    public DisputeController(DisputeFacade disputes) {
+    public DisputeController(DisputeFacade disputes, MarketplaceFacade marketplace) {
         this.disputes = disputes;
+        this.marketplace = marketplace;
     }
 
     @PostMapping("/api/v1/orders/{orderNo}/disputes")
     public ResponseEntity<DisputeView> open(
             @PathVariable String orderNo,
-            @RequestBody OpenDisputeRequest request) {
+            @RequestBody OpenDisputeRequest request, HttpServletRequest httpRequest) {
+        long userId = requireBuyer(httpRequest);
         DisputeView dispute = disputes.openDispute(new OpenDisputeCommand(
-                orderNo, request.userId(), request.reason(), request.description(),
+                orderNo, userId, request.reason(), request.description(),
                 request.evidenceUrl(), request.requestedResolution(), request.requestedAmount()));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .location(URI.create("/api/v1/disputes/" + dispute.disputeNo()))
@@ -49,39 +55,51 @@ public class DisputeController {
     @GetMapping("/api/v1/orders/{orderNo}/disputes")
     public List<DisputeView> listForOrder(
             @PathVariable String orderNo,
-            @RequestParam Long userId) {
+            HttpServletRequest request) {
+        long userId = requireBuyer(request);
         return disputes.disputesOfOrder(orderNo, userId);
     }
 
     @PostMapping("/api/v1/disputes/{disputeNo}/withdraw")
     public DisputeView withdraw(
             @PathVariable String disputeNo,
-            @RequestBody WithdrawDisputeRequest request) {
-        return disputes.withdraw(disputeNo, request.userId());
+            @RequestBody(required = false) WithdrawDisputeRequest request, HttpServletRequest httpRequest) {
+        return disputes.withdraw(disputeNo, requireBuyer(httpRequest));
     }
 
     /**
-     * 卖家争议：按争议开单时快照的挂牌卖家归属（服务端校验，不校验 token）；
-     * 未知卖家 404。与买家查争议同一模型：声明身份 + 归属守卫。
+     * 卖家争议：先用 bearer token 校验 sellerNo 的账号归属，再按争议开单时快照读取。
+     * 未知卖家 404，token 不属于该卖家 403。
      */
     @GetMapping("/api/v1/sellers/{sellerNo}/disputes")
-    public List<DisputeView> listForSeller(@PathVariable String sellerNo) {
+    public List<DisputeView> listForSeller(@PathVariable String sellerNo, HttpServletRequest request) {
+        requireSellerOwner(sellerNo, request);
         return disputes.disputesOfSeller(sellerNo);
     }
 
     /**
-     * 卖家申辩：声明 sellerNo + 内容；归属校验与在途守卫在模块层
+     * 卖家申辩：bearer token 必须拥有请求声明的 sellerNo；争议快照归属与在途守卫仍由模块层检查。
      * （非快照卖家 / 纯平台库存争议 / 已终态一律 409 DISPUTE_CONFLICT）。
      */
     @PostMapping("/api/v1/disputes/{disputeNo}/seller-response")
     public ResponseEntity<DisputeSellerResponseView> submitSellerResponse(
             @PathVariable String disputeNo,
-            @RequestBody SubmitSellerResponseRequest request) {
+            @RequestBody SubmitSellerResponseRequest request, HttpServletRequest httpRequest) {
+        requireSellerOwner(request.sellerNo(), httpRequest);
         DisputeSellerResponseView response = disputes.submitSellerResponse(
                 new SubmitSellerResponseCommand(disputeNo, request.sellerNo(), request.content()));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .location(URI.create("/api/v1/disputes/" + disputeNo + "/seller-responses"))
                 .body(response);
+    }
+
+    private long requireBuyer(HttpServletRequest request) {
+        return AuthenticatedUser.userId(request);
+    }
+
+    private void requireSellerOwner(String sellerNo, HttpServletRequest request) {
+        long userId = AuthenticatedUser.userId(request);
+        AuthenticatedUser.requireOwner(marketplace.sellerOf(sellerNo).userId(), userId);
     }
 
     /**

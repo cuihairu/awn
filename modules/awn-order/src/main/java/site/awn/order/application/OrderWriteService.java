@@ -3,9 +3,12 @@ package site.awn.order.application;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import site.awn.catalog.api.CatalogFacade;
+import site.awn.catalog.api.ProductView;
 import site.awn.inventory.api.InventoryFacade;
 import site.awn.inventory.api.ReserveInventoryCommand;
 import site.awn.inventory.api.ReservationView;
+import site.awn.marketplace.api.ListingView;
 import site.awn.marketplace.api.MarketplaceFacade;
 import site.awn.order.api.AttendeeCommand;
 import site.awn.order.api.CreateOrderCommand;
@@ -55,22 +58,34 @@ public class OrderWriteService {
     private final OrderAttendeeRepository attendeeRows;
     private final InventoryFacade inventory;
     private final MarketplaceFacade marketplace;
+    private final CatalogFacade catalog;
     private final OutboxMessageRepository outbox;
 
     OrderWriteService(OrderRepository orders, OrderItemRepository items,
                       OrderAttendeeRepository attendeeRows,
                       InventoryFacade inventory, MarketplaceFacade marketplace,
-                      OutboxMessageRepository outbox) {
+                      CatalogFacade catalog, OutboxMessageRepository outbox) {
         this.orders = orders;
         this.items = items;
         this.attendeeRows = attendeeRows;
         this.inventory = inventory;
         this.marketplace = marketplace;
+        this.catalog = catalog;
         this.outbox = outbox;
     }
 
     @Transactional
     public OrderView createOrder(CreateOrderCommand command) {
+        return createOrder(command, false);
+    }
+
+    /** Uses a previously validated, persisted waitlist price snapshot during promotion. */
+    @Transactional
+    public OrderView createWaitlistPromotionOrder(CreateOrderCommand command) {
+        return createOrder(command, true);
+    }
+
+    private OrderView createOrder(CreateOrderCommand command, boolean trustedWaitlistSnapshot) {
         // 1) 幂等键串行化：先到者提交后，后到者在锁内看到已提交订单
         orders.lockIdempotencyKey(command.idempotencyKey());
         String requestHash = requestHash(command);
@@ -95,7 +110,14 @@ public class OrderWriteService {
         long feeAmount = amounts.feeAmount();
         long payAmount = amounts.payAmount();
 
-        // 3) 逐行原子预留（orderRef 用订单号；预留与订单同事务提交）
+        // 3) 服务端核价（审核整改 P0，luna-review 表一）：金额不由请求方决定——
+        //    数量型行：池必须属于行商品（防行商品写错用错池），单价 = 目录价；
+        //    座位型行：座位↔商品一致性由库存侧裁决，单价 = 目录价；
+        //    凭证型行：单价 = 挂牌价（卖家定价为权威），行商品必须与挂牌一致；
+        //    优惠 / 费用：服务端暂无规则来源，非 0 一律拒绝。
+        verifyPricing(command.lines(), trustedWaitlistSnapshot);
+
+        // 4) 逐行原子预留（orderRef 用订单号；预留与订单同事务提交）
         //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）；
         //    座位型行 → 平台座位预留（守卫迁移，并发抢座只放行一单）
         String orderNo = "ORD-" + UUID.randomUUID();
@@ -359,7 +381,49 @@ public class OrderWriteService {
         }
     }
 
-    /** 请求指纹：同键同请求 → 原结果；同键不同请求 → 冲突。 */
+    /**
+     * 服务端核价：目录 / 挂牌为唯一价格权威。任何一行单价与权威价不符即整体拒绝
+     * （400 VALIDATION_FAILED），先于任何预留执行，失败不留库存痕迹。
+     * 唯一例外是递补流程中已在候补加入时校验并持久化的价格快照；该入口只接受数量型行。
+     */
+    private void verifyPricing(java.util.List<OrderLineCommand> lines, boolean trustedWaitlistSnapshot) {
+        for (OrderLineCommand line : lines) {
+            if (line.discountAmount() != 0 || line.feeAmount() != 0) {
+                throw new IllegalArgumentException(
+                        "discount/fee must be 0 until server-side pricing rules exist: "
+                                + line.discountAmount() + "/" + line.feeAmount());
+            }
+            if (trustedWaitlistSnapshot && (line.voucherLine() || line.seatLine())) {
+                throw new IllegalArgumentException("waitlist snapshot pricing only supports quantity lines");
+            }
+            long expected;
+            if (line.voucherLine()) {
+                ListingView listing = marketplace.listingOf(line.listingNo());
+                if (!listing.productCode().equals(line.productId())) {
+                    throw new IllegalArgumentException("listing " + line.listingNo()
+                            + " belongs to product " + listing.productCode()
+                            + ", not " + line.productId());
+                }
+                expected = listing.unitPrice();
+            } else {
+                ProductView product = catalog.product(line.productId());
+                expected = product.unitPrice();
+                if (!line.seatLine()) {
+                    String poolOfProduct = inventory.poolByProductId(line.productId()).poolCode();
+                    if (!poolOfProduct.equals(line.poolCode())) {
+                        throw new IllegalArgumentException("pool " + line.poolCode()
+                                + " does not belong to product " + line.productId());
+                    }
+                }
+            }
+            if (line.unitPrice() != expected && !trustedWaitlistSnapshot) {
+                throw new IllegalArgumentException("unit price mismatch for "
+                        + line.productId() + ": server price " + expected
+                        + ", request " + line.unitPrice());
+            }
+        }
+    }
+
     private static String requestHash(CreateOrderCommand command) {
         StringBuilder canonical = new StringBuilder();
         canonical.append(command.idempotencyKey()).append('|')

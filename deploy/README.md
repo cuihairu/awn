@@ -16,7 +16,7 @@ rustfs:9000                       图片与素材对象存储（S3 兼容，Rust
 
 ```bash
 cd deploy
-cp .env.example .env      # 填写 AWN_DB_PASSWORD / RUSTFS_SECRET_KEY 等
+cp .env.example .env      # 填写所有必需密钥，包括 AWN_ADMIN_TOKEN / AWN_API_TOKEN_SECRET
 # 修改 config/postgres/init-intel.sql 中的情报库占位密码，与 AWN_INTEL_PASSWORD 一致
 # 修改 config/caddy/Caddyfile 中的域名占位
 docker compose up -d --build
@@ -51,5 +51,6 @@ docker compose exec postgresql psql -U awn_app -d awn -tAc \
   限流组件故障时 fail-open，不阻断管理面。
 - **情报隔离**：同实例下 `intelligence` schema 使用独立角色 `awn_intel`，对交易表零权限（`config/postgres/init-intel.sql`；验证见 `IntelligenceIsolationTests`）。是权限边界，不是物理隔离。
 - **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。受限交易角色 `awn_trading` 已由 `V12__trading_role.sql` 建立（仅业务表读写、无 CREATE、情报 schema 零权限，验证见 `TradingRoleIsolationTests`）。生产收紧路径：用独立管理员账号执行初始化，api/worker 改连 `awn_trading`，Flyway 以管理员账号执行，并替换 `awn_trading` 与 `awn_intel` 的占位密码。
+- **买家 / 卖家鉴权**：`POST /api/v1/auth/register` 与 `/login` 返回一小时 Bearer token；订单、支付、退款、履约、候补、争议和卖家端点按 token subject 做归属校验。生产必须配置 `AWN_API_TOKEN_SECRET`（至少 32 字节）与 `AWN_ADMIN_TOKEN`；`prod` profile 不接受缺省值。
 - **Outbox 分发**：由 awn-worker 的 `outbox-dispatch` 任务轮询，无 Kafka 依赖（docs/architecture/async-outbox.md）。
 - **幂等**：所有写接口要求 `Idempotency-Key`，Worker 任务自身也按任务周期幂等（docs/architecture/payment-state-machine.md）。

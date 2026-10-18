@@ -91,27 +91,28 @@ class CheckoutApiTests extends AbstractPostgresIntegrationTest {
     void quoteMatchesOrderAmountsForSameLines() throws Exception {
         String suffix = uid();
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, 10));
 
         String line = """
-                {"poolCode":"%s","productId":"p-%s","productNameSnapshot":"口径演出",
-                "quantity":3,"unitPrice":2500,"discountAmount":300,"feeAmount":0}
-                """.formatted(poolCode, suffix);
+                {"poolCode":"%s","productId":"%s","productNameSnapshot":"口径演出",
+                "quantity":3,"unitPrice":10000,"discountAmount":0,"feeAmount":0}
+                """.formatted(poolCode, productCode);
         String quote = mvc.perform(post("/api/v1/checkout/quote")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"currency\":\"CNY\",\"lines\":[" + line + "]}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        assertThat(quote).contains("\"payAmount\":7200");
+        assertThat(quote).contains("\"payAmount\":30000");
 
-        // 同一行下单：金额与报价同口径（服务端同一计算路径）
+        // 同一行下单：金额与报价同口径（服务端同一计算路径；目录价权威，审核整改 P0）
         OrderView order = orders.createOrder(new CreateOrderCommand("quote-ord-" + suffix, 42L,
-                "CNY", List.of(new OrderLineCommand(poolCode, "p-" + suffix, "口径演出",
-                null, null, 3, 2500, 300, 0))));
-        assertThat(order.totalAmount()).isEqualTo(7500);
-        assertThat(order.discountAmount()).isEqualTo(300);
-        assertThat(order.payAmount()).isEqualTo(7200);
+                "CNY", List.of(new OrderLineCommand(poolCode, productCode, "口径演出",
+                null, null, 3, 10000, 0, 0))));
+        assertThat(order.totalAmount()).isEqualTo(30000);
+        assertThat(order.discountAmount()).isZero();
+        assertThat(order.payAmount()).isEqualTo(30000);
     }
 
     @Test
@@ -149,9 +150,10 @@ class CheckoutApiTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void unknownOrderFulfillmentReturnsNotFoundEnvelope() throws Exception {
+        // 归属校验先于履约查询：订单不存在时报订单级码（仍是 404 统一信封）
         mvc.perform(get("/api/v1/orders/ORD-missing-" + uid() + "/fulfillment"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"))
                 .andExpect(jsonPath("$.message").isNotEmpty())
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
@@ -160,11 +162,12 @@ class CheckoutApiTests extends AbstractPostgresIntegrationTest {
     void unpaidOrderHasNoFulfillment() throws Exception {
         String suffix = uid();
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, 10));
         OrderView order = orders.createOrder(new CreateOrderCommand("chk-" + suffix, 42L,
-                "CNY", List.of(new OrderLineCommand(poolCode, "p-" + suffix, "履约查询演出",
-                null, null, 1, 500, 0, 0))));
+                "CNY", List.of(new OrderLineCommand(poolCode, productCode, "履约查询演出",
+                null, null, 1, 10000, 0, 0))));
 
         // 待支付订单没有履约单：404 而不是空视图
         mvc.perform(get("/api/v1/orders/" + order.orderNo() + "/fulfillment"))
@@ -176,11 +179,12 @@ class CheckoutApiTests extends AbstractPostgresIntegrationTest {
     void fulfillmentReturnsViewAfterPaymentEventLoop() throws Exception {
         String suffix = uid();
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, 10));
         OrderView order = orders.createOrder(new CreateOrderCommand("chk-paid-" + suffix, 42L,
-                "CNY", List.of(new OrderLineCommand(poolCode, "p-" + suffix, "履约查询演出",
-                null, null, 1, 500, 0, 0))));
+                "CNY", List.of(new OrderLineCommand(poolCode, productCode, "履约查询演出",
+                null, null, 1, 10000, 0, 0))));
 
         var payment = payments.createPayment(new CreatePaymentCommand(
                 order.orderNo(), "sandbox", "CNY", order.payAmount()));

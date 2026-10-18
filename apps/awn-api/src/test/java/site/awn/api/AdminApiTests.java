@@ -85,7 +85,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void orderAndInventoryViewsReturnRealData() throws Exception {
-        OrderView order = newOrder(2, 300);
+        OrderView order = newOrder(2);
 
         mockMvc.perform(get("/api/v1/admin/orders").header(TOKEN_HEADER, TOKEN))
                 .andExpect(status().isOk())
@@ -169,7 +169,7 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void reconciliationDifferenceRaisesAlertVisibleInAnomalies() throws Exception {
-        OrderView order = newOrder(1, 500);
+        OrderView order = newOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
 
@@ -380,14 +380,16 @@ class AdminApiTests extends AbstractPostgresIntegrationTest {
 
     private String lastPoolCode;
 
-    private OrderView newOrder(int quantity, long unitPrice) {
+    /** 订单按目录价 10000 建（核价契约后行单价必须等于目录价） */
+    private OrderView newOrder(int quantity) {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
         lastPoolCode = poolCode;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, quantity * 5));
-        var line = new OrderLineCommand(poolCode, "prod-" + suffix, "运营接口测试演出",
-                "sess-" + suffix, null, quantity, unitPrice, 0, 0);
+        var line = new OrderLineCommand(poolCode, productCode, "运营接口测试演出",
+                "sess-" + suffix, null, quantity, 10000, 0, 0);
         return orderFacade.createOrder(new CreateOrderCommand("adm-" + suffix, 42L, "CNY", List.of(line)));
     }
 }

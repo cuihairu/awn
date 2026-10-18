@@ -21,7 +21,8 @@
 | `AWN_DB_PASSWORD` | PostgreSQL `awn_app` 账号密码 | 强随机；api/worker/postgresql 三处同源引用 |
 | `RUSTFS_SECRET_KEY` | 对象存储密钥 | 强随机 |
 | `AWN_INTEL_PASSWORD` | 情报角色 `awn_intel` 密码 | 强随机；与 `config/postgres/init-intel.sql` 中占位密码一致 |
-| `AWN_ADMIN_TOKEN` | 运营接口令牌 | **必须覆盖**——不设置时回落到开发默认 `awn-admin-dev-token`，等同于运营接口裸奔 |
+| `AWN_ADMIN_TOKEN` | 运营接口令牌 | 必填；Compose 与 `prod` profile 缺失时拒绝启动，不回落开发默认值 |
+| `AWN_API_TOKEN_SECRET` | 买家 / 卖家 Bearer token 的 HMAC 密钥 | 必填；至少 32 字节，轮换会使现有 token 失效 |
 | `CENTRAL_MIRROR` | Maven 镜像（可选） | 仅出口受限环境需要 |
 
 同时修改两处仓库内文件（不入库的改动自行保管）：
@@ -98,11 +99,12 @@ docker compose up -d --no-deps --force-recreate api worker
    `change-me-trading-password` 必须在部署前替换。
    剩余收紧：独立管理员账号做初始化，Flyway 以管理员执行、api/worker 改连 `awn_trading`
    （见 deploy/README「关键约束」）。
-2. **AWN_ADMIN_TOKEN 必须覆盖默认值**（见密钥表）；泄露后更换令牌只需改 `.env` 重建 api/worker。
+2. **管理面令牌必须配置**（见密钥表）；泄露后更换令牌只需改 `.env` 重建 api/worker。
    管理面口径：`/api/v1/admin/**` 与专场管理写操作（`POST /api/v1/campaigns**`）都需要 `X-Admin-Token`，
    公开读（`GET /api/v1/campaigns**`）不需要。鉴权通过后按资源组限流（默认 100 次/60s），超限 429；
    存储由 `AWN_RATELIMIT_STORE` 选择——compose 默认 `redis`（多实例共享额度），本地/测试默认 `memory`
-   （进程内）。限流组件故障时 fail-open，不阻断管理面。
+    （进程内）。限流组件故障时 fail-open，不阻断管理面。
+   买家 / 卖家交易端点另要求 `Authorization: Bearer <accessToken>`，token 一小时过期；用户身份及订单 / 卖家归属取服务端校验，不能以请求体 `userId` 替代。
 3. **PITR 未启用**：当前为逻辑备份（pg_dump），误删数据只能回到最近一次备份点；
    需要分钟级 RPO 时再评估 WAL 归档。
 4. **worker 单副本**为硬约束（见日常升级）。

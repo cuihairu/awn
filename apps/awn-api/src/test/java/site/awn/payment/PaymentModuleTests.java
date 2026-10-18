@@ -42,6 +42,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -147,7 +152,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void callbackSuccessClosesEventLoopToFulfillingOrder() {
-        OrderView order = newPaidPendingOrder(2, 1000);
+        OrderView order = newPaidPendingOrder(2);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
 
@@ -178,7 +183,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void duplicateCallbackTakesEffectOnce() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -194,7 +199,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void invalidSignatureIsRejected() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -210,7 +215,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void amountMismatchIsRejected() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -224,7 +229,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void callbackRacingTimeoutReleaseGoesUnknownNotPaid() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -246,7 +251,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void refundLifecycleIsGuardedAndIdempotent() {
-        OrderView order = newPaidPendingOrder(1, 1000);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -256,7 +261,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
         // 部分退款
         String key = "refund-" + UUID.randomUUID();
         RefundView partial = payments.requestRefund(
-                new RequestRefundCommand(payment.paymentNo(), key, 400, "partial"));
+                new RequestRefundCommand(payment.paymentNo(), key, 4000, "partial"));
         assertThat(partial.status()).isEqualTo("PENDING");
         sandbox.succeedRefund(partial.channelRefundNo());
         RefundView done = payments.handleRefundCallback(refundCallback(partial));
@@ -268,22 +273,22 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
         // 重复退款请求（同键同请求）→ 原退款单，不重复发起资金退款
         RefundView same = payments.requestRefund(
-                new RequestRefundCommand(payment.paymentNo(), key, 400, "partial"));
+                new RequestRefundCommand(payment.paymentNo(), key, 4000, "partial"));
         assertThat(same.refundNo()).isEqualTo(partial.refundNo());
 
         // 支付单转部分退款
         assertThat(payments.payment(payment.paymentNo()).status())
                 .isEqualTo(PaymentStatus.PARTIALLY_REFUNDED.name());
 
-        // 超额退款被拒绝：剩余可退 600，请求 601
+        // 超额退款被拒绝：剩余可退 6000，请求 6001
         assertThatThrownBy(() -> payments.requestRefund(
-                new RequestRefundCommand(payment.paymentNo(), "refund-x-" + UUID.randomUUID(), 601, "over")))
+                new RequestRefundCommand(payment.paymentNo(), "refund-x-" + UUID.randomUUID(), 6001, "over")))
                 .isInstanceOf(RefundConflictException.class)
                 .hasMessageContaining("exceeds");
 
         // 全额退款补齐 → REFUNDED
         RefundView rest = payments.requestRefund(
-                new RequestRefundCommand(payment.paymentNo(), "refund-rest-" + UUID.randomUUID(), 600, "rest"));
+                new RequestRefundCommand(payment.paymentNo(), "refund-rest-" + UUID.randomUUID(), 6000, "rest"));
         sandbox.succeedRefund(rest.channelRefundNo());
         payments.handleRefundCallback(refundCallback(rest));
         assertThat(payments.payment(payment.paymentNo()).status())
@@ -292,7 +297,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void refundNotAllowedBeforePaymentSucceeds() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
 
@@ -303,8 +308,78 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void concurrentRefundsCannotExceedThePaidAmount() throws Exception {
+        OrderView order = newPaidPendingOrder(1);
+        PaymentView payment = payments.createPayment(
+                new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+        sandbox.succeedCharge(payment.channelTxnNo());
+        payments.handleCallback(success(payment));
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<Boolean> first = executor.submit(() -> requestPartialRefund(payment, start, "race-a-"));
+            Future<Boolean> second = executor.submit(() -> requestPartialRefund(payment, start, "race-b-"));
+            start.countDown();
+            boolean firstAccepted = first.get(20, TimeUnit.SECONDS);
+            boolean secondAccepted = second.get(20, TimeUnit.SECONDS);
+
+            assertThat(List.of(firstAccepted, secondAccepted)).containsExactlyInAnyOrder(true, false);
+            Long occupied = jdbc.queryForObject(
+                    "SELECT COALESCE(SUM(amount),0) FROM refunds WHERE payment_no = ? "
+                            + "AND status IN ('CREATED','PENDING','UNKNOWN','SUCCEEDED')",
+                    Long.class, payment.paymentNo());
+            assertThat(occupied).isLessThanOrEqualTo(payment.amount());
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void concurrentPaymentCreationAllowsOnlyOneActivePaymentPerOrder() throws Exception {
+        OrderView order = newPaidPendingOrder(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<Boolean> first = executor.submit(() -> createPaymentIfAllowed(order, start));
+            Future<Boolean> second = executor.submit(() -> createPaymentIfAllowed(order, start));
+            start.countDown();
+            assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+            Integer count = jdbc.queryForObject(
+                    "SELECT count(*) FROM payments WHERE order_no = ? AND status <> 'FAILED'",
+                    Integer.class, order.orderNo());
+            assertThat(count).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private boolean createPaymentIfAllowed(OrderView order, CountDownLatch start) throws InterruptedException {
+        start.await();
+        try {
+            payments.createPayment(new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
+            return true;
+        } catch (PaymentConflictException expected) {
+            return false;
+        }
+    }
+
+    private boolean requestPartialRefund(PaymentView payment, CountDownLatch start, String keyPrefix)
+            throws InterruptedException {
+        start.await();
+        try {
+            payments.requestRefund(new RequestRefundCommand(payment.paymentNo(),
+                    keyPrefix + UUID.randomUUID(), 7000, "concurrency test"));
+            return true;
+        } catch (RefundConflictException expected) {
+            return false;
+        }
+    }
+
+    @Test
     void chargeAcceptanceFailureKeepsCreatedPayment() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
 
         // 渠道受理故障：不得回滚本地支付单，保留 CREATED 交对账闭环
         assertThatThrownBy(() -> payments.createPayment(
@@ -320,7 +395,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void refundAcceptanceFailureKeepsCreatedRefund() {
-        OrderView order = newPaidPendingOrder(1, 1000);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "flaky-refund", "CNY", order.payAmount()));
         assertThat(payment.status()).isEqualTo("PENDING");
@@ -346,7 +421,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void unknownPaymentResolvesToSucceededAndAutoRefundsAfterRelease() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
@@ -377,7 +452,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void unknownPaymentResolvesToFailedWhenChannelConfirmsNotPaid() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.failCharge(payment.channelTxnNo());
@@ -397,7 +472,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void unknownPaymentStaysWhenChannelStillPending() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         // 渠道侧保持 PENDING：查实无结论
@@ -417,14 +492,14 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void duplicateRefundCallbackWritesEventOnce() {
-        OrderView order = newPaidPendingOrder(1, 1000);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
         sandbox.succeedCharge(payment.channelTxnNo());
         payments.handleCallback(success(payment));
 
         RefundView refund = payments.requestRefund(new RequestRefundCommand(
-                payment.paymentNo(), "refund-once-" + UUID.randomUUID(), 1000, null));
+                payment.paymentNo(), "refund-once-" + UUID.randomUUID(), order.payAmount(), null));
         sandbox.succeedRefund(refund.channelRefundNo());
 
         payments.handleRefundCallback(refundCallback(refund));
@@ -438,7 +513,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void reconciliationDetectsChannelLocalDifferences() {
-        OrderView order = newPaidPendingOrder(1, 500);
+        OrderView order = newPaidPendingOrder(1);
         PaymentView payment = payments.createPayment(
                 new CreatePaymentCommand(order.orderNo(), "sandbox", "CNY", order.payAmount()));
 
@@ -475,7 +550,7 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
     void reconciliationReportsPaymentsOnUnregisteredChannel() {
         // 渠道下线 / 配置缺失后遗留的 PENDING 支付单：对账是只读报告，
         // 必须把「渠道无法核对」本身报告成差异，而不是让整个对账端点报错
-        OrderView order = newPaidPendingOrder(1, 100);
+        OrderView order = newPaidPendingOrder(1);
         String paymentNo = "pay-ghost-" + UUID.randomUUID();
         jdbc.update("INSERT INTO payments (payment_no, order_no, channel, status, currency, amount) "
                         + "VALUES (?, ?, 'ghost-channel', 'PENDING', 'CNY', 100)",
@@ -519,13 +594,15 @@ class PaymentModuleTests extends AbstractPostgresIntegrationTest {
         for (int i = 0; i < 50 && dispatcher.dispatchDue(Instant.now()) > 0; i++) { }
     }
 
-    private OrderView newPaidPendingOrder(int quantity, long unitPrice) {
+    /** 待支付订单：目录价 10000（核价契约后行单价必须等于目录价） */
+    private OrderView newPaidPendingOrder(int quantity) {
         String suffix = UUID.randomUUID().toString().substring(0, 12);
         String poolCode = "pool-" + suffix;
-        inventory.createPool(new CreatePoolCommand(poolCode, products.productCode(suffix),
+        String productCode = products.productCode(suffix);
+        inventory.createPool(new CreatePoolCommand(poolCode, productCode,
                 "sess-" + suffix, quantity * 5));
-        var line = new OrderLineCommand(poolCode, "prod-" + suffix, "支付测试演出",
-                "sess-" + suffix, null, quantity, unitPrice, 0, 0);
+        var line = new OrderLineCommand(poolCode, productCode, "支付测试演出",
+                "sess-" + suffix, null, quantity, 10000, 0, 0);
         return orderFacade.createOrder(new CreateOrderCommand("pay-" + suffix, 42L, "CNY", List.of(line)));
     }
 }

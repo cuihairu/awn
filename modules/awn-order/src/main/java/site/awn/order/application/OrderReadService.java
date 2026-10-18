@@ -42,6 +42,11 @@ public class OrderReadService {
     }
 
     @Transactional(readOnly = true)
+    public long ownerOf(String orderNo) {
+        return orders.findByOrderNo(orderNo).orElseThrow(() -> new OrderNotFoundException(orderNo)).getUserId();
+    }
+
+    @Transactional(readOnly = true)
     public java.util.List<OrderView> recentOrders() {
         return orders.findTop50ByOrderByIdDesc().stream()
                 .map(o -> {

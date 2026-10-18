@@ -17,7 +17,16 @@ public interface OrderFacade {
      */
     OrderView createOrder(CreateOrderCommand command);
 
+    /**
+     * Internal waitlist promotion path: consumes the price snapshot validated when the user joined.
+     * Only the waitlist module should call this method; it is not exposed over HTTP.
+     */
+    OrderView createWaitlistPromotionOrder(CreateOrderCommand command);
+
     OrderView orderOf(String orderNo);
+
+    /** Internal ownership check for the HTTP boundary; never expose ownership through a public order DTO. */
+    long ownerOf(String orderNo);
 
     /**
      * 结算报价（POST /api/v1/checkout/quote）：按订单行同一口径计算金额，
