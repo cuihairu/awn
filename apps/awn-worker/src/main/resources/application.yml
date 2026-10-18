@@ -7,6 +7,14 @@ spring:
     url: ${AWN_DB_URL:jdbc:postgresql://localhost:5432/awn}
     username: ${AWN_DB_USER:awn}
     password: ${AWN_DB_PASSWORD:awn}
+  intel-datasource:
+    # 情报独立数据源（Hikari 平铺属性）：默认回退主源同值；
+    # 部署收紧（S4）后指向受限账号 awn_intel
+    jdbc-url: ${AWN_INTEL_DB_URL:${spring.datasource.url}}
+    username: ${AWN_INTEL_DB_USER:${spring.datasource.username}}
+    password: ${AWN_INTEL_DB_PASSWORD:${spring.datasource.password}}
+    maximum-pool-size: 6
+    minimum-idle: 1
   jpa:
     open-in-view: false
     hibernate:

@@ -2,7 +2,7 @@
 
 解决审核表一 P1「API / Worker 使用 PostgreSQL 引导超级用户」（`todo.md` 审核整改条 表一 P1）。
 2026-10-19 巡检推进单授权代决：**按方案 A（S1–S4）推进**，S3 迁移角色收敛本期不做；
-S1 已落地（见下），S4（部署账号切换）未做。回滚口径见各阶段。
+S1 与 S4 的代码前置（双数据源 + 独立迁移连接装配）已落地（见下），部署面账号切换未做。回滚口径见各阶段。
 
 ## 卡点现状（证据，2026-10-19 复核）
 
@@ -35,7 +35,7 @@ S1 已落地（见下），S4（部署账号切换）未做。回滚口径见各
 
 ### S1：情报 JPA 单元独立（无行为变化）【已落地 2026-10-19】
 
-- 实际落地（与原稿的差异：S1 只拆单元，第二数据源并入 S4，两单元暂共用主数据源，运行行为等价）：
+- 实际落地：
   - 新增 `modules/awn-shared/src/main/java/site/awn/shared/config/PersistenceConfig.java`：显式声明交易 / 情报两个 `EntityManagerFactory`、两个 `JpaTransactionManager` 与两个 `@EnableJpaRepositories` 扫描器。必须全部显式声明的原因：Boot 4.1 的 `JpaBaseConfiguration` 对 `LocalContainerEntityManagerFactoryBean` / `TransactionManager` 均带 `@ConditionalOnMissingBean` 回退，而任一 `@EnableJpaRepositories` 存在又会整体关闭仓库自动装配（`DataJpaRepositoriesAutoConfiguration` 的 `@ConditionalOnMissingBean(JpaRepositoryConfigExtension)`）。
   - 交易 EMF 用 `setManagedClassNameFilter` 排除 `site.awn.intelligence.*` 实体——Spring 7 的 `@EntityScan` 只收集包名（`EntityScanPackages.getPackageNames()`），没有 excludeFilters 通道。
   - 交易仓库扫描器用 `@ComponentScan.Filter(REGEX)` 排除情报仓库，避免与情报扫描器重复注册。
@@ -58,13 +58,13 @@ S1 已落地（见下），S4（部署账号切换）未做。回滚口径见各
 - 已代决维持方案 A 原口径：**迁移轨不拆**，仍由高权限连接（`awn_app`）执行；V29 迁移角色收敛延后，避免改动已应用的迁移轨。
 - S4 切换运行账号后，Flyway 必须继续走高权限连接（见 S4 第 2 条），因此本阶段不阻塞 S4。
 
-### S4：部署切换与验收【未做，开工前置条件已探明】
+### S4：部署切换与验收【代码前置已就绪，部署面未做】
 
-1. 第二数据源接入：新增 `spring.intel-datasource`（url/user/password，默认回退主源同值），情报 EMF / 情报事务管理器改绑 intel 源；因定义第二个 `DataSource` bean 会触发 Boot `DataSourceAutoConfiguration` 回退，需同时显式声明主源（`DataSourceProperties` + `initializeDataSourceBuilder`，`spring.datasource.*` 绑定不变）。
-2. **迁移连接独立配置**（2026-10-19 补充发现）：`awn_trading` 对 `intelligence` 零权限且无 CREATE，无法执行 V8–V10 的 intelligence 建表；切换后 Flyway 必须经 `spring.flyway.url/username/password` 继续以 `awn_app` 连接，否则空库初始化直接失败。
-3. 账号密码来源：`awn_intel` 密码当前硬编码在 `deploy/config/postgres/init-intel.sql`（`change-me-intel-password`），切换前须改为环境变量注入（initdb 改 shell 包装或 psql 变量）并同步 `IntelligenceIsolationTests` 的密码常量；`V12__trading_role.sql` 的 `awn_trading` 密码来源同样需核对（已应用迁移不可改，密码经 `ALTER ROLE` 由部署侧管理）。
-4. `deploy/docker-compose.yml`：api / worker 主源改 `AWN_DB_USER: awn_trading`，新增 intel 源 `awn_intel` 与 flyway 源 `awn_app` 的连接变量；`.env.example` / `deploy/README.md` / `docs/deployment/structure.md` / `docs/deployment/production.md` 同步。
-5. 验收：compose 空库冒烟（initdb 建 `awn_intel`、V12 建 `awn_trading`、迁移以 `awn_app` 通过、两应用以受限账号启动）+ `TradingRoleIsolationTests` + `IntelligenceIsolationTests`；随后才能勾选 `todo.md` 审核整改 表一 P1。
+1. 第二数据源接入【已落地 2026-10-19】：`PersistenceConfig` 显式声明交易主源（`spring.datasource.*` + `spring.datasource.hikari.*`，Boot 配方复刻）与情报源 `spring.intel-datasource.*`（Hikari 平铺属性）；因定义第二个 `DataSource` bean 会触发 `DataSourceConfiguration.Hikari` 的 `@ConditionalOnMissingBean(DataSource)` 回退，主源必须显式。两应用 YAML 已加 intel 段与 `spring.flyway.url/user/password` 迁移段（均回退主源同值，默认行为不变）。验收：`PersistenceUnitSplitTests.unitsUseSeparateDataSources`（交易 EMF 绑主源、情报 EMF 绑情报源、两个独立连接池）+ 全量套件。
+2. **迁移连接独立配置**【已就绪 2026-10-19】：`awn_trading` 对 `intelligence` 零权限且无 CREATE，无法执行 V8–V10 的 intelligence 建表；`spring.flyway.url/user/password` 已支持独立迁移连接，部署时指向 `awn_app`。
+3. 账号密码来源【未做】：`awn_intel` 密码当前硬编码在 `deploy/config/postgres/init-intel.sql`（`change-me-intel-password`），切换前须改为环境变量注入（initdb 改 shell 包装）并同步 `IntelligenceIsolationTests` 的密码常量；`V12__trading_role.sql` 的 `awn_trading` 密码为固定占位（`change-me-trading-password`，已应用迁移不可改），部署侧需经 `ALTER ROLE` 或追加迁移（Flyway placeholder 注入）管理，S3 已代决延后，本期采用部署侧统一。
+4. `deploy/docker-compose.yml`【未做】：api / worker 主源改 `AWN_DB_USER: awn_trading` + `AWN_INTEL_DB_USER: awn_intel` + `AWN_MIGRATE_DB_USER: awn_app`，新增 `AWN_INTEL_DB_PASSWORD` 环境变量；`.env.example` / `deploy/README.md` / `docs/deployment/structure.md` / `docs/deployment/production.md` 同步。
+5. 验收【未做】：compose 空库冒烟（initdb 建 `awn_intel`、V12 建 `awn_trading`、迁移以 `awn_app` 通过、两应用以受限账号启动）+ `TradingRoleIsolationTests` + `IntelligenceIsolationTests`；随后才能勾选 `todo.md` 审核整改 表一 P1。
 
 ## 风险与取舍
 

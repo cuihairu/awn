@@ -48,6 +48,14 @@ class PersistenceUnitSplitTests extends AbstractPostgresIntegrationTest {
     @Qualifier("intelTransactionManager")
     JpaTransactionManager intelTransactionManager;
 
+    @Autowired
+    @Qualifier("tradingDataSource")
+    javax.sql.DataSource tradingDataSource;
+
+    @Autowired
+    @Qualifier("intelDataSource")
+    javax.sql.DataSource intelDataSource;
+
     private static Set<Class<?>> entityClasses(EntityManagerFactory emf) {
         return emf.getMetamodel().getEntities().stream()
                 .map(e -> e.getJavaType())
@@ -77,6 +85,16 @@ class PersistenceUnitSplitTests extends AbstractPostgresIntegrationTest {
         assertThat(entityClasses(intelTransactionManager.getEntityManagerFactory()))
                 .as("情报事务管理器必须挂在情报单元上")
                 .isEqualTo(INTELLIGENCE_ENTITIES);
+    }
+
+    @Test
+    void unitsUseSeparateDataSources() {
+        assertThat(tradingEmf.getDataSource())
+                .as("交易单元必须绑定主数据源").isSameAs(tradingDataSource);
+        assertThat(intelEmf.getDataSource())
+                .as("情报单元必须绑定情报数据源").isSameAs(intelDataSource);
+        assertThat(intelDataSource)
+                .as("两个数据源必须是独立连接池").isNotSameAs(tradingDataSource);
     }
 
     @Test
