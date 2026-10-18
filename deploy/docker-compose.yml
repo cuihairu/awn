@@ -54,8 +54,17 @@ services:
     restart: unless-stopped
     environment:
       AWN_DB_URL: jdbc:postgresql://postgresql:5432/awn
-      AWN_DB_USER: awn_app
-      AWN_DB_PASSWORD: ${AWN_DB_PASSWORD:?set AWN_DB_PASSWORD in .env}
+      # 运行账号=受限交易角色（仅交易表组读写、无 CREATE、情报零权限，见 V12）
+      AWN_DB_USER: awn_trading
+      AWN_DB_PASSWORD: ${AWN_TRADING_DB_PASSWORD:?set AWN_TRADING_DB_PASSWORD in .env}
+      # V29 迁移占位符：与运行账号同值，启动时把 awn_trading 密码对齐到部署配置
+      AWN_TRADING_DB_PASSWORD: ${AWN_TRADING_DB_PASSWORD:?set AWN_TRADING_DB_PASSWORD in .env}
+      # 情报独立数据源：受限情报角色 awn_intel（intelligence schema 读写、交易零权限）
+      AWN_INTEL_DB_USER: awn_intel
+      AWN_INTEL_DB_PASSWORD: ${AWN_INTEL_DB_PASSWORD:?set AWN_INTEL_DB_PASSWORD in .env}
+      # Flyway 迁移连接：需建表权限（V8–V10 建 intelligence schema 表、V12/V29 管角色），走引导账号
+      AWN_MIGRATE_DB_USER: awn_app
+      AWN_MIGRATE_DB_PASSWORD: ${AWN_DB_PASSWORD:?set AWN_DB_PASSWORD in .env}
       AWN_ADMIN_TOKEN: ${AWN_ADMIN_TOKEN:?set AWN_ADMIN_TOKEN in .env}
       AWN_API_TOKEN_SECRET: ${AWN_API_TOKEN_SECRET:?set AWN_API_TOKEN_SECRET in .env}
       AWN_REDIS_HOST: redis
@@ -85,8 +94,11 @@ services:
     restart: unless-stopped
     environment:
       AWN_DB_URL: jdbc:postgresql://postgresql:5432/awn
-      AWN_DB_USER: awn_app
-      AWN_DB_PASSWORD: ${AWN_DB_PASSWORD:?set AWN_DB_PASSWORD in .env}
+      # 运行账号=受限交易角色；worker 生产关闭 Flyway，无需迁移连接
+      AWN_DB_USER: awn_trading
+      AWN_DB_PASSWORD: ${AWN_TRADING_DB_PASSWORD:?set AWN_TRADING_DB_PASSWORD in .env}
+      AWN_INTEL_DB_USER: awn_intel
+      AWN_INTEL_DB_PASSWORD: ${AWN_INTEL_DB_PASSWORD:?set AWN_INTEL_DB_PASSWORD in .env}
       AWN_REDIS_HOST: redis
       SPRING_PROFILES_ACTIVE: prod
     depends_on:
@@ -100,10 +112,15 @@ services:
       POSTGRES_DB: awn
       POSTGRES_USER: awn_app
       POSTGRES_PASSWORD: ${AWN_DB_PASSWORD:?set in .env}
+      # init-intel.sh 从这里读情报角色密码（initdb 只在空卷首启执行）
+      AWN_INTEL_DB_PASSWORD: ${AWN_INTEL_DB_PASSWORD:?set in .env}
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # 情报独立 schema + 最小权限角色（应用启动前执行一次）
-      - ./config/postgres/init-intel.sql:/docker-entrypoint-initdb.d/10-init-intel.sql:ro
+      # 情报独立 schema + 最小权限角色（首启时由 wrapper 以 psql 变量注入密码执行；
+      # SQL 挂到 /opt/awn-init 是为了不被 entrypoint 当作 .sql 自动执行——
+      # 其密码是 psql 变量，没有 -v 传参会报错）
+      - ./config/postgres/init-intel.sql:/opt/awn-init/init-intel.sql:ro
+      - ./config/postgres/init-intel.sh:/docker-entrypoint-initdb.d/10-init-intel.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U awn_app -d awn"]
       interval: 10s

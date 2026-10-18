@@ -73,10 +73,13 @@ class IntelligenceIsolationTests extends AbstractPostgresIntegrationTest {
         }
     }
 
-    /** 以库属主（测试库超级用户）身份执行 init-intel.sql：幂等，可重复执行 */
+    /** 以库属主（测试库超级用户）身份执行 init-intel.sql：幂等，可重复执行。
+     *  脚本内密码为 psql 变量（:'intel_password'，部署由 init-intel.sh 注入），
+     *  JDBC 不能解析 psql 变量，执行前替换为测试常量。 */
     private void applyInitScriptAsOwner() throws Exception {
         Path script = locate("deploy/config/postgres/init-intel.sql");
-        String sql = Files.readString(script, StandardCharsets.UTF_8);
+        String sql = Files.readString(script, StandardCharsets.UTF_8)
+                .replace(":'intel_password'", "'" + INTEL_PASSWORD + "'");
         try (Connection owner = dataSource.getConnection(); Statement st = owner.createStatement()) {
             st.execute(sql);
         }

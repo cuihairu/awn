@@ -50,8 +50,9 @@ quality_status
 
 初期可以共享 PostgreSQL 实例，但应采用**独立的情报 Schema** 或清晰独立的表组，并使用单独的数据库访问权限：
 
-- 情报角色 `awn_intel` 只获得情报 schema 的最小权限；交易侧受限角色 `awn_trading` 已建立（V12 迁移 + `TradingRoleIsolationTests` 验证，9fbd92e），应用改连该角色属部署收紧步骤（见 `docs/deployment/production.md`）。
-  直接改连会因运行时单元未拆而中断情报读写；运行时 JPA 单元已按 [运行时账号收紧方案](/design/dual-datasource-split-plan) 拆分落地（2026-10-19，交易 / 情报两个 EntityManagerFactory 与事务管理器，`site.awn.shared.config.PersistenceConfig`），部署侧账号切换（S4）未做。
+- 情报角色 `awn_intel` 只获得情报 schema 的最小权限；交易侧受限角色 `awn_trading` 已建立（V12 迁移 + `TradingRoleIsolationTests` 验证，9fbd92e）。
+  运行时 JPA 单元已按 [运行时账号收紧方案](/design/dual-datasource-split-plan) 拆分并落地（2026-10-19，交易 / 情报两个 EntityManagerFactory 与事务管理器，`site.awn.shared.config.PersistenceConfig`）；
+  部署侧账号切换已完成：api/worker 交易源连 `awn_trading`、情报源连 `awn_intel`，Flyway 迁移连接单独走 `awn_app`（见 `docs/deployment/production.md`）。
 - 情报 Worker 的数据库角色**不能写入**订单、库存、支付和退款表。
 - 情报接口只向页面提供经过标准化的观察结果和分析数据。
 - 交易商品的价格与库存仍由交易服务决定。

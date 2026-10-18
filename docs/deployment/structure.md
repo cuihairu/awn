@@ -20,11 +20,12 @@ Docker Compose
 
 | 变量 | 用途 |
 |------|------|
-| `AWN_DB_PASSWORD` | PostgreSQL 密码（api/worker 共用） |
+| `AWN_DB_PASSWORD` | PostgreSQL 引导账号 `awn_app` 密码（postgresql 容器 + Flyway 迁移连接） |
+| `AWN_TRADING_DB_PASSWORD` | 交易角色 `awn_trading` 密码（api/worker 主源 + `V29` 迁移占位符同源引用） |
+| `AWN_INTEL_DB_PASSWORD` | 情报角色 `awn_intel` 密码（initdb 建号 + api/worker 情报源同源引用） |
 | `AWN_ADMIN_TOKEN` | 运营接口令牌（**必填**，Compose 以 `:?` 强制，缺失拒绝启动） |
 | `AWN_API_TOKEN_SECRET` | 买家 / 卖家 Bearer token 的 HMAC 密钥（**必填**，至少 32 字节） |
 | `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | 对象存储凭证 |
-| `AWN_INTEL_PASSWORD` | 情报库角色密码（与 `init-intel.sql` 占位同步） |
 | `AWN_RATELIMIT_STORE` | 管理面限流存储（可选；Compose 默认 `redis`，本地/测试默认 `memory`） |
 
 前端可以独立构建与部署；API 和 Worker 共享后端代码，但使用不同启动配置和任务开关。
@@ -40,12 +41,11 @@ Docker Compose
 
 ## 秘密管理
 
-密钥只走 `deploy/.env`（`.gitignore` 已排除，不入库）。两处入库文件含占位密码，部署前必须替换为 `.env` 中的真实值：
+密钥只走 `deploy/.env`（`.gitignore` 已排除，不入库）。数据库账号密码不再以占位值写死在入库文件里，全部由 `.env` 经环境变量注入：
 
-| 文件 | 占位值 |
-|---|---|
-| `config/postgres/init-intel.sql` | `change-me-intel-password` |
-| `db/migration/V12__trading_role.sql` | `change-me-trading-password` |
+- `awn_app`（引导超管）：`POSTGRES_PASSWORD` ← `AWN_DB_PASSWORD`；应用不再以它运行。
+- `awn_trading`（交易运行账号）：`V12` 建号、`V29` 以 Flyway 占位符按 `AWN_TRADING_DB_PASSWORD` 重设。
+- `awn_intel`（情报运行账号）：空卷首启时 `init-intel.sh` 以 psql 变量按 `AWN_INTEL_DB_PASSWORD` 建号。
 
 ## 运维要求
 

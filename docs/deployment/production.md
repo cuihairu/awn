@@ -18,31 +18,40 @@
 
 | 变量 | 用途 | 生产要求 |
 |---|---|---|
-| `AWN_DB_PASSWORD` | PostgreSQL `awn_app` 账号密码 | 强随机；api/worker/postgresql 三处同源引用 |
+| `AWN_DB_PASSWORD` | PostgreSQL 引导账号 `awn_app` 密码 | 强随机；postgresql 容器与 Flyway 迁移连接同源引用，应用运行时不使用 |
+| `AWN_TRADING_DB_PASSWORD` | 交易运行账号 `awn_trading` 密码 | 强随机；api/worker 主源与 `V29` 迁移占位符同源引用 |
+| `AWN_INTEL_DB_PASSWORD` | 情报运行账号 `awn_intel` 密码 | 强随机；initdb 建号与 api/worker 情报源同源引用 |
 | `RUSTFS_SECRET_KEY` | 对象存储密钥 | 强随机 |
-| `AWN_INTEL_PASSWORD` | 情报角色 `awn_intel` 密码 | 强随机；与 `config/postgres/init-intel.sql` 中占位密码一致 |
 | `AWN_ADMIN_TOKEN` | 运营接口令牌 | 必填；Compose 与 `prod` profile 缺失时拒绝启动，不回落开发默认值 |
 | `AWN_API_TOKEN_SECRET` | 买家 / 卖家 Bearer token 的 HMAC 密钥 | 必填；至少 32 字节，轮换会使现有 token 失效 |
 | `CENTRAL_MIRROR` | Maven 镜像（可选） | 仅出口受限环境需要 |
 
-同时修改两处仓库内文件（不入库的改动自行保管）：
+三个数据库账号密码全部由 `.env` 注入，不再改仓库内文件（三个变量在 Compose 里均以 `:?` 强制，缺失即拒绝启动）。唯一还需修改的仓库内文件：
 
-1. `config/postgres/init-intel.sql`：把 `change-me-intel-password` 换成与 `.env` 一致的真实密码。
-2. `config/caddy/Caddyfile`：把域名占位换成真实域名。
+1. `config/caddy/Caddyfile`：把域名占位换成真实域名。
 
 ## 首次部署
 
 ```bash
 cd deploy
 cp .env.example .env            # 填密钥（见上表）
-# 修改 init-intel.sql 密码、Caddyfile 域名
+# 修改 config/caddy/Caddyfile 域名
 docker compose up -d --build
 docker compose ps               # 等 awn-api / postgresql healthy
 curl -s http://127.0.0.1:18080/actuator/health   # 预期 {"status":"UP",...}
 ```
 
-空库首次启动时 Flyway 自动执行全部迁移（`select max(version) from flyway_schema_history` 可核）；
-`init-intel.sql` 由 postgres 容器初始化钩子执行，建立 `intelligence` schema 与 `awn_intel` 最小权限角色。
+空库首次启动的初始化顺序（postgres 容器 initdb 钩子 → api 进程）：
+
+1. `10-init-intel.sh`（`docker-entrypoint-initdb.d`，仅空卷首启执行）以 psql 变量把
+   `AWN_INTEL_DB_PASSWORD` 注入 `init-intel.sql`，建 `intelligence` schema 与最小权限角色 `awn_intel`。
+2. Flyway 以引导账号 `awn_app` 执行全部迁移（`select max(version) from flyway_schema_history` 可核）：
+   `V12` 建受限交易角色 `awn_trading`，`V29` 按其密码占位符对齐到 `AWN_TRADING_DB_PASSWORD`。
+3. api / worker 才启动：交易数据源以 `awn_trading`、情报数据源以 `awn_intel`、
+   Flyway 以 `awn_app`，三者互不代用。
+
+角色创建幂等但**只有空卷首启执行一次**：已初始化的卷重跑 compose 不会重建角色，
+轮换 `AWN_INTEL_DB_PASSWORD` 需要重跑容器初始化脚本（见下「备份与恢复」）。
 
 ## 日常升级
 
@@ -74,8 +83,11 @@ docker compose up -d --no-deps --force-recreate api worker
 - 破坏性变更（删列、改类型、大批量 UPDATE）前手动加一次备份。
 - 恢复目标：同版本 PostgreSQL（16-alpine）+ 同版本应用镜像。
 - 三个必须知道的坑（2026-10-13 演练实测）：
-  1. **角色不随 dump 走**：恢复后要重跑 `deploy/config/postgres/init-intel.sql` 补 `awn_intel`，
-     否则跨 schema 授权缺失（restore 日志 `role "awn_intel" does not exist`）。
+  1. **角色不随 dump 走**：角色是集群级对象，`pg_dump -Fc` 不含角色定义；恢复后要补回
+     `awn_intel`（以 psql 变量注入密码重跑 `init-intel.sql`，容器内路径 `/opt/awn-init/init-intel.sql`）
+     与 `awn_trading`（`V12` / `V29` 已登记在 `flyway_schema_history` 不会自动重放，需手工重跑），
+     否则跨 schema 授权缺失（restore 日志 `role "awn_intel" does not exist`）或应用连不上库；
+     平时用 `pg_dumpall --globals-only` 单独备份角色可免此坑。
   2. **`flyway_schema_history.version` 是文本**：`max(version)` 会把 `'9'` 判为最新，
      必须按 `installed_rank` 校验迁移状态。
   3. 对账不覆盖 `total` 与 ADJUST 流水累计，恢复后的台账一致性要单独查（见压测报告）。
@@ -92,13 +104,15 @@ docker compose up -d --no-deps --force-recreate api worker
 
 ## 已知限制与加固清单
 
-1. **应用账号即实例引导超级用户**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号
-   不受 schema 权限约束（`awn_intel → 交易表` 零权限方向不受影响）。
-   受限交易角色已落地：`V12__trading_role.sql` 建 `awn_trading`（仅交易表组读写、无 CREATE、
-   对 `intelligence` schema 零权限），验证见 `TradingRoleIsolationTests`；其占位密码
-   `change-me-trading-password` 必须在部署前替换。
-   剩余收紧：独立管理员账号做初始化，Flyway 以管理员执行、api/worker 改连 `awn_trading`
-   （见 deploy/README「关键约束」）。
+1. **数据库账号已收紧（2026-10-19 落地）**：api/worker 不再以实例引导超级用户运行。
+   交易数据源走 `awn_trading`（`V12__trading_role.sql` 建，仅交易表组读写、无 CREATE、
+   对 `intelligence` schema 零权限，密码由 `V29` 按 `AWN_TRADING_DB_PASSWORD` 注入，
+   验证见 `TradingRoleIsolationTests`）；情报数据源走 `awn_intel`
+   （`intelligence` 读写、交易表零权限，验证见 `IntelligenceIsolationTests`）。
+   运行时 JPA 已按数据源拆成两个实体单元，见 [运行时账号收紧方案](../design/dual-datasource-split-plan)。
+   **剩余收紧**：Flyway 迁移连接仍用引导账号 `awn_app`（建表与管角色需要高权限，属设计内口径，
+   见上述方案 S3）；若要求迁移也不碰超管，需另行收敛迁移账号。
+   另注：空卷初始化只在首启发生，**卷已存在时轮换情报密码不会自动生效**，需手工重跑 `init-intel.sql`。
 2. **管理面令牌必须配置**（见密钥表）；泄露后更换令牌只需改 `.env` 重建 api/worker。
    管理面口径：`/api/v1/admin/**` 与专场管理写操作（`POST /api/v1/campaigns**`）都需要 `X-Admin-Token`，
    公开读（`GET /api/v1/campaigns**`）不需要。鉴权通过后按资源组限流（默认 100 次/60s），超限 429；
