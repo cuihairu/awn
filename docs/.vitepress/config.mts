@@ -48,6 +48,7 @@ export default withMermaid(
             { text: 'UI 设计系统', link: '/design/ui-system' },
             { text: '3D 座位图方案', link: '/design/seatmap-3d-plan' },
             { text: '场馆布局数据模型', link: '/design/venue-layout-schema' },
+            { text: '运行时账号收紧方案', link: '/design/dual-datasource-split-plan' },
             { text: 'Logo 候选方案', link: '/design/logo-candidates' },
           ],
         },
