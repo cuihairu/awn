@@ -2,8 +2,6 @@ package site.awn.worker;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.persistence.autoconfigure.EntityScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -20,8 +18,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "site.awn")
-@EntityScan(basePackages = "site.awn")
-@EnableJpaRepositories(basePackages = "site.awn")
 public class AwnWorkerApplication {
 
     public static void main(String[] args) {

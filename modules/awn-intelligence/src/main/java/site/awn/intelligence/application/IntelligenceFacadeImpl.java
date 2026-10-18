@@ -64,7 +64,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional
+    @Transactional("intelTransactionManager")
     public SourceView registerSource(CreateSourceCommand command) {
         SourceKind kind;
         try {
@@ -81,14 +81,14 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(value = "intelTransactionManager", readOnly = true)
     public SourceView sourceOf(String sourceNo) {
         return sources.findBySourceNo(sourceNo).map(this::toView)
                 .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
     }
 
     @Override
-    @Transactional
+    @Transactional("intelTransactionManager")
     public CollectReport collect(String sourceNo) {
         DataSource source = sources.findBySourceNo(sourceNo)
                 .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
@@ -134,7 +134,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
      * 下轮重采（来源内去重保证幂等）。停用来源跳过；手动单源采集不受限。
      */
     @Override
-    @Transactional
+    @Transactional("intelTransactionManager")
     public CollectAllReport collectAll() {
         List<CollectReport> reports = new ArrayList<>();
         int failed = 0;
@@ -152,7 +152,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional
+    @Transactional("intelTransactionManager")
     public SourceView disableSource(String sourceNo) {
         DataSource source = sources.findBySourceNo(sourceNo)
                 .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
@@ -161,7 +161,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional
+    @Transactional("intelTransactionManager")
     public SourceView enableSource(String sourceNo) {
         DataSource source = sources.findBySourceNo(sourceNo)
                 .orElseThrow(() -> new SourceNotFoundException("source not found: " + sourceNo));
@@ -170,7 +170,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(value = "intelTransactionManager", readOnly = true)
     public List<PricePointView> priceHistoryOf(String productCode) {
         Map<Long, DataSource> sourceCache = new HashMap<>();
         return history.findByProductCodeOrderByObservedAtDesc(productCode).stream()
@@ -180,7 +180,7 @@ public class IntelligenceFacadeImpl implements IntelligenceFacade {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(value = "intelTransactionManager", readOnly = true)
     public List<PricePointView> priceHistoryOfSessions(Collection<String> sessionCodes) {
         if (sessionCodes == null || sessionCodes.isEmpty()) {
             return List.of();

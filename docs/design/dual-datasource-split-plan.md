@@ -1,7 +1,8 @@
-# 运行时账号收紧：双数据源 / JPA 单元拆分方案（待拍板，未实现）
+# 运行时账号收紧：双数据源 / JPA 单元拆分方案（已代决按 A 推进，S1 已落地）
 
 解决审核表一 P1「API / Worker 使用 PostgreSQL 引导超级用户」（`todo.md` 审核整改条 表一 P1）。
-本文件是**设计与分期方案**，未落任何实现；开工需用户拍板。可推翻：删掉本文件即回卡点。
+2026-10-19 巡检推进单授权代决：**按方案 A（S1–S4）推进**，S3 迁移角色收敛本期不做；
+S1 已落地（见下），S4（部署账号切换）未做。回滚口径见各阶段。
 
 ## 卡点现状（证据，2026-10-19 复核）
 
@@ -32,39 +33,38 @@
 
 ## 方案 A 分期
 
-### S1：情报 JPA 单元独立（无行为变化）
+### S1：情报 JPA 单元独立（无行为变化）【已落地 2026-10-19】
 
-- 新增配置类（建议置于 `modules/awn-shared` 或应用装配层）：
-  - `intelEntityManagerFactory`：`@EntityScan` + `@EnableJpaRepositories` 限 `site.awn.intelligence`，绑定 intel 数据源；
-  - `intelTransactionManager`；交易单元显式排除 `site.awn.intelligence`；
-  - `IntelligenceFacadeImpl` 改 `@Transactional("intelTransactionManager")`（5 处同改）。
-- 默认连接参数不变（两源同 URL 同账号），因此**行为完全不变**，仅验证装配正确。
-- 验收：`AwnApiApplicationTests` / `ModularityTests` / `IntelligenceModuleTests` 全绿。
-- 回滚：删配置类 + 还原事务注解，无数据变更。
+- 实际落地（与原稿的差异：S1 只拆单元，第二数据源并入 S4，两单元暂共用主数据源，运行行为等价）：
+  - 新增 `modules/awn-shared/src/main/java/site/awn/shared/config/PersistenceConfig.java`：显式声明交易 / 情报两个 `EntityManagerFactory`、两个 `JpaTransactionManager` 与两个 `@EnableJpaRepositories` 扫描器。必须全部显式声明的原因：Boot 4.1 的 `JpaBaseConfiguration` 对 `LocalContainerEntityManagerFactoryBean` / `TransactionManager` 均带 `@ConditionalOnMissingBean` 回退，而任一 `@EnableJpaRepositories` 存在又会整体关闭仓库自动装配（`DataJpaRepositoriesAutoConfiguration` 的 `@ConditionalOnMissingBean(JpaRepositoryConfigExtension)`）。
+  - 交易 EMF 用 `setManagedClassNameFilter` 排除 `site.awn.intelligence.*` 实体——Spring 7 的 `@EntityScan` 只收集包名（`EntityScanPackages.getPackageNames()`），没有 excludeFilters 通道。
+  - 交易仓库扫描器用 `@ComponentScan.Filter(REGEX)` 排除情报仓库，避免与情报扫描器重复注册。
+  - `AwnWorkerApplication` 移除 `@EntityScan` / `@EnableJpaRepositories`（改由 PersistenceConfig 统一装配）。
+  - `IntelligenceFacadeImpl` 全部 8 处 `@Transactional` 指定 `intelTransactionManager`。
+- 验收：新增 `apps/awn-api/src/test/java/site/awn/persistence/PersistenceUnitSplitTests.java`（4 项断言：交易单元不含 intelligence 实体且仍映射交易实体；情报单元恰好映射 4 个 intelligence 实体；intel 事务管理器挂在情报单元；情报服务事务注解绑定 intel 事务管理器）+ 全量测试套件（api/worker 及全部上游模块）。
+- 回滚：删 PersistenceConfig + 还原事务注解与 AwnWorkerApplication 注解，无数据变更。
 
-### S2：受限账号接入集成测试（先补测试）
+### S2：受限账号接入集成测试
 
-- 测试侧把 `IntelligenceIsolationTests.applyInitScriptAsOwner` 的建角色逻辑抽成共用测试工具，两个应用进程在测试容器内以 `awn_trading` / `awn_intel` 分别连接：
-  - intel 数据源 → `awn_intel`；交易数据源 → `awn_trading`。
-- 新增断言（先于 S3 实现）：
+- 结构断言部分已随 S1 落地（`PersistenceUnitSplitTests`：单元映射边界 + 情报事务管理器绑定）。
+- 账号断言部分仍待 S4 一起做：两个应用进程在测试容器内以 `awn_trading` / `awn_intel` 分别连接（复用 `IntelligenceIsolationTests.applyInitScriptAsOwner` 的建角色逻辑），补应用路径断言：
   1. 以 intel 连接跑一次 `collectAll` + 价格历史查询成功；
   2. 以交易连接跑一条下单→支付→回调→履约链路成功；
-  3. 负向：交易模块任何写入经 intel 连接失败（现有权限测试已覆盖，补一条应用路径断言）。
-- 验收：上述用例在 S1 之上变绿。
+  3. 负向：交易模块写入经 intel 连接失败（权限层已由 `IntelligenceIsolationTests` 覆盖，此处补应用路径）。
 - 回滚：测试内连接参数还原。
 
-### S3：迁移执行者与运行账号分离
+### S3：迁移执行者与运行账号分离【已代决：本期不做】
 
-- Flyway 只挂主数据源；主连接需要一个同时持有 `public` 与 `intelligence` 建对象权限的**非超管**迁移角色（新增迁移 V29 建 `awn_migration` 并授两 schema CREATE/USAGE，避免继续用超管跑迁移）。
-- 交易单元保留 `ddl-auto: validate`（仅校验 public）；intel 单元单独 validate `intelligence`。
-- 验收：空库启动演练（`AwnApiApplicationTests` 口径）在受限账号下迁移通过；`TradingRoleIsolationTests` / `IntelligenceIsolationTests` 全绿。
-- 回滚：V29 无破坏性，账号引用改回 `awn_app` 即回现状。
+- 已代决维持方案 A 原口径：**迁移轨不拆**，仍由高权限连接（`awn_app`）执行；V29 迁移角色收敛延后，避免改动已应用的迁移轨。
+- S4 切换运行账号后，Flyway 必须继续走高权限连接（见 S4 第 2 条），因此本阶段不阻塞 S4。
 
-### S4：部署切换与验收
+### S4：部署切换与验收【未做，开工前置条件已探明】
 
-- `deploy/docker-compose.yml`：api / worker 主源改 `AWN_DB_USER: awn_trading`，新增 intel 数据源连接 `awn_intel`；`.env.example` / `deploy/README.md` / `docs/deployment/structure.md` / `docs/deployment/production.md` 同步（含 `AWN_INTEL_PASSWORD` 与运行账号关系说明）。
-- 生产收紧完成口径写入 `docs/architecture/intelligence-isolation.md`（当前该文件仍写「应用改连该角色属部署收紧步骤」）。
-- 验收：compose 冒烟 + `TradingRoleIsolationTests` + `IntelligenceIsolationTests` + 一次空库演练；随后才能勾选 `todo.md` 审核整改 表一 P1。
+1. 第二数据源接入：新增 `spring.intel-datasource`（url/user/password，默认回退主源同值），情报 EMF / 情报事务管理器改绑 intel 源；因定义第二个 `DataSource` bean 会触发 Boot `DataSourceAutoConfiguration` 回退，需同时显式声明主源（`DataSourceProperties` + `initializeDataSourceBuilder`，`spring.datasource.*` 绑定不变）。
+2. **迁移连接独立配置**（2026-10-19 补充发现）：`awn_trading` 对 `intelligence` 零权限且无 CREATE，无法执行 V8–V10 的 intelligence 建表；切换后 Flyway 必须经 `spring.flyway.url/username/password` 继续以 `awn_app` 连接，否则空库初始化直接失败。
+3. 账号密码来源：`awn_intel` 密码当前硬编码在 `deploy/config/postgres/init-intel.sql`（`change-me-intel-password`），切换前须改为环境变量注入（initdb 改 shell 包装或 psql 变量）并同步 `IntelligenceIsolationTests` 的密码常量；`V12__trading_role.sql` 的 `awn_trading` 密码来源同样需核对（已应用迁移不可改，密码经 `ALTER ROLE` 由部署侧管理）。
+4. `deploy/docker-compose.yml`：api / worker 主源改 `AWN_DB_USER: awn_trading`，新增 intel 源 `awn_intel` 与 flyway 源 `awn_app` 的连接变量；`.env.example` / `deploy/README.md` / `docs/deployment/structure.md` / `docs/deployment/production.md` 同步。
+5. 验收：compose 空库冒烟（initdb 建 `awn_intel`、V12 建 `awn_trading`、迁移以 `awn_app` 通过、两应用以受限账号启动）+ `TradingRoleIsolationTests` + `IntelligenceIsolationTests`；随后才能勾选 `todo.md` 审核整改 表一 P1。
 
 ## 风险与取舍
 
@@ -74,10 +74,10 @@
 - **`awn_intel` 由容器初始化脚本创建**，非迁移轨对象；S1–S3 的测试夹具必须显式执行 `init-intel.sql`（现状 `IntelligenceIsolationTests` 已如此）。
 - 测试矩阵扩大后本地与 CI 时长会上升，可在 `docs/testing/checklist.md` 记录实测增量。
 
-## 待用户拍板
+## 拍板记录（2026-10-19，依巡检推进单代决）
 
-1. 是否按方案 A 推进（S1–S4）？
-2. S3 是否本期内做迁移角色收敛（新增 V29），还是先接受「迁移仍由超管执行、运行账号受限」？
-3. 是否允许在本仓引入第二数据源装配（`spring.datasource` 命名空间新增 intel 段）？
+1. **按方案 A 推进（S1–S4）**：已代决采纳；S1 已落地，S4 待做（前置条件见 S4 节）。
+2. **S3 迁移角色收敛（V29）**：本期不做，迁移仍由高权限连接执行（方案 A 原口径），后续可另起一期。
+3. **第二数据源装配**：允许，命名空间定为 `spring.intel-datasource`，随 S4 一起接入（S1 先共用主源，行为等价）。
 
-拍板前不动代码；本方案不改任何业务代码，仅作设计留档。
+推翻方式：S1 为纯装配变更，还原 `PersistenceConfig`、`IntelligenceFacadeImpl` 事务注解与 `AwnWorkerApplication` 注解即回原状；S4 改动均可通过 `.env` 账号回退。
