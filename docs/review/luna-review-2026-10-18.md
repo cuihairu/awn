@@ -372,7 +372,7 @@ deploy/README.md:21:# 修改 config/caddy/Caddyfile 中的域名占位
 deploy/README.md:53:- **账号权限现状**：compose 的 `POSTGRES_USER: awn_app` 使 api/worker 运行账号即实例引导超级用户——超级用户不受权限检查约束，可读写 `intelligence` schema（`awn_intel → 交易表` 方向的零权限不受影响）。受限交易角色 `awn_trading` 已由 `V12__trading_role.sql` 建立（仅业务表读写、无 CREATE、情报 schema 零权限，验证见 `TradingRoleIsolationTests`）。生产收紧路径：用独立管理员账号执行初始化，api/worker 改连 `awn_trading`，Flyway 以管理员账号执行，并替换 `awn_trading` 与 `awn_intel` 的占位密码。
 packages/campaign-renderer/src/renderer.tsx:53:  // 素材红线：只渲染 alt 文本占位块，图片 URL 为空时不输出 img
 packages/campaign-renderer/src/renderer.tsx:81:  // 渲染层只留占位框；真实嵌入由接入方以受控 URL 决定，不渲染任意 iframe
-packages/campaign-renderer/src/renderer.tsx:85:      <div className="sunken state" role="img" aria-label="视频占位">
+packages/campaign-renderer/src/renderer.tsx:85:      &lt;div className="sunken state" role="img" aria-label="视频占位">
 packages/campaign-renderer/src/renderer.tsx:86:        {textOf(section.props, 'description') || '视频占位'}
 packages/campaign-renderer/src/renderer.tsx:115:  // 票档数据经 ticket-components 的 TierCard 渲染，此处只做占位结构展示
 packages/campaign-renderer/test/renderer.test.tsx:110:  it('renders image placeholder instead of img when src is missing', () => {
@@ -411,45 +411,45 @@ docs/design/star-catalog.md:135:- **明星管理**：列表 / 新建 / 编辑 / 
 docs/design/star-catalog.md:161:2. 照片只允许三类来源：权方书面授权的官方宣传照（记录来源 URL 与授权方式）、自有拍摄、明确标注的占位图。
 docs/design/star-catalog.md:162:3. **缺图一律占位**：中性人形剪影（纯色几何，带「示意图」标注，复用原型 `demo-note` 机制）；绝不用生成人脸顶替。
 docs/design/star-catalog.md:163:4. 授权字段（来源 / 状态 / 录入人）缺失的图片，系统按占位图展示，不进入公开 API。
-docs/design/prototypes/mobile/purchase-flow.html:69:            <input class="input" type="search" placeholder="搜索演出 / 场馆 / 艺人" aria-label="搜索演出">
-docs/design/prototypes/mobile/purchase-flow.html:287:              <span class="hint">脱敏占位，仅作示例；用于入场核验</span></div>
-docs/design/prototypes/mobile/purchase-flow.html:379:            <div class="subtle" style="font-size:var(--fs-xs);">电子票码（占位为几何图案 · 示例）</div>
-docs/design/prototypes/mobile/purchase-flow.html:380:            <div class="ticket-code" role="img" aria-label="电子票二维码占位，几何图案"></div>
-docs/design/prototypes/mobile/seatmap-mobile.html:218:          <div class="desc">该分区座位尚未开售，去看看其他分区</div>
-docs/design/prototypes/mobile/miniprogram.html:87:            <input class="input" type="search" style="min-height:36px; flex:1;" placeholder="搜索演出 / 场馆" aria-label="搜索演出">
-docs/design/prototypes/mobile/miniprogram.html:178:            <div class="map-box mini-map" role="img" aria-label="场馆位置示意图（网格占位）" style="margin-top:var(--space-sm);">
-docs/design/prototypes/mobile/miniprogram.html:201:      <div class="caption">② 活动详情 · 地址坐标 + 地图占位</div>
-docs/design/prototypes/mobile/miniprogram.html:289:              <span class="hint">脱敏占位，仅作示例；用于入场核验</span></div>
-docs/design/prototypes/index.html:107:      <p class="muted" style="font-size:var(--fs-sm)">· 不生成明星肖像、照片或品牌 logo 代餐——文字占位 + 纯色/几何装饰</p>
-docs/design/prototypes/index.html:117:      <p class="muted" style="font-size:var(--fs-sm)">4. 3D 原型：等 2D 过目后再做（当前仅为线框示意占位）</p>
+docs/design/prototypes/mobile/purchase-flow.html:69:            &lt;input class="input" type="search" placeholder="搜索演出 / 场馆 / 艺人" aria-label="搜索演出">
+docs/design/prototypes/mobile/purchase-flow.html:287:              &lt;span class="hint">脱敏占位，仅作示例；用于入场核验&lt;/span>&lt;/div>
+docs/design/prototypes/mobile/purchase-flow.html:379:            &lt;div class="subtle" style="font-size:var(--fs-xs);">电子票码（占位为几何图案 · 示例）&lt;/div>
+docs/design/prototypes/mobile/purchase-flow.html:380:            &lt;div class="ticket-code" role="img" aria-label="电子票二维码占位，几何图案">&lt;/div>
+docs/design/prototypes/mobile/seatmap-mobile.html:218:          &lt;div class="desc">该分区座位尚未开售，去看看其他分区&lt;/div>
+docs/design/prototypes/mobile/miniprogram.html:87:            &lt;input class="input" type="search" style="min-height:36px; flex:1;" placeholder="搜索演出 / 场馆" aria-label="搜索演出">
+docs/design/prototypes/mobile/miniprogram.html:178:            &lt;div class="map-box mini-map" role="img" aria-label="场馆位置示意图（网格占位）" style="margin-top:var(--space-sm);">
+docs/design/prototypes/mobile/miniprogram.html:201:      &lt;div class="caption">② 活动详情 · 地址坐标 + 地图占位&lt;/div>
+docs/design/prototypes/mobile/miniprogram.html:289:              &lt;span class="hint">脱敏占位，仅作示例；用于入场核验&lt;/span>&lt;/div>
+docs/design/prototypes/index.html:107:      &lt;p class="muted" style="font-size:var(--fs-sm)">· 不生成明星肖像、照片或品牌 logo 代餐——文字占位 + 纯色/几何装饰&lt;/p>
+docs/design/prototypes/index.html:117:      &lt;p class="muted" style="font-size:var(--fs-sm)">4. 3D 原型：等 2D 过目后再做（当前仅为线框示意占位）&lt;/p>
 modules/awn-shared/src/main/resources/db/migration/V18__star_catalog_tables.sql:3:-- 首版照片直接存授权图片 URL；photo_source 为空时 facade 不透出 photo_url（按占位图渲染）。
-docs/design/prototypes/admin/orders.html:233:        <div class="desc">订单列表正在拉取（GET /api/v1/admin/orders），骨架屏占位。</div>
-docs/design/prototypes/admin/orders.html:240:        <span>「麦芒」三角标为几何占位，非最终 logo</span>
+docs/design/prototypes/admin/orders.html:233:        &lt;div class="desc">订单列表正在拉取（GET /api/v1/admin/orders），骨架屏占位。&lt;/div>
+docs/design/prototypes/admin/orders.html:240:        &lt;span>「麦芒」三角标为几何占位，非最终 logo&lt;/span>
 modules/awn-shared/src/main/resources/db/migration/V22__order_disputes.sql:38:-- 同订单至多一张在途争议（OPEN/UNDER_REVIEW），终态不占位
 modules/awn-shared/src/main/resources/db/migration/V20__waitlist.sql:28:-- 同用户同池占用位次判重（排队中与已递补都算占位）
-docs/design/prototypes/admin/inventory.html:232:            <input class="input num" id="adj-qty" name="delta" type="number" inputmode="numeric" placeholder="正数加库存 / 负数减库存，如 +120">
-docs/design/prototypes/admin/inventory.html:237:            <textarea class="textarea" id="adj-reason" name="reason" required aria-required="true" placeholder="例：10-13 实物盘点，看台B盘盈 120 张，附盘点单 PD-20261013-07"></textarea>
-docs/design/prototypes/admin/inventory.html:260:        <span>「麦芒」三角标为几何占位，非最终 logo</span>
+docs/design/prototypes/admin/inventory.html:232:            &lt;input class="input num" id="adj-qty" name="delta" type="number" inputmode="numeric" placeholder="正数加库存 / 负数减库存，如 +120">
+docs/design/prototypes/admin/inventory.html:237:            &lt;textarea class="textarea" id="adj-reason" name="reason" required aria-required="true" placeholder="例：10-13 实物盘点，看台B盘盈 120 张，附盘点单 PD-20261013-07">&lt;/textarea>
+docs/design/prototypes/admin/inventory.html:260:        &lt;span>「麦芒」三角标为几何占位，非最终 logo&lt;/span>
 modules/awn-order/src/main/java/site/awn/order/domain/WaitlistStatus.java:13:    /** 排队中（占位，不占库存） */
 modules/awn-order/src/main/java/site/awn/order/domain/WaitlistStatus.java:39:    /** 是否仍占位（同用户同池不可重复排队） */
 modules/awn-order/src/main/java/site/awn/order/domain/OrderDispute.java:18: * 买家只能撤回尚未受理的争议。争议是订单旁路记录，不阻塞订单状态机。
 modules/awn-order/src/main/java/site/awn/order/domain/OrderDispute.java:119:    /** 买家撤回：仅尚未受理的争议可撤；已受理只能由平台裁决关闭 */
-modules/awn-campaign/src/main/java/site/awn/campaign/api/CampaignAssetView.java:6: * <p>素材红线：url 只能指向有授权来源或明确标注的占位图，本模块不生成图、不代餐 logo；
+modules/awn-campaign/src/main/java/site/awn/campaign/api/CampaignAssetView.java:6: * &lt;p>素材红线：url 只能指向有授权来源或明确标注的占位图，本模块不生成图、不代餐 logo；
 modules/awn-campaign/src/main/java/site/awn/campaign/api/CampaignAssetView.java:7: * altText 缺失时前端出占位块（见 docs/api/contracts.md「专场列表与内容接口」）。
-docs/design/prototypes/admin/session-config.html:150:          <div class="map-box" role="img" aria-label="场馆位置示意：上海国际赛车场（离线静态图占位）">
-docs/design/prototypes/admin/session-config.html:314:        <span>「麦芒」三角标为几何占位，非最终 logo</span>
-docs/design/prototypes/admin/anomalies.html:186:        <span>「麦芒」三角标为几何占位，非最终 logo</span>
-docs/design/prototypes/web/home.html:41:      <input class="input" style="max-width:360px" type="search" placeholder="搜索活动、场馆、艺人…">
-docs/design/prototypes/web/activity-zcx.html:59:      <div class="demo-note">原型 · 文字占位 · 不使用艺人肖像素材</div>
+docs/design/prototypes/admin/session-config.html:150:          &lt;div class="map-box" role="img" aria-label="场馆位置示意：上海国际赛车场（离线静态图占位）">
+docs/design/prototypes/admin/session-config.html:314:        &lt;span>「麦芒」三角标为几何占位，非最终 logo&lt;/span>
+docs/design/prototypes/admin/anomalies.html:186:        &lt;span>「麦芒」三角标为几何占位，非最终 logo&lt;/span>
+docs/design/prototypes/web/home.html:41:      &lt;input class="input" style="max-width:360px" type="search" placeholder="搜索活动、场馆、艺人…">
+docs/design/prototypes/web/activity-zcx.html:59:      &lt;div class="demo-note">原型 · 文字占位 · 不使用艺人肖像素材&lt;/div>
 modules/awn-star/src/main/java/site/awn/star/domain/Person.java:18: * 否则公开视图按未收录处理（前端渲染占位图，不生成人脸）。
-docs/design/prototypes/web/activity-jay.html:62:    <div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff">原型 · 文字占位 · 不使用艺人肖像素材</div>
-docs/design/prototypes/web/activity-f1.html:92:    <p class="hint" style="margin-top:10px">素材红线：不使用明星肖像与车队/品牌 logo 素材，一律文字占位；真实素材待运营提供后替换。</p>
-modules/awn-star/src/main/java/site/awn/star/package-info.java:6: * 缺图一律占位，不生成人脸（素材红线见 docs/design/star-catalog.md §3）。</p>
-docs/design/prototypes/web/seatmap-2d.html:123:  <!-- 3D 状态（占位） -->
-docs/design/prototypes/web/seatmap-2d.html:126:      <h3 style="margin:0">3D 视图（P2 · 线框示意占位）</h3>
+docs/design/prototypes/web/activity-jay.html:62:    &lt;div class="demo-note" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff">原型 · 文字占位 · 不使用艺人肖像素材&lt;/div>
+docs/design/prototypes/web/activity-f1.html:92:    &lt;p class="hint" style="margin-top:10px">素材红线：不使用明星肖像与车队/品牌 logo 素材，一律文字占位；真实素材待运营提供后替换。&lt;/p>
+modules/awn-star/src/main/java/site/awn/star/package-info.java:6: * 缺图一律占位，不生成人脸（素材红线见 docs/design/star-catalog.md §3）。&lt;/p>
+docs/design/prototypes/web/seatmap-2d.html:123:  &lt;!-- 3D 状态（占位） -->
+docs/design/prototypes/web/seatmap-2d.html:126:      &lt;h3 style="margin:0">3D 视图（P2 · 线框示意占位）&lt;/h3>
 docs/design/prototypes/web/seatmap-2d.html:305:  /* 3D 切换占位 */
 modules/awn-inventory/src/main/java/site/awn/inventory/api/InventoryFacade.java:28:     * 商品尚未建池时返回空。
-modules/awn-event/src/main/java/site/awn/event/api/SessionVenueView.java:6: * <p>坐标缺失是正常态（场馆信息未录全）：latitude / longitude 为 null 时前端渲染占位，
+modules/awn-event/src/main/java/site/awn/event/api/SessionVenueView.java:6: * &lt;p>坐标缺失是正常态（场馆信息未录全）：latitude / longitude 为 null 时前端渲染占位，
 modules/awn-star/src/main/java/site/awn/star/api/PersonView.java:7: * 缺图 / 无授权来源一律按占位图渲染，公开面不透出来源细节）。
 modules/awn-event/src/main/java/site/awn/event/api/CreateVenueCommand.java:5: * 坐标缺省即「暂无坐标」，前端按占位渲染，不以 (0,0) 兜底。
 modules/awn-order/src/main/java/site/awn/order/infrastructure/WaitlistRepository.java:18:    /** 同用户同池占用位次判重（排队中与已递补都算占位） */
@@ -486,37 +486,37 @@ apps/web/lib/campaign-resolve.ts:309:  // 引用型 ID 未必是真实活动 ID�
 apps/web/lib/campaign-resolve.ts:315: * 按 section 类型解析为展示型 props；无公开数据源的模块明确标记待接入。
 apps/web/lib/campaign-resolve.ts:365:/** 待接入模块的中文标签（页面展示用，不发明后端没有的内容）。 */
 apps/miniprogram/src/pages/order-pay/index.tsx:10: * 沙箱环境无此配置，故「拉起微信支付」为显式占位，不伪造支付成功。
-apps/miniprogram/src/pages/order-pay/index.tsx:80:        <Text className="state">尚未发起支付。</Text>
+apps/miniprogram/src/pages/order-pay/index.tsx:80:        &lt;Text className="state">尚未发起支付。&lt;/Text>
 apps/admin/src/lib/admin-format.ts:102:/** 状态角标：待受理警示 / 受理中提示（待裁决）/ 已裁决成功；已撤回用默认样式 */
 apps/web/app/campaigns/[code]/page.tsx:29: *    查不到或未配置的内容模块标记待接入并显式说明，不渲染空白区块也不造假内容。
 apps/web/app/campaigns/[code]/page.tsx:83:              reason: section.reason ?? '内容待接入',
-apps/web/app/campaigns/[code]/page.tsx:149:        <p className="state">该专场尚未配置已发布内容。</p>
-apps/web/app/campaigns/[code]/page.tsx:156:          <h2>以下内容待接入</h2>
+apps/web/app/campaigns/[code]/page.tsx:149:        &lt;p className="state">该专场尚未配置已发布内容。&lt;/p>
+apps/web/app/campaigns/[code]/page.tsx:156:          &lt;h2>以下内容待接入&lt;/h2>
 apps/admin/src/App.tsx:105:              placeholder="awn-admin-dev-token"
 apps/miniprogram/src/pages/campaign/index.tsx:71:          placeholder="输入专场编码，如 CAMP-F1-2026"
-apps/miniprogram/src/pages/event/index.tsx:66:      {sessions.length === 0 && <Text className="state">该活动暂未开放场次。</Text>}
+apps/miniprogram/src/pages/event/index.tsx:66:      {sessions.length === 0 && &lt;Text className="state">该活动暂未开放场次。&lt;/Text>}
 apps/web/app/page.tsx:11: * 封面为几何占位（素材红线：不使用图像素材）；城市 / 距离排序待后端地理字段落地。
-apps/miniprogram/src/pages/session/index.tsx:94:      {sorted.length === 0 && <Text className="state">该场次暂未开放票档。</Text>}
-apps/web/app/checkout/page.tsx:271:          {products.length === 0 && <p className="muted">该场次暂未开放票档。</p>}
+apps/miniprogram/src/pages/session/index.tsx:94:      {sorted.length === 0 && &lt;Text className="state">该场次暂未开放票档。&lt;/Text>}
+apps/web/app/checkout/page.tsx:271:          {products.length === 0 && &lt;p className="muted">该场次暂未开放票档。&lt;/p>}
 apps/web/app/checkout/page.tsx:361:              placeholder="演示用：后端尚无登录态，userId 必填"
 apps/admin/src/views/SessionsView.tsx:290:              placeholder="https://assets.awn.site/venues/…"
-apps/admin/src/views/SeatsView.tsx:181:              <p className="state">该场次暂未铺座。</p>
+apps/admin/src/views/SeatsView.tsx:181:              &lt;p className="state">该场次暂未铺座。&lt;/p>
 apps/admin/src/views/SeatsView.tsx:200:              placeholder="如 prod-seat-a（须为目录内同场次商品）"
 apps/admin/src/views/SeatsView.tsx:212:              placeholder={'A,1,1\nA,1,2\nA,2,1'}
 apps/awn-api/src/test/java/site/awn/order/DisputeModuleTests.java:138:        // 撤回后可以再开：终态不占位
-apps/web/app/sessions/[id]/page.tsx:155:        {tiers.length === 0 && <p className="muted">该场次暂未开放票档。</p>}
-apps/miniprogram/src/pages/order-confirm/index.tsx:84:        <Input placeholder="用户 ID（登录联调前手填）" value={userId} onInput={(e) => setUserId(e.detail.value)} />
+apps/web/app/sessions/[id]/page.tsx:155:        {tiers.length === 0 && &lt;p className="muted">该场次暂未开放票档。&lt;/p>}
+apps/miniprogram/src/pages/order-confirm/index.tsx:84:        &lt;Input placeholder="用户 ID（登录联调前手填）" value={userId} onInput={(e) => setUserId(e.detail.value)} />
 apps/miniprogram/src/pages/order-confirm/index.tsx:86:          实名制字段后端下单接口暂未提供；联系人信息不参与本次请求。观看人须与证件一致，
 apps/awn-api/src/test/java/site/awn/intelligence/IntelligenceModuleTests.java:199:            // 首次运行尚未注册：无需恢复
 apps/web/app/stars/page.tsx:120:              placeholder="姓名 / 别名 / 原名"
 apps/admin/src/views/InventoryView.tsx:188:              placeholder="正数加库存 / 负数减库存，如 120"
 apps/admin/src/views/InventoryView.tsx:200:              placeholder="例：实物盘点盘盈 120 张，附盘点单号"
 apps/admin/src/views/InventoryView.tsx:212:              placeholder="如 cui"
-apps/web/app/events/[id]/page.tsx:107:          <p className="muted">该活动暂未开放场次。</p>
+apps/web/app/events/[id]/page.tsx:107:          &lt;p className="muted">该活动暂未开放场次。&lt;/p>
 apps/awn-api/src/test/java/site/awn/star/StarApiTests.java:268:        // 无图人物：photoUrl 为 null（前端按「未收录」渲染占位）
 apps/web/app/works/page.tsx:90:              placeholder="作品名"
 apps/awn-api/src/main/java/site/awn/api/AvailabilityResponse.java:8: * 商品尚未建池时 sellable 为 false、数量为 null（未开售）。
-apps/web/app/campaigns/page.tsx:69:                  <span>专场封面 · 几何占位</span>
+apps/web/app/campaigns/page.tsx:69:                  &lt;span>专场封面 · 几何占位&lt;/span>
 apps/web/app/orders/[orderNo]/page.tsx:110:    // 履约单只在支付后才存在：404 表示尚未进入履约，不是错误
 apps/web/app/orders/[orderNo]/page.tsx:577:                    placeholder={`退款金额（元，不超过 ${formatMinor(order?.payAmount ?? 0)}）`}
 apps/web/app/orders/[orderNo]/page.tsx:590:                  placeholder="发生了什么、期望如何解决（必填）"
@@ -692,114 +692,114 @@ modules/awn-order/src/main/java/site/awn/order/api/DisputeFacade.java:8: * 与�
     "vitest": "^5.0.4"
   }
 }
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+  &lt;modelVersion>4.0.0&lt;/modelVersion>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.1</version>
-    <relativePath/>
-  </parent>
+  &lt;parent>
+    &lt;groupId>org.springframework.boot&lt;/groupId>
+    &lt;artifactId>spring-boot-starter-parent&lt;/artifactId>
+    &lt;version>4.1.1&lt;/version>
+    &lt;relativePath/>
+  &lt;/parent>
 
-  <groupId>site.awn</groupId>
-  <artifactId>awn-parent</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>awn-parent</name>
-  <description>AWN ticketing trading and intelligence platform (modular monolith)</description>
+  &lt;groupId>site.awn&lt;/groupId>
+  &lt;artifactId>awn-parent&lt;/artifactId>
+  &lt;version>0.1.0-SNAPSHOT&lt;/version>
+  &lt;packaging>pom&lt;/packaging>
+  &lt;name>awn-parent&lt;/name>
+  &lt;description>AWN ticketing trading and intelligence platform (modular monolith)&lt;/description>
 
-  <properties>
-    <java.version>21</java.version>
-    <spring-modulith.version>2.1.1</spring-modulith.version>
-  </properties>
+  &lt;properties>
+    &lt;java.version>21&lt;/java.version>
+    &lt;spring-modulith.version>2.1.1&lt;/spring-modulith.version>
+  &lt;/properties>
 
-  <modules>
-    <!-- 业务模块 -->
-    <module>modules/awn-shared</module>
-    <module>modules/awn-identity</module>
-    <module>modules/awn-event</module>
-    <module>modules/awn-catalog</module>
-    <module>modules/awn-campaign</module>
-    <module>modules/awn-inventory</module>
-    <module>modules/awn-order</module>
-    <module>modules/awn-payment</module>
-    <module>modules/awn-fulfillment</module>
-    <module>modules/awn-marketplace</module>
-    <module>modules/awn-promotion</module>
-    <module>modules/awn-intelligence</module>
-    <module>modules/awn-notification</module>
-    <module>modules/awn-audit</module>
-    <module>modules/awn-star</module>
-    <!-- 可运行应用 -->
-    <module>apps/awn-api</module>
-    <module>apps/awn-worker</module>
-  </modules>
+  &lt;modules>
+    &lt;!-- 业务模块 -->
+    &lt;module>modules/awn-shared&lt;/module>
+    &lt;module>modules/awn-identity&lt;/module>
+    &lt;module>modules/awn-event&lt;/module>
+    &lt;module>modules/awn-catalog&lt;/module>
+    &lt;module>modules/awn-campaign&lt;/module>
+    &lt;module>modules/awn-inventory&lt;/module>
+    &lt;module>modules/awn-order&lt;/module>
+    &lt;module>modules/awn-payment&lt;/module>
+    &lt;module>modules/awn-fulfillment&lt;/module>
+    &lt;module>modules/awn-marketplace&lt;/module>
+    &lt;module>modules/awn-promotion&lt;/module>
+    &lt;module>modules/awn-intelligence&lt;/module>
+    &lt;module>modules/awn-notification&lt;/module>
+    &lt;module>modules/awn-audit&lt;/module>
+    &lt;module>modules/awn-star&lt;/module>
+    &lt;!-- 可运行应用 -->
+    &lt;module>apps/awn-api&lt;/module>
+    &lt;module>apps/awn-worker&lt;/module>
+  &lt;/modules>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.modulith</groupId>
-        <artifactId>spring-modulith-bom</artifactId>
-        <version>${spring-modulith.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-shared</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-event</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-catalog</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-campaign</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-inventory</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>site.awn</groupId>
-        <artifactId>awn-order</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+  &lt;dependencyManagement>
+    &lt;dependencies>
+      &lt;dependency>
+        &lt;groupId>org.springframework.modulith&lt;/groupId>
+        &lt;artifactId>spring-modulith-bom&lt;/artifactId>
+        &lt;version>${spring-modulith.version}&lt;/version>
+        &lt;type>pom&lt;/type>
+        &lt;scope>import&lt;/scope>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-shared&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-event&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-catalog&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-campaign&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-inventory&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+      &lt;dependency>
+        &lt;groupId>site.awn&lt;/groupId>
+        &lt;artifactId>awn-order&lt;/artifactId>
+        &lt;version>${project.version}&lt;/version>
+      &lt;/dependency>
+    &lt;/dependencies>
+  &lt;/dependencyManagement>
 
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <configuration>
-            <mainClass>site.awn.AwnApplication</mainClass>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.springframework.modulith</groupId>
-          <artifactId>spring-modulith-maven-plugin</artifactId>
-          <version>${spring-modulith.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
-</project>
+  &lt;build>
+    &lt;pluginManagement>
+      &lt;plugins>
+        &lt;plugin>
+          &lt;groupId>org.springframework.boot&lt;/groupId>
+          &lt;artifactId>spring-boot-maven-plugin&lt;/artifactId>
+          &lt;configuration>
+            &lt;mainClass>site.awn.AwnApplication&lt;/mainClass>
+          &lt;/configuration>
+        &lt;/plugin>
+        &lt;plugin>
+          &lt;groupId>org.springframework.modulith&lt;/groupId>
+          &lt;artifactId>spring-modulith-maven-plugin&lt;/artifactId>
+          &lt;version>${spring-modulith.version}&lt;/version>
+        &lt;/plugin>
+      &lt;/plugins>
+    &lt;/pluginManagement>
+  &lt;/build>
+&lt;/project>
 # AWN 单机部署编排（docker compose）
 #
 # 拓扑：caddy(80/443) → web(3000) / admin(5174) / awn-api(8080)
@@ -873,7 +873,7 @@ services:
       redis:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "`http://localhost:8080/actuator/health`"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -1114,7 +1114,7 @@ apps/web/app/checkout/page.tsx:172:  const userIdOk = userId.trim().length > 0
 apps/web/app/checkout/page.tsx:180:    if (!userIdOk || blocker || !quote || submitting) return
 apps/web/app/checkout/page.tsx:184:      window.localStorage.setItem(DEMO_USER_KEY, userId.trim())
 apps/web/app/checkout/page.tsx:187:        userId: userId.trim(),
-apps/web/app/checkout/page.tsx:357:            <label htmlFor="userId">下单身份 userId</label>
+apps/web/app/checkout/page.tsx:357:            &lt;label htmlFor="userId">下单身份 userId&lt;/label>
 apps/web/app/checkout/page.tsx:359:              id="userId"
 apps/web/app/checkout/page.tsx:360:              value={userId}
 apps/web/app/checkout/page.tsx:361:              placeholder="演示用：后端尚无登录态，userId 必填"
@@ -1124,7 +1124,7 @@ apps/miniprogram/src/pages/order-confirm/index.tsx:16: * 不参与下单请求�
 apps/miniprogram/src/pages/order-confirm/index.tsx:28:  const [userId, setUserId] = useState('')
 apps/miniprogram/src/pages/order-confirm/index.tsx:41:    if (!userId.trim()) {
 apps/miniprogram/src/pages/order-confirm/index.tsx:48:      const order = await mpApi.createOrder(idempotencyKey, userId.trim(), draft.lines)
-apps/miniprogram/src/pages/order-confirm/index.tsx:84:        <Input placeholder="用户 ID（登录联调前手填）" value={userId} onInput={(e) => setUserId(e.detail.value)} />
+apps/miniprogram/src/pages/order-confirm/index.tsx:84:        &lt;Input placeholder="用户 ID（登录联调前手填）" value={userId} onInput={(e) => setUserId(e.detail.value)} />
 [0m$ [0mpnpm test
 > awn-monorepo@ test /home/cui/workspaces/awn
 > vitest run
@@ -1226,7 +1226,7 @@ pository; If you want this repository to be a Redis repository, consider annotat
 [INFO] Replacing main artifact /home/cui/workspaces/awn/apps/awn-api/target/awn-api-0.1.0-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
 [INFO] The original artifact has been renamed to /home/cui/workspaces/awn/apps/awn-api/target/awn-api-0.1.0-SNAPSHOT.jar.original
 [INFO] 
-[INFO] ------------------------< site.awn:awn-worker >-------------------------
+[INFO] ------------------------&lt; site.awn:awn-worker >-------------------------
 [INFO] Building awn-worker 0.1.0-SNAPSHOT                               [18/18]
 [INFO]   from apps/awn-worker/pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
@@ -1301,7 +1301,7 @@ pository; If you want this repository to be a Redis repository, consider annotat
 2026-10-18T20:21:17.195+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
 2026-10-18T20:21:17.200+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 26 migrations (execution time 00:00.036s)
 2026-10-18T20:21:17.222+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
-2026-10-18T20:21:17.288+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-10-18T20:21:17.288+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": &lt;&lt; Empty Schema >>
 2026-10-18T20:21:17.302+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - baseline"
 2026-10-18T20:21:17.361+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - inventory tables"
 2026-10-18T20:21:17.430+08:00  INFO [awn-worker,] 3572723 --- [awn-worker] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - order tables"
@@ -1465,7 +1465,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     32	    }
     33	
     34	    @PostMapping("/api/v1/orders")
-    35	    public ResponseEntity<OrderView> createOrder(
+    35	    public ResponseEntity&lt;OrderView> createOrder(
     36	            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
     37	            @RequestBody CreateOrderRequest request) {
     38	        OrderView order = orders.createOrder(toCommand(idempotencyKey, request));
@@ -1512,7 +1512,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     10	public record CreateOrderRequest(
     11	        Long userId,
     12	        String currency,
-    13	        List<Line> lines) {
+    13	        List&lt;Line> lines) {
     14	
     15	    public record Line(
     16	            String poolCode,
@@ -1526,7 +1526,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     24	            long unitPrice,
     25	            long discountAmount,
     26	            long feeAmount,
-    27	            List<Attendee> attendees) {
+    27	            List&lt;Attendee> attendees) {
     28	    }
     29	
     82	    public OrderLineCommand {
@@ -1547,10 +1547,10 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     97	        if (productId == null || productId.isBlank()) {
     98	            throw new IllegalArgumentException("productId is required");
     99	        }
-   100	        if (quantity <= 0) {
+   100	        if (quantity &lt;= 0) {
    101	            throw new IllegalArgumentException("quantity must be positive");
    102	        }
-   103	        if (unitPrice < 0 || discountAmount < 0 || feeAmount < 0) {
+   103	        if (unitPrice &lt; 0 || discountAmount &lt; 0 || feeAmount &lt; 0) {
    104	            throw new IllegalArgumentException("amounts must be non-negative");
    105	        }
    106	        // 实名一票一证：提供 attendees 时逐票对应（数量必须与 quantity 一致）
@@ -1576,9 +1576,9 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     99	        //    数量型行 → 库存池预留；凭证型行 → 挂牌票品预留（不触碰库存池）；
    100	        //    座位型行 → 平台座位预留（守卫迁移，并发抢座只放行一单）
    101	        String orderNo = "ORD-" + UUID.randomUUID();
-   102	        List<String> reservationNos = new ArrayList<>(command.lines().size());
-   103	        List<String> unitNos = new ArrayList<>(command.lines().size());
-   104	        List<String> seatNos = new ArrayList<>(command.lines().size());
+   102	        List&lt;String> reservationNos = new ArrayList&lt;>(command.lines().size());
+   103	        List&lt;String> unitNos = new ArrayList&lt;>(command.lines().size());
+   104	        List&lt;String> seatNos = new ArrayList&lt;>(command.lines().size());
    105	        for (OrderLineCommand line : command.lines()) {
    106	            if (line.voucherLine()) {
    107	                unitNos.add(marketplace.reserveUnitForOrder(line.listingNo()));
@@ -1644,7 +1644,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     57	        return id;
 [0m$ [0mnl -ba modules/awn-payment/src/main/java/site/awn/payment/application/PaymentFacadeImpl.java | sed -n '58,115p'; nl -ba modules/awn-payment/src/main/java/site/awn/payment/application/PaymentFacadeImpl.java | sed -n '240,291p'; nl -ba modules/awn-payment/src/main/java/site/awn/payment/infrastructure/RefundRepository.java | sed -n '55,68p'; nl -ba modules/awn-shared/src/main/resources/db/migration/V6__payment_tables.sql | sed -n '9,31p'
 58	    /** 在途或已成功的支付单状态：同订单存在即阻止新发起支付单（防重复扣款） */
-    59	    private static final Set<PaymentStatus> BLOCKS_NEW_PAYMENT = EnumSet.of(
+    59	    private static final Set&lt;PaymentStatus> BLOCKS_NEW_PAYMENT = EnumSet.of(
     60	            PaymentStatus.CREATED, PaymentStatus.PENDING, PaymentStatus.UNKNOWN,
     61	            PaymentStatus.SUCCEEDED, PaymentStatus.REFUNDING, PaymentStatus.PARTIALLY_REFUNDED,
     62	            PaymentStatus.REFUNDED);
@@ -1675,7 +1675,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     87	
     88	    @Override
     89	    public PaymentView createPayment(CreatePaymentCommand command) {
-    90	        if (command.amount() < 0) {
+    90	        if (command.amount() &lt; 0) {
     91	            throw new IllegalArgumentException("payment amount must be non-negative");
     92	        }
     93	        // 1) 渠道校验先于落库：非法渠道不留孤儿支付单
@@ -1703,7 +1703,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
    115	    }
    240	    @Override
    241	    public RefundView requestRefund(RequestRefundCommand command) {
-   242	        if (command.amount() <= 0) {
+   242	        if (command.amount() &lt;= 0) {
    243	            throw new IllegalArgumentException("refund amount must be positive");
    244	        }
    245	        // 1) 幂等：同键同请求返回原退款单，不重复发起资金退款
@@ -1958,7 +1958,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     92	1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 支付 / 退款在模块层全程幂等（幂等键由 facade 强制，HTTP 入口尚未暴露）；4. 专场只渲染已发布版本，模块白名单校验；5. 情报与交易同实例分库边界（独立 `intelligence` schema + 独立角色 `awn_intel` 最小权限），情报永不回写交易表；应用当前以引导超管账号连接，边界在以 `awn_intel` 连接时生效；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。
     41	    /** 为订单发起支付：金额/币种服务端定，客户端只选渠道；订单不存在 → 404 */
     42	    @PostMapping("/api/v1/orders/{orderId}/payments")
-    43	    public ResponseEntity<PaymentView> createPayment(
+    43	    public ResponseEntity&lt;PaymentView> createPayment(
     44	            @PathVariable String orderId,
     45	            @RequestBody CreatePaymentRequest request) {
     46	        OrderView order = orders.orderOf(orderId);
@@ -1971,31 +1971,31 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
     53	
     54	    /** 订单的支付历史（创建顺序）；订单不存在 → 404，未支付返回空列表 */
     55	    @GetMapping("/api/v1/orders/{orderId}/payments")
-    56	    public List<PaymentView> payments(@PathVariable String orderId) {
+    56	    public List&lt;PaymentView> payments(@PathVariable String orderId) {
     57	        orders.orderOf(orderId);
     58	        return payments.paymentsOfOrder(orderId);
     37	    @Transactional(readOnly = true)
     38	    public OrderView orderOf(String orderNo) {
     39	        Order order = orders.findByOrderNo(orderNo).orElseThrow(() -> new OrderNotFoundException(orderNo));
-    40	        List<OrderItem> lines = items.findByOrderId(order.getId());
+    40	        List&lt;OrderItem> lines = items.findByOrderId(order.getId());
     41	        return toView(order, lines, attendees.findByItemIdIn(itemIds(lines)));
     42	    }
     43	
     44	    @Transactional(readOnly = true)
-    45	    public java.util.List<OrderView> recentOrders() {
+    45	    public java.util.List&lt;OrderView> recentOrders() {
     46	        return orders.findTop50ByOrderByIdDesc().stream()
     47	                .map(o -> {
-    48	                    List<OrderItem> lines = items.findByOrderId(o.getId());
+    48	                    List&lt;OrderItem> lines = items.findByOrderId(o.getId());
     49	                    return toView(o, lines,
     50	                            attendees.findByItemIdIn(itemIds(lines)));
     51	                })
     52	                .toList();
     53	    }
     54	
-    55	    static OrderView toView(Order order, List<OrderItem> lines, List<OrderAttendee> attendeeRows) {
-    56	        Map<Long, List<OrderAttendee>> byItem = attendeeRows.stream()
+    55	    static OrderView toView(Order order, List&lt;OrderItem> lines, List&lt;OrderAttendee> attendeeRows) {
+    56	        Map&lt;Long, List&lt;OrderAttendee>> byItem = attendeeRows.stream()
     57	                .collect(Collectors.groupingBy(OrderAttendee::getItemId));
-    58	        List<OrderItemView> itemViews = lines.stream()
+    58	        List&lt;OrderItemView> itemViews = lines.stream()
     59	                .map(i -> new OrderItemView(
     60	                        i.getPoolCode(), i.getProductId(), i.getProductNameSnapshot(),
     61	                        i.getSessionId(), i.getTicketCategorySnapshot(),
@@ -2128,7 +2128,7 @@ Update the arguments and call the tool again.
     35	type ViewMode = (typeof VIEW_MODES)[number]['key']
     36	
     37	export function SeatMap({ sections, selected, onToggleSeat }: SeatMapProps) {
-    38	  const [view, setView] = useState<ViewMode>('flat')
+    38	  const [view, setView] = useState&lt;ViewMode>('flat')
     39	  const selectedSeats = new Set(selected)
     40	  const layouts = layoutSections(sections)
     41	  const totalWidth = Math.max(
