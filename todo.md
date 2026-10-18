@@ -177,7 +177,7 @@
 
 ---
 
-## 三、完全没有（无设计无实现）
+## 三、未完项（可能已有分阶段设计或部分实现）
 
 - [x] 平台座位型票品模型（独立 `platform_seats`，逐座状态机，守卫条件 UPDATE 并发抢座只放行一单）— c7ea49c；PlatformSeatModuleTests 9 例（含并发抢座）
 - [x] 3D 座位图（P2）— 方案已交、S1 已落地、S2 契约先行已落地（本次提交，见下方行）；**如实标注：S2 契约已落地、坐标数据仍待拍板、3D 渲染（S3）未动**。验收：2D 过目后给出 3D 方案（2D 过目已代决 2026-10-14 巡检授权，3D 维持 P2，不阻塞 2D 实现）；S3 起仍按坐标数据拍板推进（挂起项，见 venue-seatmaps.md §8 #4/#7）
@@ -218,9 +218,28 @@
   - 理由：交付后发现公开列表接口返回非 2xx 时，客户端把 `{code,message}` 当成功体 resolve，列表页 `persons.map` 抛 TypeError 白屏；属明确缺陷，故代决修复。
 
 - [ ] 审核整改（2026-10-18 独立审核，见 docs/review/luna-review-2026-10-18.md）：
-      按审核报告的三张表逐项处理，**先核对再动手**，每项给 file:line 证据。
-      1) 表一「缺陷」：按风险排序修，高风险优先
-      2) 表二「文档与实现不一致」：以代码为准改文档，或明确标注为规划中
-         **禁止为对齐文档去改业务代码**
-      3) 表三「值得补的能力」：只做评估与分期建议，**不实现**（需用户拍板）
-      每完成一项勾掉并写证据；全部测试通过后 commit+push；不 bump 版本号。
+      主项未勾：表一 P1 数据库运行账号仍待独立数据源设计，详见下；因此不作全项完成声明。
+  - [x] 表一 P0 下单金额由请求方控制（审核 `docs/review/luna-review-2026-10-18.md:2169`）：数量 / 座位行按目录价核对、凭证行按挂牌价核对，错价或非零折扣/费用在预留前拒绝；候补加入也核目录价。证据：`modules/awn-order/src/main/java/site/awn/order/application/OrderWriteService.java:108,379-409`、`modules/awn-order/src/main/java/site/awn/order/application/WaitlistService.java:72-80`；回归 `OrderCoreTests` / `WaitlistModuleTests`。
+  - [x] 表一 P0 重复或终态订单不得重复创建支付（审核 `.../luna-review-2026-10-18.md:2170`）：订单 advisory lock + 待支付/截止期/已有非 FAILED 支付守卫 + DB 部分唯一索引；失败单重试仍可走既有新支付路径。证据：`modules/awn-payment/src/main/java/site/awn/payment/application/PaymentFacadeImpl.java:98-120`、`modules/awn-shared/src/main/resources/db/migration/V28__payment_order_guard.sql:1-6`；并发回归 `apps/awn-api/src/test/java/site/awn/payment/PaymentModuleTests.java:339-359`。
+  - [x] 表一 P0 买家 / 卖家交易接口身份与归属（审核 `.../luna-review-2026-10-18.md:2171`）：增加注册 / 登录与 1 小时签名 Bearer token；订单、支付、退款、履约、候补、争议和卖家操作要求 token，忽略请求体身份并校验订单 / 卖家归属。证据：`apps/awn-api/src/main/java/site/awn/api/auth/ApiAuthenticationFilter.java:26-60`、`OrderController.java:34-63`、`PaymentController.java:41-123`、`DisputeController.java:37-105`；回归 `AuthApiTests` 与 `DisputeModuleTests`。token 暂无撤销 / refresh，客户端登录接入列入分期评估，不在本项扩展。
+  - [x] 表一 P1 管理令牌空值回落开发令牌（审核 `.../luna-review-2026-10-18.md:2172`）：Compose 强制提供非空 `AWN_ADMIN_TOKEN`；`prod` 配置缺失即启动失败，另强制 `AWN_API_TOKEN_SECRET`。证据：`deploy/docker-compose.yml:55-64`、`apps/awn-api/src/main/resources/application-prod.yml:1-5`、`deploy/.env.example:6-8`。
+  - [x] 表一 P1 并发退款超额窗口（审核 `.../luna-review-2026-10-18.md:2173`）：退款占额事务先锁支付行，再累计占用并落 CREATED，锁覆盖检查与写入。证据：`modules/awn-payment/src/main/java/site/awn/payment/application/PaymentFacadeImpl.java:276-290`、`modules/awn-payment/src/main/java/site/awn/payment/infrastructure/PaymentRepository.java:27-29`；回归 `apps/awn-api/src/test/java/site/awn/payment/PaymentModuleTests.java:311-336`。
+  - [ ] 表一 P1 API / Worker 使用 PostgreSQL 引导超级用户（审核 `.../luna-review-2026-10-18.md:2174`）：未擅自切换到 `awn_trading`，因为 API 和 Worker 的情报 JPA 仓储目前与交易仓储共用同一个数据源；`awn_trading` 对 `intelligence` 零权限会直接破坏情报读写。证据：`deploy/docker-compose.yml:56-60,86-89,99-108` 仍以 `awn_app` 连接；`apps/awn-api/src/main/resources/application.yml:4-16` 是唯一 JPA/Flyway 数据源；`modules/awn-intelligence/src/main/java/site/awn/intelligence/domain/RawObservation.java:21` 使用同库 `intelligence` schema。需要先做双数据源 / JPA 仓储与事务拆分，再切运行账号；本轮不以破坏功能的配置改动冒充修复。
+  - [x] 表二 G6 文档按实现修正（审核 `.../luna-review-2026-10-18.md:2180`）：更新支付状态机、交易模型、库存一致性与测试清单，说明 UNKNOWN 核实、终态告警和原路幂等退款；**未为对齐文档改业务代码**。证据：`docs/architecture/payment-state-machine.md:112-118`、`docs/architecture/trading-model.md:169,181`、`docs/architecture/inventory-consistency.md:104-107`、`docs/testing/checklist.md:25`。
+  - [x] 表二 README 的幂等 HTTP 说法按实现修正（审核 `.../luna-review-2026-10-18.md:2181`）：说明订单 / 退款要求 Idempotency-Key，支付按订单防重；证据：`README.md:91`、`README.zh.md:92`。
+  - [x] 表二 Phase 02 页面状态按实现修正（审核 `.../luna-review-2026-10-18.md:2182`）：证据 `apps/web/app/sessions/[id]/page.tsx:21-29`；文档已标注场次票档页实现，见 `docs/implementation-plan.md:64`。
+  - [x] 表二第三部分标题按实际完成状态修正（审核 `.../luna-review-2026-10-18.md:2183`）：证据 `todo.md:182-191` 与 `apps/web/components/SeatMap.tsx:7-12,30-38`；标题现为「未完项（可能已有分阶段设计或部分实现）」。
+  - [x] 表三仅评估与分期建议，不额外实现能力（审核 `.../luna-review-2026-10-18.md:2185-2193`）：下列建议已记录；表三目录核价与 API 鉴权仅因表一 P0 先行完成最小服务端防护。
+    - 身份会话 / 角色授权（高）：当前一小时 bearer token 无撤销、refresh，且 Web / 小程序尚未铺登录 UI；下一期先定角色矩阵、撤销策略，再分端接入并验证订单归属，证据 `apps/awn-api/src/main/java/site/awn/api/auth/ApiTokenService.java:13-54`、`docs/api/contracts.md:59-72`。
+    - 目录核价 / 优惠规则（高）：核价已成为硬守卫；下一期仅在优惠来源、叠加顺序和审计口径拍板后设计规则引擎，当前非零折扣 / 费用拒绝，证据 `OrderWriteService.java:379-409`。
+    - 真实支付与回调接入（高）：先选渠道并完成商户资质、密钥托管、签名算法、回调重放与沙箱联调方案，再单独立项实现；当前仍为 sandbox，证据 `modules/awn-payment/src/main/java/site/awn/payment/sandbox/SandboxPaymentGateway.java:21-28,65-72`。
+    - 邮件 / 短信通知（中）：先确定模板、供应商、退订 / 重试 / 失败告警，再接 Outbox worker；当前 EMAIL/SMS 仍为占位，证据 `docs/architecture/async-outbox.md:50`。
+    - 真实场馆布局 / 3D（中）：等用户点名首批场馆并提供授权 CAD/SVG/PDF 或购数裁决，再完成布局坐标、编辑流程和 3D 原型分期；证据 `todo.md:183-198`、`apps/web/components/SeatMap.tsx:7-12`。
+  - 验证记录：`./mvnw -B -ntp verify -pl apps/awn-api,apps/awn-worker -am` 通过（API 314、Worker 7）；`pnpm test` 通过（338）；docs / web / admin builds 通过。`flutter test` 与 `flutter analyze` 未能启动：本机 Flutter SDK `/home/cui/.local/flutter` 缺少 `packages/flutter_tools` 且 Git pack 校验损坏，非仓库测试失败。因表一 P1 数据源隔离仍未完成、Flutter 环境未验证，按本项约定暂不 commit / push；未 bump 版本号。
+- [ ] 文档时效性清理（2026-10-18 用户令：很多文档已过时）：
+      在本轮审核整改完成之后执行，避免与整改冲突。
+      1) 通读 README / docs，找出与当前代码不符的描述（能力、配置项、命令、路径、版本）
+      2) 以代码为准修正文档；**禁止为对齐文档去改业务代码**
+      3) 已废弃但仍留在文档里的功能，明确标注「已移除」或删除，不要留成"看起来还能用"
+      4) 命令行示例逐条跑一遍，跑不通的改掉或删掉
+      5) 构建通过后 commit+push，回报改动文件清单
