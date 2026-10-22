@@ -8,7 +8,7 @@
 
 Ticketing trading & intelligence platform
 
-[![Status](https://img.shields.io/badge/status-in%20development-orange)](https://github.com/cuihairu/awn/releases)
+<p align="center">[![Status](https://img.shields.io/badge/status-in%20development-orange)](https://github.com/cuihairu/awn/releases)</p>
 [![ci](https://github.com/cuihairu/awn/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/awn/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-21-6db33f?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6db33f?logo=springboot&logoColor=white)
