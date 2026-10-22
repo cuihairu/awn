@@ -30,7 +30,8 @@
       "swiper": "12.1.2",
       "uuid": "14.0.3",
       "webpack-dev-server": "5.2.6",
-      "vitepress>vite": "6.4.3"
+      "vitepress>vite": "6.4.4",
+      "vite@<6.4.4": "6.4.4"
     }
   },
   "devDependencies": {
