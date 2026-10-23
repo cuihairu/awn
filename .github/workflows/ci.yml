@@ -29,7 +29,7 @@ permissions:
 jobs:
   backend:
     name: backend (mvn verify)
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -46,7 +46,7 @@ jobs:
 
   frontend:
     name: frontend (docs + web + admin)
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -72,7 +72,7 @@ jobs:
 
   client:
     name: flutter analyze
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7.0.1
 
