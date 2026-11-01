@@ -1,20 +1,22 @@
 <div align="center">
-  <img src="docs/public/logo.svg" alt="AWN logo" width="64"/>
+
+<img src="docs/public/logo.svg" alt="AWN logo" width="64"/>
+
 # AWN · 麦芒网
+
 > [English](README.md) | **中文**
+
 票务交易与情报平台
-<p align="center">
-<a href="https://github.com/cuihairu/awn/releases"></a>
-<a href="https://github.com/cuihairu/awn/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/cuihairu/awn/actions/workflows/ci.yml/badge.svg"></a>
-</p>
+
+[![ci](https://github.com/cuihairu/awn/actions/workflows/ci.yml/badge.svg)](https://github.com/cuihairu/awn/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-21-6db33f?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6db33f?logo=springboot&logoColor=white)
 ![Spring Modulith](https://img.shields.io/badge/Spring%20Modulith-2.1.1-6db33f?logo=spring&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1?logo=postgresql&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-10-f9ad00?logo=pnpm&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-client-02569b?logo=flutter&logoColor=white)
-![License](https://img.shields.io/badge/License-Apache--2.0-2563eb) <a href="https://cuihairu.github.io/awn/zh//"></a>
-  <img alt="Status" src="https://img.shields.io/badge/status-in%20development-orange"> <img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue" alt="docs">
+![License](https://img.shields.io/badge/License-Apache--2.0-2563eb) <a href="https://cuihairu.github.io/awn/zh/"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-blue" alt="docs"></a>
+
 </div>
 
 麦芒网（AWN）是票务交易与情报平台。Java 21 + Spring Boot 模块化单体为交易核心，PostgreSQL 为库存唯一权威，多端复用统一 API 契约（`/api/v1`）。
