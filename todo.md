@@ -246,3 +246,8 @@
       - [x] 3) 废弃能力标注：无「已移除但文档仍在」项；两处死配置（`notification-dispatch`/`refund-reconciliation`）已在 async-outbox.md 明确标注「无任务认领」
       - [x] 4) 命令示例实跑：`node docs/data/venues/validate.mjs` 通过（4 样本 + 缺口断言成立）；`docker compose config --quiet` 缺必需 env 报错 = 设计守卫，带 `AWN_ADMIN_TOKEN` 等 5 变量后通过；`./mvnw -v`（3.10.0）通过；`pnpm docs:build` 通过；需运行态的示例（psql/cron/健康检查）对照 compose 服务名/账号/库名逐条静态核验一致，无跑不通项
       - [x] 5) 构建门禁：`pnpm docs:build` 通过（26.3s）、`git diff --check` 通过；改动文件清单（12）：README.md、README.zh.md、deploy/README.md、docs/api/contracts.md、docs/architecture/domain-model.md、docs/architecture/system-overview.md、docs/architecture/async-outbox.md、docs/architecture/inventory-consistency.md、docs/architecture/trading-model.md、docs/implementation-plan.md、docs/deployment/structure.md、docs/testing/checklist.md
+
+## 漏洞扫描遗留（2026-11-03 全舰队扫描，源 scratch/vuln-scan-*.md）
+
+- [ ] VULN-AWN-001 [BLOCKED·上游无补丁·高危·命令注入] git-clone ≤0.2.0（@tarojs/cli>download-git-repo 链，终扫残留 1）：上游无 patched 版本，需替换 download-git-repo 链路；不勾，验收：链路替换后 pnpm audit --audit-level=high 中 git-clone 不再命中 + pnpm test 绿（338/338）
+- [ ] VULN-AWN-002 [BLOCKED·上游停维护·高危 REDoS] html-minifier ≤4.0.0（终扫残留 1）：上游停维护无补丁，需换 html-minifier-terser；不勾，验收：替换后 pnpm audit 中 html-minifier 不再命中 + pnpm test 绿（338/338）
