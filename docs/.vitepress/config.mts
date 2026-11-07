@@ -3,6 +3,30 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 export default withMermaid(
   defineConfig({
+  // 官方 i18n：root=en（根路径），zh=简体中文（/zh/）
+  locales: {
+    root: { label: 'English', lang: 'en' },
+    zh: {
+      label: '简体中文',
+      lang: 'zh-CN',
+      link: '/zh/',
+      themeConfig: {
+        nav: [],   // TODO: 中文导航
+        sidebar: [
+          {
+            text: '架构',
+            items: [
+              { text: '系统总览', link: '/zh/architecture/system-overview' },
+              { text: '源码分层架构', link: '/zh/architecture/source-layer-architecture' },
+              { text: '源码分层术语表', link: '/zh/architecture/source-layer-glossary' },
+              { text: '源码拆分理由', link: '/zh/architecture/source-layer-split-rationale' },
+            ],
+          },
+        ],
+      },
+    },
+  },
+
     lang: 'zh-CN',
     base: '/awn/',
     title: '麦芒网 AWN',
@@ -35,6 +59,9 @@ export default withMermaid(
             { text: '订单与支付状态机', link: '/architecture/payment-state-machine' },
             { text: '异步与 Outbox', link: '/architecture/async-outbox' },
             { text: '情报数据隔离', link: '/architecture/intelligence-isolation' },
+            { text: '源码分层架构', link: '/architecture/source-layer-architecture' },
+            { text: '源码分层术语表', link: '/architecture/source-layer-glossary' },
+            { text: '源码拆分理由', link: '/architecture/source-layer-split-rationale' },
           ],
         },
         {

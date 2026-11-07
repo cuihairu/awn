@@ -251,3 +251,28 @@
 
 - [ ] VULN-AWN-001 [BLOCKED·上游无补丁·高危·命令注入] git-clone ≤0.2.0（@tarojs/cli>download-git-repo 链，终扫残留 1）：上游无 patched 版本，需替换 download-git-repo 链路；不勾，验收：链路替换后 pnpm audit --audit-level=high 中 git-clone 不再命中 + pnpm test 绿（338/338）
 - [ ] VULN-AWN-002 [BLOCKED·上游停维护·高危 REDoS] html-minifier ≤4.0.0（终扫残留 1）：上游停维护无补丁，需换 html-minifier-terser；不勾，验收：替换后 pnpm audit 中 html-minifier 不再命中 + pnpm test 绿（338/338）
+
+## 源码分层分析 2026-11-07
+
+### 抽象层清单
+
+- L1 客户端渠道：多端 UI、本地文案与渠道传输，通过 HTTP 消费 API —— `apps/web/app/layout.tsx:7`、`apps/admin/src/App.tsx:17`、`apps/miniprogram/src/lib/taro-transport.ts:10`、`apps/client/lib/src/api/awn_client.dart:15`。
+- L2 共享前端包：跨端契约、主题、票档组件与专场渲染白名单 —— `packages/api-client/src/index.ts:9`、`packages/ui/src/themes.ts:14`、`packages/campaign-renderer/src/index.ts:11`。
+- L3 组合根：HTTP 路由、认证/限流/追踪、请求模型与领域异常映射 —— `apps/awn-api/src/main/java/site/awn/AwnApplication.java:6`、`apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java:55`。
+- L4 业务模块：14 个有向依赖模块，分别拥有 api/application/domain/infrastructure —— `pom.xml:26`、`modules/awn-order/src/main/java/site/awn/order/application/OrderWriteService.java:48`。
+- L5 共享后端基础设施：跨模块持久化、发件箱/收件箱、告警、限流、追踪、脱敏与 URL 白名单 —— `modules/awn-shared/src/main/java/site/awn/shared/package-info.java:1`、`modules/awn-shared/src/main/java/site/awn/shared/outbox/OutboxDispatchService.java:17`。
+- L6 运行进程：API 只承载 HTTP，Worker 只承载定时任务 —— `apps/awn-api/src/main/java/site/awn/AwnApplication.java:6`、`apps/awn-worker/src/main/java/site/awn/worker/AwnWorkerApplication.java:6`。
+- L7 数据：PostgreSQL 交易/情报双持久化单元、Flyway SQL、可选 Redis 或内存限流 —— `modules/awn-shared/src/main/java/site/awn/shared/config/PersistenceConfig.java:38`、`modules/awn-shared/src/main/java/site/awn/shared/ratelimit/RedisRateLimiter.java:10`。
+- L8 部署：镜像、Caddy 路由、PostgreSQL/Redis/RustFS、凭证与健康依赖 —— `deploy/docker-compose.yml:15`、`deploy/config/caddy/Caddyfile:4`。
+
+详细分析：`docs/architecture/source-layer-architecture.md`（English）、`docs/zh/architecture/source-layer-architecture.md`（中文）、`docs/architecture/source-layer-glossary.md`、`docs/architecture/source-layer-split-rationale.md`；中文镜像在 `docs/zh/architecture/source-layer-*.md`。
+
+### 超大文件候选
+
+- [ ] LAY-001 [P1] 拆分 `apps/web/app/globals.css`（1080 行）—— web 全局基础样式仍集中承载结构、页面与组件规则；文件已声明颜色令牌归 `packages/ui`（`apps/web/app/globals.css:1-2`）。
+
+（源码检视排除依赖、构建产物和工具缓存后，仅上述文件超过 1000 行。）
+
+### 目录/分类问题
+
+未见分类问题。
