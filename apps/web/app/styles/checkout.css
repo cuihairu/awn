@@ -1,0 +1,298 @@
+/* 购买/订单/座位图域：steps/purchase-grid/cart-summary/stepper/table/seatmap 2D+3D（LAY-001 拆出） */
+
+/* ── 购买流程（原型 web/purchase.html） ───────────────────── */
+
+/* 步骤条：只标进度，不做可点击导航 */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--awn-ink-2);
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step + .step::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  margin-right: 10px;
+  background: var(--awn-border);
+}
+
+.step .n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--awn-border);
+  font-size: 12px;
+}
+
+.step[data-done='true'] {
+  color: var(--awn-ink);
+}
+
+.step[data-done='true'] .n {
+  border-color: var(--awn-gold);
+  background: var(--awn-gold-soft);
+  color: var(--awn-gold-deep);
+}
+
+/* 主区 + 结算摘要两栏（窄屏回落单列） */
+.purchase-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .purchase-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cart-summary {
+  padding: 20px;
+  border: 1px solid var(--awn-border);
+  border-radius: 16px;
+  background: var(--awn-card);
+  position: sticky;
+  top: 24px;
+}
+
+/* 数量步进器：触控目标 44px（docs/design/ui-system.md 触控规范） */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--awn-border);
+  border-radius: 10px;
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper span {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 说明与分隔 */
+.hint {
+  margin: 6px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--awn-ink-2);
+}
+
+.divider {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--awn-border);
+}
+
+
+/* 订单明细表（/orders/{orderNo}） */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.table th,
+.table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--awn-border);
+  text-align: left;
+}
+
+.table th {
+  color: var(--awn-ink-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.table th.num,
+.table td.num {
+  text-align: right;
+}
+
+/* 次级动作按钮（刷新 / 取消）：不与主 CTA 抢视觉权重 */
+.btn--ghost {
+  background: transparent;
+  color: var(--awn-ink-2);
+  border: 1px solid var(--awn-border);
+}
+
+/* ---------- 2D 座位图（原型 seatmap-2d.html） ---------- */
+
+.seatmap-svg {
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--awn-ink) 4%, var(--awn-bg));
+}
+
+.seatmap-stage {
+  fill: var(--awn-gold-soft);
+  stroke: var(--awn-gold);
+  stroke-width: 1.5;
+}
+
+.seatmap-stage-title {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--awn-gold-deep);
+}
+
+.seatmap-stage-note {
+  font-size: 9px;
+  fill: var(--awn-ink-2);
+}
+
+.seatmap-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--awn-ink);
+}
+
+.seatmap-row-label {
+  font-size: 10px;
+  fill: var(--awn-ink-2);
+}
+
+.seat rect {
+  stroke: var(--awn-border);
+  stroke-width: 1;
+}
+
+.seat rect.seat--free {
+  fill: var(--awn-bg);
+  stroke: var(--awn-gold);
+}
+
+.seat rect.seat--occupied {
+  fill: color-mix(in srgb, var(--awn-ink) 14%, var(--awn-bg));
+  stroke: transparent;
+  cursor: not-allowed;
+}
+
+.seat rect.seat--selected {
+  fill: var(--awn-gold);
+  stroke: var(--awn-gold-deep);
+}
+
+.seat:focus-visible {
+  outline: 2px solid var(--awn-gold-deep);
+  outline-offset: 2px;
+}
+
+.seat-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: var(--fs-xs, 12px);
+  color: var(--awn-ink-2);
+}
+
+.seat-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.seat-dot--free {
+  background: var(--awn-bg);
+  border: 1px solid var(--awn-gold);
+}
+
+.seat-dot--occupied {
+  background: color-mix(in srgb, var(--awn-ink) 14%, var(--awn-bg));
+}
+
+.seat-dot--selected {
+  background: var(--awn-gold);
+}
+
+
+/* ── 3D 视角增强（docs/design/seatmap-3d-plan.md S1）───────────────── */
+
+.seatmap-view {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.seatmap-view button {
+  font-size: 12px;
+  border: 1px solid var(--awn-border);
+  background: var(--awn-card);
+  color: var(--awn-ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.seatmap-view button:hover {
+  color: var(--awn-gold-deep);
+}
+
+.seatmap-view button[aria-pressed="true"] {
+  border-color: var(--awn-gold);
+  color: var(--awn-gold-deep);
+  font-weight: 700;
+}
+
+/* 透视 = 纯 CSS 变换：不改节点数与交互层，俯视（默认）与原 2D 完全一致 */
+.seatmap-viewport {
+  perspective: 1100px;
+}
+
+.seatmap-viewport--tilted .seatmap-svg {
+  transform: rotateX(38deg) scale(0.92);
+  transform-origin: 50% 0%;
+}
+
+.seatmap-svg {
+  transition: transform 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seatmap-svg {
+    transition: none;
+  }
+}
