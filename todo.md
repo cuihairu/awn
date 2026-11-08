@@ -269,7 +269,7 @@
 
 ### 超大文件候选
 
-- [ ] LAY-001 [P1] 拆分 `apps/web/app/globals.css`（1080 行）—— web 全局基础样式仍集中承载结构、页面与组件规则；文件已声明颜色令牌归 `packages/ui`（`apps/web/app/globals.css:1-2`）。
+- [x] LAY-001 [P1] 拆分 `apps/web/app/globals.css`（1080 行）—— web 全局基础样式仍集中承载结构、页面与组件规则；文件已声明颜色令牌归 `packages/ui`（`apps/web/app/globals.css:1-2`）。— 已修复:e7a3bee `refactor(web): split globals.css into layered style files`;globals.css 只留结构层(1080→85 行),组件/页面域拆至 styles/{chrome,catalog,events,checkout}.css,layout.tsx 按 globals→chrome→catalog→events→checkout 序导入;新测试 apps/web/app/css-scope.test.ts(154 选择器全量保真 + 分层不回流 + styles/ 非空);pnpm test 341/341 绿(338 基线+3 新增),pnpm --filter web build 绿(12 路由)。
 
 （源码检视排除依赖、构建产物和工具缓存后，仅上述文件超过 1000 行。）
 
