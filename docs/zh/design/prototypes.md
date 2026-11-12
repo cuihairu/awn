@@ -2,7 +2,7 @@
 
 > 2026-10-12 起，四端原型重做为令牌化 HTML 版（多主题、可切换），位于仓库
 > [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)（`index.html` 为总览），
-> 设计体系见 [`ui-system.md`](ui-system.md)。本页保留为早期 SVG 原型存档。
+> 设计体系见 [`ui-system.md`](/design/ui-system)。本页保留为早期 SVG 原型存档。
 
 以下为 2026-10-12 前的 SVG 版原型存档，当前原型见上方 [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)。设计令牌见 `design-system/awn/MASTER.md`。
 
