@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Material 库自 3.47 起抽离为 pub 包；flutter/material.dart 已标弃用
+  material_ui: ^1.11.0
   cupertino_icons: ^1.0.8
   # 网络与模型按 OpenAPI 契约生成（docs/api/contracts.md）
   dio: ^5.8.0
