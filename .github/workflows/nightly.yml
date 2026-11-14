@@ -133,9 +133,10 @@ jobs:
           if (-not (Test-Path $wixBin)) { $wixBin = "C:\Program Files (x86)\WiX Toolset v3.14\bin" }
           if (-not (Test-Path $wixBin)) { Write-Output "::warning::msi leg BLOCKED: WiX v3 not found on runner"; "blocked=true" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8; exit 0 }
           $env:PATH = "$wixBin;$env:PATH"
-          jpackage --type msi --name awn-api --app-version 0 `
+          jpackage --type msi --name awn-api --app-version 0.0 `
             --input winstage --main-jar awn-api.jar --dest out
-          if (Test-Path "out/awn-api-0.msi") { Move-Item out/awn-api-0.msi out/awn-nightly-windows-x64.msi }
+          # msi bundler 要求版本至少两段（deb/rpm 单段 0 可用，msi 不行）
+          if (Test-Path "out/awn-api-0.0.msi") { Move-Item out/awn-api-0.0.msi out/awn-nightly-windows-x64.msi }
 
       # msi 只验结构（dark 解析），不安装
       - name: Verify msi structure
