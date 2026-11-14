@@ -64,6 +64,19 @@
 | 一条命令构建 | `scripts/build.sh` | 后端 fat jar + `apps/web/.next/` + `apps/admin/dist/` + 文档站；失败非零退出 |
 | 一键验证 | `docker compose -f deploy/docker-compose.yml up -d --build` 后 `curl -s http://127.0.0.1:18080/actuator/health` 返回 UP | 冒烟与细节见 `deploy/README.md` |
 
+## 夜间构建
+
+滚动 nightly tag（[releases](https://github.com/cuihairu/awn/releases/tag/nightly)，prerelease）只保留最新一版。产物由 `apps/awn-api` 打包并内带 jlink 运行时，装机无需本机 JDK。
+
+| 产物 | 安装 | 启动 |
+|---|---|---|
+| `awn-nightly-linux-x64.deb` | `sudo dpkg -i awn-nightly-linux-x64.deb` | `/opt/awn-api/bin/awn-api` |
+| `awn-nightly-linux-x64.rpm` | `sudo rpm -i awn-nightly-linux-x64.rpm` | `/opt/awn-api/bin/awn-api` |
+| `awn-nightly-windows-x64.zip` | 解压即用，无需安装 | `awn-api\awn-api.exe` |
+| `awn-nightly-windows-x64.msi` | 双击安装包 | 开始菜单 / 桌面入口 |
+
+每次构建同时发布覆盖全部产物的 `SHA256SUMS`。nightly 目前仅出 x86_64 —— arm64 构建链尚未接入。服务仍需运行时配置环境（数据库、管理员令牌），完整变量清单见 `deploy/README.md`。
+
 ## 本地测试口径
 
 CI 与本地开发按改动面三路分流——改一行文档不该全量编译。Maven 版本经 wrapper 钉定（`./mvnw`，3.10.0，首次运行自动下载），本地与 CI 一致。

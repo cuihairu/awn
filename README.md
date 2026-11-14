@@ -64,6 +64,18 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | One-command build | `scripts/build.sh` | Backend fat jars + `apps/web/.next/` + `apps/admin/dist/` + docs site; non-zero exit on failure |
 | One-shot verify | `docker compose -f deploy/docker-compose.yml up -d --build` → `curl -s http://127.0.0.1:18080/actuator/health` returns `UP` | Smoke + details: `deploy/README.md` |
 
+## Nightly builds
+
+Rolling nightly tag ([releases](https://github.com/cuihairu/awn/releases/tag/nightly), prerelease) keeps only the latest build. Assets are packaged from `apps/awn-api` and bundle a jlink runtime, so no JDK is needed at install time.
+
+| Asset | Install | Run |
+|---|---|---|
+| `awn-nightly-linux-x64.deb` | `sudo dpkg -i awn-nightly-linux-x64.deb` | `/opt/awn-api/bin/awn-api` |
+| `awn-nightly-linux-x64.rpm` | `sudo rpm -i awn-nightly-linux-x64.rpm` | `/opt/awn-api/bin/awn-api` |
+| `awn-nightly-windows-x64.zip` | unzip, no install needed | `awn-api\awn-api.exe` |
+| `awn-nightly-windows-x64.msi` | double-click installer | Start menu / desktop entry |
+
+Every build publishes a `SHA256SUMS` covering all assets. Nightly currently covers x86_64 only — no arm64 build chain is wired up. The service still needs its environment (database, admin token) configured at runtime, see `deploy/README.md` for the full variable list.
 
 ## Local test scope
 

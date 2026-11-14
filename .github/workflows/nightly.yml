@@ -1,0 +1,212 @@
+name: nightly
+
+on:
+  schedule:
+    # 00:23 UTC 每日（错峰，避开整点洪峰）
+    - cron: '23 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: linux (jar + deb + rpm)
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # 仅打包构建（测试门禁在 ci.yml）
+      - name: Build fat jar
+        run: ./mvnw -B -ntp -DskipTests package -pl apps/awn-api -am
+
+      - name: Stage distribution
+        run: |
+          mkdir -p dist
+          cp apps/awn-api/target/awn-api-*.jar dist/awn-api.jar
+          cp README.md dist/
+          cp LICENSE dist/ 2>/dev/null || true
+
+      # 冒烟：jar 必须能启动到 Spring 引导（缺 DB 时允许后续失败）
+      - name: Smoke test jar
+        run: |
+          timeout 90 java -jar dist/awn-api.jar > smoke.log 2>&1 || true
+          grep -q "Starting AwnApplication" smoke.log || { echo "::error::fat jar did not boot"; tail -40 smoke.log; exit 1; }
+          echo "smoke ok: Spring Boot launcher reached"
+
+      - name: Install rpm tooling
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      # jpackage：自带 jlink 运行时；deb 落 /opt/awn-api/bin/awn-api
+      - name: Package deb
+        run: |
+          jpackage --type deb --name awn-api --app-version 0 \
+            --input dist --main-jar awn-api.jar \
+            --java-options '-Xms128m' --java-options '-Xmx512m' \
+            --dest out
+          mv out/awn-api_0_amd64.deb out/awn-nightly-linux-x64.deb
+
+      - name: Package rpm
+        run: |
+          jpackage --type rpm --name awn-api --app-version 0 \
+            --input dist --main-jar awn-api.jar \
+            --java-options '-Xms128m' --java-options '-Xmx512m' \
+            --dest out
+          mv out/awn-api-0-1.x86_64.rpm out/awn-nightly-linux-x64.rpm
+
+      - name: Smoke test deb install
+        run: |
+          sudo dpkg -i out/awn-nightly-linux-x64.deb
+          test -x /opt/awn-api/bin/awn-api
+          timeout 90 /opt/awn-api/bin/awn-api > smoke-deb.log 2>&1 || true
+          grep -q "Starting AwnApplication" smoke-deb.log || { echo "::error::installed launcher did not boot"; tail -40 smoke-deb.log; exit 1; }
+          echo "smoke ok: deb launcher boots"
+
+      # arm64：jpackage 不能跨架构出 deb/rpm，免费 runner 亦无 linux-arm64 → 如实不出，见 README 注
+
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: linux-assets
+          path: |
+            out/awn-nightly-linux-x64.deb
+            out/awn-nightly-linux-x64.rpm
+
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: jar
+          path: dist/awn-api.jar
+
+  windows:
+    name: windows (app-image zip + msi)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: jar
+          path: winstage
+
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Package app-image (exe) and zip it
+        shell: pwsh
+        run: |
+          jpackage --type app-image --name awn-api --app-version 0 `
+            --input winstage --main-jar awn-api.jar --dest out
+          Compress-Archive -Path out/awn-api -DestinationPath out/awn-nightly-windows-x64.zip
+
+      # exe 冒烟：启动器必须能引导 Spring（缺 DB 时允许后续失败）
+      - name: Smoke test app-image
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "out/awn-api/awn-api.exe" -RedirectStandardOutput smoke-out.log -RedirectStandardError smoke-err.log -PassThru -NoNewWindow
+          $deadline = (Get-Date).AddSeconds(120)
+          $booted = $false
+          while ((Get-Date) -lt $deadline) {
+            if (Select-String -Path @("smoke-out.log","smoke-err.log") -Pattern "Starting AwnApplication" -Quiet -ErrorAction SilentlyContinue) { $booted = $true; break }
+            Start-Sleep -Seconds 3
+          }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not $booted) { Write-Output "::error::app-image launcher did not boot"; Get-Content smoke-out.log,smoke-err.log -ErrorAction SilentlyContinue | Select-Object -Last 40; exit 1 }
+          Write-Output "smoke ok: app-image launcher boots"
+
+      # msi 需要 WiX v3（runner 预装）；装不上则 msi 腿如实 BLOCKED，不硬造
+      - name: Package msi
+        id: msi
+        shell: pwsh
+        run: |
+          $wixBin = "$env:WIX\bin"
+          if (-not (Test-Path $wixBin)) { $wixBin = "C:\Program Files (x86)\WiX Toolset v3.14\bin" }
+          if (-not (Test-Path $wixBin)) { Write-Output "::warning::msi leg BLOCKED: WiX v3 not found on runner"; "blocked=true" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8; exit 0 }
+          $env:PATH = "$wixBin;$env:PATH"
+          jpackage --type msi --name awn-api --app-version 0 `
+            --input winstage --main-jar awn-api.jar --dest out
+          if (Test-Path "out/awn-api-0.msi") { Move-Item out/awn-api-0.msi out/awn-nightly-windows-x64.msi }
+
+      # msi 只验结构（dark 解析），不安装
+      - name: Verify msi structure
+        if: steps.msi.outputs.blocked != 'true'
+        shell: pwsh
+        run: |
+          $wixBin = "$env:WIX\bin"; if (-not (Test-Path $wixBin)) { $wixBin = "C:\Program Files (x86)\WiX Toolset v3.14\bin" }
+          & "$wixBin\dark.exe" -x msi_extract out/awn-nightly-windows-x64.msi
+          if (-not (Test-Path "msi_extract")) { Write-Output "::error::msi structure check failed"; exit 1 }
+          Write-Output "msi structure ok"
+
+      - name: List windows assets
+        if: always()
+        shell: pwsh
+        run: Get-ChildItem out -ErrorAction SilentlyContinue | Format-Table Name,Length
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: windows-assets
+          path: |
+            out/awn-nightly-windows-x64.zip
+            out/awn-nightly-windows-x64.msi
+
+  release:
+    needs: [linux, windows]
+    if: always() && !failure() && !cancelled()
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          path: artifacts
+
+      - name: Collect assets
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.zip' -o -name '*.msi' \) -exec cp {} dist/ \;
+          cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+          test -f awn-nightly-linux-x64.deb
+          test -f awn-nightly-linux-x64.rpm
+          test -f awn-nightly-windows-x64.zip
+          test -f awn-nightly-windows-x64.msi   # msi 腿 BLOCKED 时本步失败，release 不发四缺一
+
+      - name: Delete rolling nightly release
+        run: |
+          gh release delete nightly --yes --repo "$GITHUB_REPOSITORY" || true
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/nightly" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish rolling nightly
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          tag_name: nightly
+          name: Nightly build (rolling)
+          body: |
+            Automated nightly build from main. Rolling tag: only the latest build is kept.
+
+            Commit: ${{ github.sha }}
+
+            Assets:
+            - `awn-nightly-linux-x64.deb` - Debian package (installs /opt/awn-api, launcher bin/awn-api)
+            - `awn-nightly-linux-x64.rpm` - RPM package (same layout)
+            - `awn-nightly-windows-x64.zip` - Windows app-image (exe + bundled runtime), unzip and run `awn-api.exe`
+            - `awn-nightly-windows-x64.msi` - Windows installer
+            - `SHA256SUMS` - checksums for all assets
+
+            This is an automated nightly build and may be unstable.
+          prerelease: true
+          files: |
+            dist/awn-nightly-linux-x64.deb
+            dist/awn-nightly-linux-x64.rpm
+            dist/awn-nightly-windows-x64.zip
+            dist/awn-nightly-windows-x64.msi
+            dist/SHA256SUMS
