@@ -138,15 +138,25 @@ jobs:
           # msi bundler 要求版本至少两段（deb/rpm 单段 0 可用，msi 不行）
           if (Test-Path "out/awn-api-0.0.msi") { Move-Item out/awn-api-0.0.msi out/awn-nightly-windows-x64.msi }
 
-      # msi 只验结构（dark 解析），不安装
-      - name: Verify msi structure
+      # msi 验收：结构（dark 解析）＋ 载荷（大小比对），不安装
+      # 结构校验对「载荷是否存在」没有判别力——空壳 msi 也能解析通过，
+      # 故必须再加一条载荷断言：msi 内嵌 cabinet，体积应与同源 zip 相当。
+      - name: Verify msi structure and payload
         if: steps.msi.outputs.blocked != 'true'
         shell: pwsh
         run: |
           $wixBin = "$env:WIX\bin"; if (-not (Test-Path $wixBin)) { $wixBin = "C:\Program Files (x86)\WiX Toolset v3.14\bin" }
           & "$wixBin\dark.exe" -x msi_extract out/awn-nightly-windows-x64.msi
           if (-not (Test-Path "msi_extract")) { Write-Output "::error::msi structure check failed"; exit 1 }
-          Write-Output "msi structure ok"
+
+          $msi = (Get-Item out/awn-nightly-windows-x64.msi).Length
+          $zip = (Get-Item out/awn-nightly-windows-x64.zip).Length
+          Write-Output "msi=$msi zip=$zip"
+          if ($msi -lt ($zip * 0.8)) {
+            Write-Output "::error::msi payload missing: msi=$msi is far smaller than zip=$zip (empty-shell msi)"
+            exit 1
+          }
+          Write-Output "msi structure + payload ok"
 
       - name: List windows assets
         if: always()
