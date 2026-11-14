@@ -50,5 +50,5 @@
 | 运行账号 | Runtime role | 分别用于交易、情报和迁移的 PostgreSQL 最小权限身份。 | `apps/awn-api/src/main/resources/application.yml:4-29`; `deploy/docker-compose.yml:52-67,96-103` |
 | 配置输入 | Configuration input | 提供数据库、Redis、密钥、任务开关、周期、限额和部署凭证的环境变量与 profile YAML。 | `apps/awn-api/src/main/resources/application.yml:4-70`; `deploy/docker-compose.yml:28-73,95-103,111-145` |
 | 健康探针 | Health probe | Compose 和生命周期检查使用的 API HTTP health 端点或 Worker management 端点。 | `apps/awn-api/src/main/resources/application.yml:37-53`; `apps/awn-worker/src/main/resources/application.yml:30-36`; `deploy/docker-compose.yml:82-106` |
-| 超大文件 | Oversized file | 超过 1000 行的源码或内容文件；即使无执行逻辑，也作为拆分候选记录。 | `apps/web/app/globals.css:1-2`; `apps/web/app/globals.css:1080` |
+| 超大文件 | Oversized file | 超过 1000 行的源码或内容文件；即使无执行逻辑，也作为拆分候选记录。 | `apps/web/app/globals.css:1-2`; `apps/web/app/globals.css:1080` | 注：`e7a3bee` 起该文件已拆分（HEAD 为 87 行），组件层与页面域样式移至 `apps/web/app/styles/`。 |
 

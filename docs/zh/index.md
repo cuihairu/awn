@@ -11,13 +11,13 @@ hero:
   actions:
     - theme: brand
       text: 架构总览
-      link: /architecture/system-overview
+      link: /zh/architecture/system-overview
     - theme: alt
       text: 实施计划
-      link: /implementation-plan
+      link: /zh/implementation-plan
     - theme: alt
       text: API 契约
-      link: /api/contracts
+      link: /zh/api/contracts
 
 features:
   - title: 统一交易核心

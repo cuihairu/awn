@@ -28,7 +28,7 @@ AWN（麦芒网）是一个面向中国用户的**票务交易与情报平台**�
 | 异步处理 | Spring Worker + PostgreSQL Outbox | 订单超时、通知、对账、履约任务 |
 | 消息队列 | 第一阶段暂不引入 | 避免在没有实际需求时增加运维复杂度 |
 | 文件存储 | S3 兼容对象存储 | 活动图片、专场素材、受控的交付凭证 |
-| API 契约 | OpenAPI | 前后端协作契约（当前以 `docs/api/contracts.md` + `packages/api-client` 共享类型为准，OpenAPI 工件未引入） |
+| API 契约 | OpenAPI | 前后端协作契约（当前以 `docs/zh/api/contracts.md` + `packages/api-client` 共享类型为准，OpenAPI 工件未引入） |
 | 测试 | JUnit 5 + Testcontainers | 真实 PostgreSQL 环境下验证事务与并发 |
 | 部署 | Docker Compose | 单机拓扑，不引入编排层 |
 

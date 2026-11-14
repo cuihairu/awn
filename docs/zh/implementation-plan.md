@@ -31,13 +31,13 @@ Phase 01–06 均已完成（代码 + 测试 + 文档）；收尾项（文档一
 
 检查现有仓库、技术栈、目录、依赖、测试和设计文档，然后提交：
 
-- `docs/architecture/system-overview.md`
+- `docs/zh/architecture/system-overview.md`
 - `docs/architecture/module-boundaries.md`
 - `docs/architecture/domain-model.md`
 - `docs/architecture/inventory-consistency.md`
 - `docs/architecture/payment-state-machine.md`
 - `docs/architecture/campaign-rendering.md`
-- `docs/implementation-plan.md`
+- `docs/zh/implementation-plan.md`
 - `docs/adr/` 下必要的架构决策记录
 
 ::: warning

@@ -80,7 +80,7 @@ API startup does not enable Worker schedules (`apps/awn-api/src/main/resources/a
 
 - **Implementation:** 16 controllers under `apps/awn-api/src/main/java/site/awn/api/`; three servlet filters (`apps/awn-api/src/main/java/site/awn/api/auth/ApiAuthenticationFilter.java:15-77`, `apps/awn-api/src/main/java/site/awn/api/AdminAuthFilter.java:29-96`, `apps/awn-api/src/main/java/site/awn/api/TraceIdFilter.java:14-55`); the shared exception mapper (`apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java:55-101`).
 - **Configuration schema:** `apps/awn-api/src/main/resources/application.yml:4-70` and `apps/awn-api/src/main/resources/application-prod.yml`.
-- **Protocol file:** `apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java` maps module exceptions to the shared error envelope; `docs/api/contracts.md` is the external contract document.
+- **Protocol file:** `apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java` maps module exceptions to the shared error envelope; `docs/api/contracts.md` (now `docs/zh/api/contracts.md`, moved at `1b7913b`) is the external contract document.
 - **Copy location:** controller messages and filter error text (`apps/awn-api/src/main/java/site/awn/api/AdminAuthFilter.java:59-75`).
 
 ### L4 Business Modules

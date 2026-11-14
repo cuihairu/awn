@@ -80,7 +80,7 @@ API 启动不启用 Worker 调度（`apps/awn-api/src/main/resources/application
 
 - **实现：** `apps/awn-api/src/main/java/site/awn/api/` 下 16 个控制器；三个 Servlet 过滤器（`apps/awn-api/src/main/java/site/awn/api/auth/ApiAuthenticationFilter.java:15-77`、`apps/awn-api/src/main/java/site/awn/api/AdminAuthFilter.java:29-96`、`apps/awn-api/src/main/java/site/awn/api/TraceIdFilter.java:14-55`）；共享异常映射器（`apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java:55-101`）。
 - **配置 schema：** `apps/awn-api/src/main/resources/application.yml:4-70` 与 `apps/awn-api/src/main/resources/application-prod.yml`。
-- **专属协议文件：** `apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java` 把模块异常映射到共享错误信封；`docs/api/contracts.md` 是对外契约文档。
+- **专属协议文件：** `apps/awn-api/src/main/java/site/awn/api/ApiExceptionHandler.java` 把模块异常映射到共享错误信封；`docs/api/contracts.md`（现位于 `docs/zh/api/contracts.md`，`1b7913b` 迁移）是对外契约文档。
 - **文案挂载：** 控制器消息和过滤器错误文本（`apps/awn-api/src/main/java/site/awn/api/AdminAuthFilter.java:59-75`）。
 
 ### L4 业务模块

@@ -31,7 +31,7 @@
 
 - 座位坐标可选化：`platform_seats` 增坐标字段或独立坐标表（版本化，随三问验证「可复用、可校验、可版本化」口径设计）。
 - 公开端点 `SeatView` 透出可选 `x`/`y`（或分区几何参数）；**`null` = 坐标缺失，前端回退 S1 网格**，不破坏现有 2D 契约。
-- **落地记录（2026-10-18，S2 契约先行已代决，见 `venue-seatmaps.md` §8 #9）**：V27 `pos_x`/`pos_y` + `SeatView`/公开 `SeatMapItem` 可选 `x`/`y` + 前端 `SeatInput` 可选坐标（null 回退网格，消费逻辑未接）；契约条目进 `docs/api/contracts.md`。3D 渲染（S3）未动。
+- **落地记录（2026-10-18，S2 契约先行已代决，见 `venue-seatmaps.md` §8 #9）**：V27 `pos_x`/`pos_y` + `SeatView`/公开 `SeatMapItem` 可选 `x`/`y` + 前端 `SeatInput` 可选坐标（null 回退网格，消费逻辑未接）；契约条目进 `docs/zh/api/contracts.md`。3D 渲染（S3）未动。
 
 ### S3 · 真 3D 原型（three.js 程序化，Web 端先行）
 
@@ -61,7 +61,7 @@
 ## 6. 验收口径（阶段化，满足才可勾选实现项）
 
 1. S1：俯视/透视切换 + reduced-motion 尊重 + 交互回归全绿（现有 seatmap 11 例不降级）。
-2. S2：契约条目进 `docs/api/contracts.md`；`null` 坐标回退路径有测试。
+2. S2：契约条目进 `docs/zh/api/contracts.md`；`null` 坐标回退路径有测试。
 3. S3：3D 场景为几何线框；键盘选中一座的路径在 2D 层可用；1 万座渲染首帧 < 2s（开发机基线）。
 4. S4：选区/选排状态与 2D 联动一致，无第三套状态源。
 

@@ -89,7 +89,7 @@ CI and local dev route by change surface — a one-line docs edit should not tri
 
 ## Implementation phases
 
-Phase 0 (architecture baseline) → 01 engineering skeleton & module governance → 02 catalog & campaign → 03 inventory & order core → 04 payment, refunds & reliable async → 05 fulfillment & seller marketplace → 06 intelligence & operations (complete). Task briefs and acceptance criteria: `docs/implementation-plan.md`.
+Phase 0 (architecture baseline) → 01 engineering skeleton & module governance → 02 catalog & campaign → 03 inventory & order core → 04 payment, refunds & reliable async → 05 fulfillment & seller marketplace → 06 intelligence & operations (complete). Task briefs and acceptance criteria: `docs/zh/implementation-plan.md`.
 
 ## Ground rules
 
