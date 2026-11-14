@@ -68,6 +68,10 @@
 - [x] 默认构建一条命令出可运行产物（`scripts/build.sh`）— 1971d0c；build.sh 全绿
 - [x] Docker 镜像多阶段构建（api/worker/web）— 1971d0c；admin 镜像需正常网络环境构建
 - [x] docker-compose 一键起 + 一键验证 — 1971d0c；4/4 healthy
+- [x] 每日构建出原生产物（linux deb+rpm / windows exe zip + msi，滚动 `nightly` tag）— 2355a66、90ca23b、c9ae87b；run 43622358734 三 job 全 success（2026-11-15）。资产：`awn-nightly-linux-x64.deb` 102,890,056B / `awn-nightly-linux-x64.rpm` 123,163,411B / `awn-nightly-windows-x64.zip` 121,272,325B / `awn-nightly-windows-x64.msi` 121,425,241B + `SHA256SUMS` 372B（4 行，与 release asset digest 前 12 位逐一吻合）。冒烟证据：`Spring Boot launcher reached`、`deb launcher boots`（dpkg -i 装机后）、`app-image launcher boots`、`msi structure ok`（dark 解包）。release `nightly` 为 `prerelease=true`，2026-11-14T18:05:50Z 发布，head c9ae87b
+  - 首跑失败根因（43613178537，windows msi 腿）：`Bundler MSI Installer Package skipped because of a configuration problem: Version string [0] must have between 2 and 4 components` — jpackage 各 `--type` 的版本号校验不一致，deb/rpm/app-image 单段 `0` 全收、唯 msi 拒；修：msi 腿 `--app-version 0` → `0.0`（c9ae87b）
+  - arm64 如实不出：jpackage 不能跨架构出 deb/rpm，免费 runner 无 linux-arm64，README 双语已注
+  - 四缺一则不发的兜底：release 腿对 4 个资产各置 `test -f` 断言，msi 腿 BLOCKED（runner 缺 WiX v3）时不放行
 
 ### Phase 09 · 业务全链审查
 - [x] 商品/票档/票品/库存池/卖家/供货/挂牌关系澄清 + 全链时序图 + 不变量到测试清单 — 5c25520；docs build 通过
