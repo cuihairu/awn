@@ -357,12 +357,14 @@ GET  /api/v1/admin/orders
 GET  /api/v1/admin/inventory
 GET  /api/v1/admin/reconciliation
 GET  /api/v1/admin/anomalies
-POST /api/v1/admin/anomalies/{alertId}/acknowledge
+POST /api/v1/admin/anomalies/{id}/acknowledge
 GET  /api/v1/admin/audit-logs
 
 POST /api/v1/admin/events/{eventCode}/publish
 
 GET    /api/v1/admin/venues
+PUT    /api/v1/admin/venues/{venueCode}
+GET    /api/v1/admin/events
 GET    /api/v1/admin/events/{eventCode}/sessions
 POST   /api/v1/admin/sessions/{sessionCode}/venue
 DELETE /api/v1/admin/sessions/{sessionCode}/venue

@@ -42,7 +42,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 │  ├─ web                 Consumer web (Next.js 15)
 │  ├─ admin               Operations admin (Vite 7 + React)
 │  ├─ miniprogram         WeChat miniprogram (Taro 4 + React)
-│  └─ client              Mobile client (Flutter skeleton; needs `flutter create .` for platform projects)
+│  └─ client              Mobile client (Flutter; android/ + ios/ platform projects included)
 ├─ packages/              Shared frontend packages (@awn/ui, @awn/campaign-renderer,
 │                           @awn/ticket-components, @awn/api-client)
 ├─ design-system/awn/     Design system master + page overrides
@@ -59,7 +59,7 @@ Full design docs: run `pnpm docs:dev` to start the VitePress site (architecture,
 | Web | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | Admin | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | Miniprogram | `pnpm --filter @awn/miniprogram dev:weapp` | Import `apps/miniprogram` into WeChat DevTools |
-| Mobile client | `cd apps/client && flutter run` | Skeleton: Dart SDK ≥ 3.8 (Flutter 3.32+); run `flutter create .` once to generate platform projects |
+| Mobile client | `cd apps/client && flutter run` | Dart SDK ≥ 3.8 (Flutter 3.32+); android/ + ios/ platform projects included |
 | One-shot deploy | `cd deploy && cp .env.example .env && docker compose up -d --build` | See `deploy/README.md` |
 | One-command build | `scripts/build.sh` | Backend fat jars + `apps/web/.next/` + `apps/admin/dist/` + docs site; non-zero exit on failure |
 | One-shot verify | `docker compose -f deploy/docker-compose.yml up -d --build` → `curl -s http://127.0.0.1:18080/actuator/health` returns `UP` | Smoke + details: `deploy/README.md` |
@@ -81,4 +81,4 @@ Phase 0 (architecture baseline) → 01 engineering skeleton & module governance 
 
 ## Ground rules
 
-1. Inventory trusts PostgreSQL only; atomic conditional UPDATE for deduction. 2. Order + reservation + outbox in one transaction. 3. Order creation and refunds require HTTP `Idempotency-Key`; payment creation is serialized per order and rejects another active/successful payment. 4. Campaigns render published revisions only, module whitelist enforced. 5. Intelligence uses a separate schema and role; production API/Worker still connect as the bootstrap superuser, so the database role boundary is not effective until the runtime-credential isolation work is completed. 6. Modules talk via `api` packages or events only — no cross-module table access.
+1. Inventory trusts PostgreSQL only; atomic conditional UPDATE for deduction. 2. Order + reservation + outbox in one transaction. 3. Order creation and refunds require HTTP `Idempotency-Key`; payment creation is serialized per order and rejects another active/successful payment. 4. Campaigns render published revisions only, module whitelist enforced. 5. Intelligence uses a separate schema and role; production API/Worker connect as restricted roles (`awn_trading`/`awn_intel`, V12) and only migrations use the bootstrap account (`awn_app`). 6. Modules talk via `api` packages or events only — no cross-module table access.

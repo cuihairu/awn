@@ -42,7 +42,7 @@
 │  ├─ web                 网页端（Next.js 15）
 │  ├─ admin               管理后台（Vite 7 + React）
 │  ├─ miniprogram         小程序（Taro 4 + React，微信 weapp）
-│  └─ client              移动客户端（Flutter 骨架，需先 `flutter create .` 生成平台工程）
+│  └─ client              移动客户端（Flutter，已含 android/ + ios/ 平台工程）
 ├─ packages/              前端共享包（@awn/ui、@awn/campaign-renderer、
 │                           @awn/ticket-components、@awn/api-client）
 ├─ design-system/awn/     设计系统 Master + 页面级覆盖
@@ -59,7 +59,7 @@
 | 网页端 | `pnpm --filter @awn/web dev` | http://localhost:3000 |
 | 管理后台 | `pnpm --filter @awn/admin dev` | http://localhost:5174 |
 | 小程序 | `pnpm --filter @awn/miniprogram dev:weapp` | 微信开发者工具导入 `apps/miniprogram` |
-| 客户端 | `cd apps/client && flutter run` | 骨架工程：Dart SDK ≥ 3.8（对应 Flutter 3.32+），先 `flutter create .` 生成平台工程 |
+| 客户端 | `cd apps/client && flutter run` | Dart SDK ≥ 3.8（对应 Flutter 3.32+），已含 android/ + ios/ 平台工程 |
 | 一键部署 | `cd deploy && cp .env.example .env && docker compose up -d --build` | 见 `deploy/README.md` |
 | 一条命令构建 | `scripts/build.sh` | 后端 fat jar + `apps/web/.next/` + `apps/admin/dist/` + 文档站；失败非零退出 |
 | 一键验证 | `docker compose -f deploy/docker-compose.yml up -d --build` 后 `curl -s http://127.0.0.1:18080/actuator/health` 返回 UP | 冒烟与细节见 `deploy/README.md` |
@@ -82,4 +82,4 @@ Phase 0（架构基线）→ 01 工程骨架与模块治理 → 02 活动、商�
 
 ## 约束速记
 
-1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 创建订单和退款 HTTP 要求 `Idempotency-Key`，支付创建按订单串行化并拒绝已有在途/成功支付；4. 专场只渲染已发布版本，模块白名单校验；5. 情报使用独立 `intelligence` schema 与角色，但生产 API/Worker 仍以引导超管账号连接，数据库角色边界尚未生效，待运行凭据隔离完成；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。
+1. 库存只认 PostgreSQL，原子条件 UPDATE 扣减；2. 订单 + 预留 + Outbox 同事务；3. 创建订单和退款 HTTP 要求 `Idempotency-Key`，支付创建按订单串行化并拒绝已有在途/成功支付；4. 专场只渲染已发布版本，模块白名单校验；5. 情报使用独立 `intelligence` schema 与角色；生产 API/Worker 以受限角色（`awn_trading`/`awn_intel`，V12）连接，仅迁移走引导账号（`awn_app`）；6. 模块间只走 `api` 包或事件，禁止跨模块摸表。
