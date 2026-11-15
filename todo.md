@@ -280,3 +280,18 @@
 ### 目录/分类问题
 
 未见分类问题。
+
+## Codex 深审发现（2026-11-12，luna profile 近5 commit 审核，0C/6M/3m，待修）
+
+- [ ] [M] lockfile 变更触发 frontend 与 docs CI（.github/workflows/ci.yml:6、docs.yml:5）——防安全相关锁文件更新绕过门禁
+- [ ] [M] 增加精确阻断 git-clone/html-minifier 的依赖审计断言（todo.md:281）——把已记录高危残留变成可执行回归检查
+- [ ] [M] 替换或移除 download-git-repo 链路并更新锁文件（pnpm-lock.yaml:11411）——消除已知命令注入依赖
+- [ ] [M] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖
+- [ ] [M] 修正中文首页 hero 链接为 /zh/...（docs/zh/index.md:14）——中文入口现落到英文路由
+- [ ] [M] 恢复英文 /design/prototypes 页或改配置链到中文页（docs/.vitepress/config.mts:44）——消除文档站导航 404
+- [ ] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留
+- [ ] [m] 统一 source-layer-glossary 中英互链 locale 约定（docs/zh/architecture/source-layer-glossary.md:3）
+- [ ] [m] 更新两份 glossary 超大文件证据到拆分后状态（docs/architecture/source-layer-glossary.md:53）——现列 globals.css:1080 行实为 87 行
+- [ ] [m] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计
+- [ ] [m] 用声明级 CSS 契约替换仅选择器集合断言（apps/web/app/css-scope.test.ts:78）——防规则体与层叠顺序漂移
+- [ ] [m] 修正文档中不存在的 design-system 路径引用（docs/zh/design/prototypes.md:7）
