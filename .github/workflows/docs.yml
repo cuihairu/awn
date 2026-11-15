@@ -2,14 +2,18 @@ name: docs
 
 on:
   push:
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "LICENSE"
-      - ".gitignore"
-      - "*.svg"
-      - ".editorconfig"
     branches: [main]
+    # 文档站部署的正向触发：站点内容与构建输入。
+    # 旧 paths-ignore 把 docs/** 排除了——文档站部署 workflow 忽略文档自身
+    # 变更，docs-only 推送从不重部署（实测 root 404 拖三周才闭合的根因）。
+    # pnpm-lock.yaml / package.json / pnpm-workspace.yaml 影响安装产物，
+    # 同样必须触发（安全相关的锁文件更新不得绕过文档站门禁）。
+    paths:
+      - "docs/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
