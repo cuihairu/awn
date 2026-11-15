@@ -1,6 +1,6 @@
 # Source Layer Glossary
 
-English | [中文](../zh/architecture/source-layer-glossary.md)
+English | [中文](/zh/architecture/source-layer-glossary)
 
 This glossary defines the runtime concepts used by the source layer analysis. Paths and line numbers refer to the source inspected at commit `7e43d70`.
 
@@ -50,5 +50,5 @@ This glossary defines the runtime concepts used by the source layer analysis. Pa
 | 运行账号 | Runtime role | The least-privilege PostgreSQL identity assigned separately to trading, intelligence, and migration work. | `apps/awn-api/src/main/resources/application.yml:4-29`; `deploy/docker-compose.yml:52-67,96-103` |
 | 配置输入 | Configuration input | Environment variables and profile YAML that supply database endpoints, Redis, secrets, task toggles, intervals, limits, and deployment credentials. | `apps/awn-api/src/main/resources/application.yml:4-70`; `deploy/docker-compose.yml:28-73,95-103,111-145` |
 | 健康探针 | Health probe | The API HTTP health endpoint or Worker management endpoint used by Compose and lifecycle checks. | `apps/awn-api/src/main/resources/application.yml:37-53`; `apps/awn-worker/src/main/resources/application.yml:30-36`; `deploy/docker-compose.yml:82-106` |
-| 超大文件 | Oversized file | A source or content file over 1,000 lines that is a split candidate even when it contains no executable logic. | `apps/web/app/globals.css:1-2`; `apps/web/app/globals.css:1080` | Note: as of `e7a3bee` this file is split (87 lines at HEAD); component and page-scope styles moved to `apps/web/app/styles/`. |
+| 超大文件 | Oversized file | A source or content file over 1,000 lines that is a split candidate even when it contains no executable logic. | `apps/web/app/globals.css:1-2`; 1080 lines at `7e43d70`. Split by `e7a3bee`: 87 lines at HEAD, page/component styles moved to `apps/web/app/styles/` |
 
