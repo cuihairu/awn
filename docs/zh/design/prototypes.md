@@ -4,7 +4,7 @@
 > [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)（`index.html` 为总览），
 > 设计体系见 [`ui-system.md`](/design/ui-system)。本页保留为早期 SVG 原型存档。
 
-以下为 2026-10-12 前的 SVG 版原型存档，当前原型见上方 [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)。设计令牌见 `design-system/awn/MASTER.md`。
+以下为 2026-10-12 前的 SVG 版原型存档，当前原型见上方 [`docs/design/prototypes/`](https://github.com/cuihairu/awn/tree/main/docs/design/prototypes)。设计令牌见 `packages/ui/src/themes.ts`（`AWN_THEME_NAMES`，8 套主题令牌）。
 
 ## 消费端 Web（Next.js）· F1 专场页
 
