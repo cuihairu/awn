@@ -1,72 +1,25 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { join, relative } from 'node:path'
 
 /**
  * CSS 分层契约（LAY-001）：
  * - 结构层：reset / 元素基础 / 页面骨架 / 字号令牌，只留在 apps/web/app/globals.css；
  * - 组件层与页面域：按域拆到 apps/web/app/styles/ 下的文件，globals.css 不再集中承载。
  *
- * 本测试两道门：
- * 1. 全量选择器不丢失——把 apps/web/app 下所有 .css 的顶层选择器求并集，
- *    必须等于拆分前的固定清单（154 组）。纯移动重构一旦误删/误改任何规则即红。
- * 2. 分层不回流——globals.css 只允许出现结构层选择器；
+ * 本测试四道门：
+ * 1. 声明级全量契约——每个 .css 的全部规则（选择器 + 归一化声明串，按源码顺序；
+ *    @media/@supports 内层以「<条件> ▸ <选择器>」编码，旧版选择器集合断言对它们是盲区）
+ *    逐条等于快照 css-scope.snapshot.json。旧版只比选择器集合，规则体与层叠顺序
+ *    漂移检测不到（2026-11-12 深审 296 条）。
+ *    更新真值：UPDATE_SNAPSHOT=1 pnpm vitest run apps/web/app/css-scope.test.ts
+ * 2. 跨文件层叠契约——layout.tsx 样式导入顺序固定
+ *    globals → chrome → catalog → events → checkout（后文件层叠覆盖前文件）。
+ * 3. 分层不回流——globals.css 只允许出现结构层选择器；
  *    组件/页面域选择器必须已迁出。拆分前 globals.css 承载全部 → 此断言为红（红先行）。
+ * 4. styles/ 目录存在且每个文件非空（拆出去的规则有归宿）。
  */
-
-// 拆分前（LAY-001 前置）globals.css 全部顶层选择器，顺序无关的集合。
-const GOLDEN = [
-  '*', 'body', 'h1', 'p', 'li', ':root',
-  '.page', '.hero', '.logo-mark', '.logo-mark::before', '.logo-mark::after',
-  '.logo-mark::before, .logo-mark::after', '.placeholder', '.placeholder a',
-  '.topnav', '.topnav a', '.topnav a:hover',
-  '.crumbs', '.crumbs a',
-  '.section-head', '.section-head h1', '.section-head h2', '.muted',
-  '.state', '.state--error', '.state--error a',
-  '.filters', '.filters__row', '.chips', '.chip', '.chip--on',
-  '.field', '.field--grow', '.field input, .field select',
-  '.group', '.group h2, .group h3', '.group h3', '.count',
-  '.card-grid', '.person-card', '.person-card:hover',
-  '.person-card__body', '.person-card__body span',
-  '.tags', '.tag', '.tag--quiet',
-  '.star-photo', '.star-photo--hero', '.star-photo--placeholder',
-  '.star-photo--placeholder svg', '.star-photo__reason', '.star-photo__badge',
-  '.detail-head', '.detail-head__body', '.detail-head__body h1',
-  '.detail-section', '.detail-section h2',
-  '.entry-list', '.entry', '.entry:hover .entry__title',
-  '.entry__title', '.entry__meta',
-  '.row', '.row-between', '.badge', '.badge--success', '.badge--warning',
-  '.badge--danger', '.num', '.price', '.price::before', '.price-yuan',
-  '.title', '.subtitle', '.cols-2',
-  '.event-card', '.event-card:hover', '.event-card__cover',
-  '.event-card__cover span', '.event-card__body',
-  '.session-card', '.session-card:hover',
-  '.tier-row', '.tier-row:hover', '.tier-row[aria-disabled=\'true\']',
-  '.tier-dot', '.tier-dot-1', '.tier-dot-2', '.tier-dot-3', '.tier-dot-4',
-  '.tier-dot-5', '.tier-list',
-  '.geo-row', '.geo-row svg', '.geo-row-block', '.geo-map', '.geo-map-frame',
-  '.geo-map-image', '.geo-map-marker', '.geo-map-caption',
-  '.page-head', '.page-head h1',
-  '.btn', '.btn:disabled', '.btn--ghost', '.card', '.sunken', '.notice-bar',
-  '.steps', '.step', '.step + .step::before', '.step .n',
-  ".step[data-done='true']", ".step[data-done='true'] .n",
-  '.purchase-grid', '.cart-summary',
-  '.stepper', '.stepper button', '.stepper button:disabled', '.stepper span',
-  '.hint', '.divider', '.table', '.table th, .table td', '.table th',
-  '.table th.num, .table td.num',
-  '.seatmap-svg', '.seatmap-stage', '.seatmap-stage-title',
-  '.seatmap-stage-note', '.seatmap-section-title', '.seatmap-row-label',
-  '.seat rect', '.seat rect.seat--free', '.seat rect.seat--occupied',
-  '.seat rect.seat--selected', '.seat:focus-visible', '.seat-legend',
-  '.seat-legend li', '.seat-dot', '.seat-dot--free', '.seat-dot--occupied',
-  '.seat-dot--selected',
-  '.theme-picker', '.theme-picker__head', '.theme-picker button',
-  '.theme-picker button:hover', '.theme-picker button[aria-pressed="true"]',
-  '.seatmap-view', '.seatmap-view button', '.seatmap-view button:hover',
-  '.seatmap-view button[aria-pressed="true"]', '.seatmap-viewport',
-  '.seatmap-viewport--tilted .seatmap-svg',
-]
 
 // 结构层专属：拆分后只允许留在 globals.css 的选择器。
 const BASE_ONLY = [
@@ -75,19 +28,13 @@ const BASE_ONLY = [
   '.logo-mark::before, .logo-mark::after', '.placeholder', '.placeholder a',
 ]
 
-/** 提取单个 css 文件的顶层选择器（去注释、去媒体查询包装、压空白、排序去重）。 */
-function selectorsOf(css: string): string[] {
-  const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '')
-  const out = new Set<string>()
-  for (const m of noComments.matchAll(/([^{}]+)\{/g)) {
-    const raw = m[1].replace(/\s+/g, ' ').trim()
-    if (!raw || raw.startsWith('@')) continue
-    out.add(raw)
-  }
-  return [...out].sort()
-}
+type Rule = { s: string; d: string }
+type FileSnapshot = { file: string; rules: Rule[] }
 
-/** apps/web/app 下所有 .css 文件（递归）。 */
+const APP_DIR = __dirname
+const SNAPSHOT_PATH = join(APP_DIR, 'css-scope.snapshot.json')
+
+/** apps/web/app 下所有 .css 文件（递归、跳 node_modules/隐藏目录，绝对路径有序）。 */
 function cssFiles(dir: string): string[] {
   const found: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -102,23 +49,86 @@ function cssFiles(dir: string): string[] {
   return found.sort()
 }
 
-// 测试文件与 globals.css 同目录（apps/web/app/），__dirname 即 app 目录。
-const APP_DIR = __dirname
+/** 去注释。 */
+function stripComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/** 归一化声明块：分号切分、逐条压空白去首尾、保留源码顺序重组（简写覆盖语义不丢序）。 */
+function normalizeDecls(body: string): string {
+  return body
+    .split(';')
+    .map((d) => d.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('; ')
+}
+
+/**
+ * 解析一段 css 为有序规则表。花括号配对读块（@media 等嵌套块不误切）；
+ * @media/@supports 条件块递归展开、内层选择器带条件前缀；其余 @ 规则
+ * （如 @keyframes）整块以内文归一化记录。输出顺序 = 源码层叠顺序。
+ */
+function parseRules(css: string, context = ''): Rule[] {
+  const rules: Rule[] = []
+  const text = stripComments(css)
+  let i = 0
+  while (i < text.length) {
+    const open = text.indexOf('{', i)
+    if (open === -1) break
+    const prelude = text.slice(i, open).replace(/\s+/g, ' ').trim()
+    let depth = 1
+    let j = open + 1
+    while (j < text.length && depth > 0) {
+      if (text[j] === '{') depth++
+      else if (text[j] === '}') depth--
+      j++
+    }
+    const body = text.slice(open + 1, j - 1)
+    if (prelude.startsWith('@media') || prelude.startsWith('@supports')) {
+      rules.push(...parseRules(body, context ? `${context} ▸ ${prelude}` : prelude))
+    } else if (prelude) {
+      const sel = context ? `${context} ▸ ${prelude}` : prelude
+      rules.push({ s: sel, d: normalizeDecls(body) })
+    }
+    i = j
+  }
+  return rules
+}
+
+function currentSnapshots(): FileSnapshot[] {
+  return cssFiles(APP_DIR).map((abs) => ({
+    file: relative(APP_DIR, abs),
+    rules: parseRules(readFileSync(abs, 'utf8')),
+  }))
+}
 
 describe('CSS 分层契约（LAY-001）', () => {
-  it('全量顶层选择器不因拆分丢失', () => {
-    const files = cssFiles(APP_DIR)
-    expect(files.length).toBeGreaterThan(0)
-    const union = new Set<string>()
-    for (const f of files) {
-      for (const s of selectorsOf(readFileSync(f, 'utf8'))) union.add(s)
+  it('声明级全量契约：规则体与层叠顺序不漂移', () => {
+    const current = currentSnapshots()
+    expect(current.length).toBe(5)
+    if (process.env.UPDATE_SNAPSHOT) {
+      writeFileSync(SNAPSHOT_PATH, JSON.stringify(current, null, 2) + '\n')
+      return
     }
-    expect([...union].sort()).toEqual([...GOLDEN].sort())
+    const expected = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8')) as FileSnapshot[]
+    expect(current).toEqual(expected)
+  })
+
+  it('layout.tsx 样式导入顺序固定（跨文件层叠契约）', () => {
+    const layout = readFileSync(join(APP_DIR, 'layout.tsx'), 'utf8')
+    const order = [...layout.matchAll(/import\s+['"]([^'"]+\.css)['"]/g)].map((m) => m[1])
+    expect(order).toEqual([
+      './globals.css',
+      './styles/chrome.css',
+      './styles/catalog.css',
+      './styles/events.css',
+      './styles/checkout.css',
+    ])
   })
 
   it('globals.css 只保留结构层（组件/页面域已迁出）', () => {
-    const globals = selectorsOf(
-      readFileSync(join(APP_DIR, 'globals.css'), 'utf8'),
+    const globals = parseRules(readFileSync(join(APP_DIR, 'globals.css'), 'utf8')).map(
+      (r) => r.s,
     )
     const baseSet = new Set(BASE_ONLY)
     const leaked = globals.filter((s) => !baseSet.has(s))
