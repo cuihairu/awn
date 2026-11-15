@@ -287,11 +287,11 @@
 - [x] [M] 增加精确阻断 git-clone/html-minifier 的依赖审计断言（todo.md:281）——把已记录高危残留变成可执行回归检查 ——scripts/check-vuln-deps.mjs 扫全部 workspace package.json，git-clone/download-git-repo/html-minifier 出现为直接依赖即红；接入 ci.yml frontend 腿 + pnpm audit:vuln-deps；双路实测 green rc=0 / 注入假依赖 red rc=1 列出违者 — d12c53c；pnpm test 341/341 绿
 - [ ] [M] [BLOCKED·上游] 替换或移除 download-git-repo 链路并更新锁文件（pnpm-lock.yaml:11411）——消除已知命令注入依赖 ——`pnpm why` 实证唯一入口 @tarojs/cli@4.1.2→download-git-repo@3.0.2（仅 @awn/miniprogram devDeps）；上游 @tarojs/cli@4.3.3 最新版仍钉 ^3.0.2、npm 无 patched 版本，替换需 fork Taro 工具链；与 VULN-AWN-001 同源同 BLOCKED 面，已由 287 断言守住「不得成为直接依赖」
 - [ ] [M] [BLOCKED·上游] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖 ——唯一入口 @tarojs/webpack5-runner@4.1.2→html-minifier@4.0.0（weapp 构建链，非运行时）；@tarojs/webpack5-runner@latest 仍钉 ^4.0.0、上游停维护，无法以 override 换维护版（无版本可选）；与 VULN-AWN-002 同源，同被 287 断言守住
-- [ ] [M] 修正中文首页 hero 链接为 /zh/...（docs/zh/index.md:14）——中文入口现落到英文路由
-- [ ] [M] 恢复英文 /design/prototypes 页或改配置链到中文页（docs/.vitepress/config.mts:44）——消除文档站导航 404
-- [ ] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留
-- [ ] [m] 统一 source-layer-glossary 中英互链 locale 约定（docs/zh/architecture/source-layer-glossary.md:3）
-- [ ] [m] 更新两份 glossary 超大文件证据到拆分后状态（docs/architecture/source-layer-glossary.md:53）——现列 globals.css:1080 行实为 87 行
-- [ ] [m] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计
-- [ ] [m] 用声明级 CSS 契约替换仅选择器集合断言（apps/web/app/css-scope.test.ts:78）——防规则体与层叠顺序漂移
-- [ ] [m] 修正文档中不存在的 design-system 路径引用（docs/zh/design/prototypes.md:7）
+- [x] [M] 修正中文首页 hero 链接为 /zh/...（docs/zh/index.md:14）——中文入口现落到英文路由 ——复核：dfbe87a 已修，hero 三链接现全 /zh/ 前缀（git log -p 实证：`/architecture/system-overview`→`/zh/architecture/system-overview` 等），线上 200
+- [x] [M] 恢复英文 /design/prototypes 页或改配置链到中文页（docs/.vitepress/config.mts:44）——消除文档站导航 404 ——采 B 支：nav 5 处 + sidebar 5 处死链全改指 /zh/ 真页（系统总览/API 契约/界面原型/实施计划/ADR-0001，中文标签配中文页自洽）；5 个 /zh/ 目标页线上 200 实证；pnpm -C docs build 绿 — ef2d57e。注：G2-009（根 locale 是否建英文页区）结构性决策仍开放
+- [x] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留 ——复核：前提不成立，root /design/ui-system 本就是中文内容页（# AWN（麦芒网）UI 设计系统），:5 链接命中无死链（线上 200）；建 zh 副本会内容分叉，不建
+- [x] [m] 统一 source-layer-glossary 中英互链 locale 约定（docs/zh/architecture/source-layer-glossary.md:3）——两份互链统一为绝对路径（/…/source-layer-glossary 无 .md 后缀），与 nav/sidebar 约定一致；docs build 绿 — 8888458
+- [x] [m] 更新两份 glossary 超大文件证据到拆分后状态（docs/architecture/source-layer-glossary.md:53）——证据格改为「7e43d70 时 1080 行；e7a3bee 起已拆分：HEAD 87 行，样式移至 apps/web/app/styles/」，尾注并入格内（原 5 列破损格一并修掉）；globals.css 实测 87 行 — 8888458
+- [ ] [m] [BLOCKED·历史] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计 ——拆已推送历史需 rebase/force-push，舰队禁令禁止；若未来必须审计，只能以 revert+分立重放（新提交）方式补偿，需用户指令
+- [x] [m] 用声明级 CSS 契约替换仅选择器集合断言（apps/web/app/css-scope.test.ts:78）——防规则体与层叠顺序漂移 ——GOLDEN 选择器集合替换为声明级快照契约（css-scope.snapshot.json：157 条「选择器+归一化声明串」按源码序逐条比对，@media 内层 2 条入保=旧盲区闭合）+ layout.tsx 导入顺序断言（globals→chrome→catalog→events→checkout）；三路红验（规则体漂移/@media 漂移/导入顺序漂移全红）+ 旧探针失误自查（letter-spacing 不存在致假绿，取真实声明重验）；pnpm test 342/342 — b57d671
+- [x] [m] 修正文档中不存在的 design-system 路径引用（docs/zh/design/prototypes.md:7）——`design-system/awn/MASTER.md` 全仓无此文件（find 实证），改指真实令牌源 packages/ui/src/themes.ts（AWN_THEME_NAMES 8 套主题）；docs build 绿 — b259049
