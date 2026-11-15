@@ -39,18 +39,18 @@ export default withMermaid(
 
       nav: [
         { text: '首页', link: '/' },
-        { text: '架构', link: '/architecture/system-overview' },
-        { text: 'API 契约', link: '/api/contracts' },
-        { text: '设计', link: '/design/prototypes' },
-        { text: '实施', link: '/implementation-plan' },
-        { text: 'ADR', link: '/adr/0001-modular-monolith' },
+        { text: '架构', link: '/zh/architecture/system-overview' },
+        { text: 'API 契约', link: '/zh/api/contracts' },
+        { text: '设计', link: '/zh/design/prototypes' },
+        { text: '实施', link: '/zh/implementation-plan' },
+        { text: 'ADR', link: '/zh/adr/0001-modular-monolith' },
       ],
 
       sidebar: [
         {
           text: '架构',
           items: [
-            { text: '系统总览', link: '/architecture/system-overview' },
+            { text: '系统总览', link: '/zh/architecture/system-overview' },
             { text: '模块边界', link: '/architecture/module-boundaries' },
             { text: '领域模型', link: '/architecture/domain-model' },
             { text: '交易全链模型', link: '/architecture/trading-model' },
@@ -66,12 +66,12 @@ export default withMermaid(
         },
         {
           text: '接口',
-          items: [{ text: 'API 契约', link: '/api/contracts' }],
+          items: [{ text: 'API 契约', link: '/zh/api/contracts' }],
         },
         {
           text: '设计',
           items: [
-            { text: '界面原型图', link: '/design/prototypes' },
+            { text: '界面原型图', link: '/zh/design/prototypes' },
             { text: 'UI 设计系统', link: '/design/ui-system' },
             { text: '3D 座位图方案', link: '/design/seatmap-3d-plan' },
             { text: '场馆布局数据模型', link: '/design/venue-layout-schema' },
@@ -82,7 +82,7 @@ export default withMermaid(
         {
           text: '实施',
           items: [
-            { text: '实施计划', link: '/implementation-plan' },
+            { text: '实施计划', link: '/zh/implementation-plan' },
             { text: '测试清单', link: '/testing/checklist' },
             { text: '压测报告', link: '/testing/load-test-report' },
             { text: '部署结构', link: '/deployment/structure' },
@@ -94,7 +94,7 @@ export default withMermaid(
         {
           text: '架构决策记录',
           items: [
-            { text: 'ADR-0001 模块化单体优先', link: '/adr/0001-modular-monolith' },
+            { text: 'ADR-0001 模块化单体优先', link: '/zh/adr/0001-modular-monolith' },
             { text: 'ADR-0002 PostgreSQL 库存权威', link: '/adr/0002-postgresql-inventory-authority' },
             { text: 'ADR-0003 Outbox + Worker 异步', link: '/adr/0003-outbox-worker-async' },
             { text: 'ADR-0004 情报数据隔离', link: '/adr/0004-intelligence-isolation' },
