@@ -283,10 +283,10 @@
 
 ## Codex 深审发现（2026-11-12，luna profile 近5 commit 审核，0C/6M/3m，待修）
 
-- [ ] [M] lockfile 变更触发 frontend 与 docs CI（.github/workflows/ci.yml:6、docs.yml:5）——防安全相关锁文件更新绕过门禁
-- [ ] [M] 增加精确阻断 git-clone/html-minifier 的依赖审计断言（todo.md:281）——把已记录高危残留变成可执行回归检查
-- [ ] [M] 替换或移除 download-git-repo 链路并更新锁文件（pnpm-lock.yaml:11411）——消除已知命令注入依赖
-- [ ] [M] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖
+- [x] [M] lockfile 变更触发 frontend 与 docs CI（.github/workflows/ci.yml:6、docs.yml:5）——防安全相关锁文件更新绕过门禁 ——复核：lockfile 本就不在两份 workflow 的 paths-ignore 里，锁文件变更现即触发（字面前提不成立）；真缺陷是 docs.yml 把 docs/** 排除＝文档站部署忽略文档自身变更（root 404 拖三周的机制根因），已改正向 paths（docs/**/pnpm-lock.yaml/package.json/pnpm-workspace.yaml/docs.yml）— f39ecdc；actionlint 过
+- [x] [M] 增加精确阻断 git-clone/html-minifier 的依赖审计断言（todo.md:281）——把已记录高危残留变成可执行回归检查 ——scripts/check-vuln-deps.mjs 扫全部 workspace package.json，git-clone/download-git-repo/html-minifier 出现为直接依赖即红；接入 ci.yml frontend 腿 + pnpm audit:vuln-deps；双路实测 green rc=0 / 注入假依赖 red rc=1 列出违者 — d12c53c；pnpm test 341/341 绿
+- [ ] [M] [BLOCKED·上游] 替换或移除 download-git-repo 链路并更新锁文件（pnpm-lock.yaml:11411）——消除已知命令注入依赖 ——`pnpm why` 实证唯一入口 @tarojs/cli@4.1.2→download-git-repo@3.0.2（仅 @awn/miniprogram devDeps）；上游 @tarojs/cli@4.3.3 最新版仍钉 ^3.0.2、npm 无 patched 版本，替换需 fork Taro 工具链；与 VULN-AWN-001 同源同 BLOCKED 面，已由 287 断言守住「不得成为直接依赖」
+- [ ] [M] [BLOCKED·上游] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖 ——唯一入口 @tarojs/webpack5-runner@4.1.2→html-minifier@4.0.0（weapp 构建链，非运行时）；@tarojs/webpack5-runner@latest 仍钉 ^4.0.0、上游停维护，无法以 override 换维护版（无版本可选）；与 VULN-AWN-002 同源，同被 287 断言守住
 - [ ] [M] 修正中文首页 hero 链接为 /zh/...（docs/zh/index.md:14）——中文入口现落到英文路由
 - [ ] [M] 恢复英文 /design/prototypes 页或改配置链到中文页（docs/.vitepress/config.mts:44）——消除文档站导航 404
 - [ ] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留
