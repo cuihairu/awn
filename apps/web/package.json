@@ -13,7 +13,7 @@
     "@awn/campaign-renderer": "workspace:*",
     "@awn/ticket-components": "workspace:*",
     "@awn/ui": "workspace:*",
-    "next": "^15.5.4",
+    "next": "^15.5.29",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
