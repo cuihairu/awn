@@ -19,7 +19,8 @@
     "overrides": {
       "html-minifier": "^5.4.0",
       "glob": "^14.0.6",
-      "serialize-javascript": "^7.1.4"
+      "serialize-javascript": "^7.1.4",
+      "minimatch": ">=11.0.1"
     }
   }
 }
