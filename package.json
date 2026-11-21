@@ -20,7 +20,8 @@
       "html-minifier": "^5.4.0",
       "glob": "^14.0.6",
       "serialize-javascript": "^7.1.4",
-      "minimatch": ">=11.0.1"
+      "minimatch": ">=11.0.1",
+      "postcss": "^8.5.29"
     }
   }
 }
