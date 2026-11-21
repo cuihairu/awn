@@ -1,0 +1,6 @@
+{
+  "name": "download-git-repo",
+  "version": "3.99.99",
+  "description": "Security stub replacing the vulnerable download-git-repo@3.0.2 chain (git-clone command injection, decompress prototype pollution, got 8). Only used by `taro init`, which this repo never runs — templates live in-repo. See todo.md VULN-AWN-001.",
+  "main": "index.js"
+}
