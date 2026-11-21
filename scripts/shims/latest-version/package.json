@@ -1,0 +1,6 @@
+{
+  "name": "latest-version",
+  "version": "5.99.99",
+  "description": "Security stub replacing latest-version@5.1.0 (pulls package-json@6.5.0 → got@9.6.0, unpatched advisory chain). Only consumer is the interactive `taro update` command, which this repo never runs — upgrades are explicit pnpm installs. See todo.md item 315.",
+  "main": "index.js"
+}

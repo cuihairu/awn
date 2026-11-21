@@ -27,7 +27,8 @@
       "katex": "^0.18.2",
       "decode-uri-component": "^0.5.1",
       "adm-zip": "^0.6.0",
-      "download-git-repo": "file:scripts/shims/download-git-repo"
+      "download-git-repo": "file:scripts/shims/download-git-repo",
+      "latest-version": "file:scripts/shims/latest-version"
     }
   }
 }
