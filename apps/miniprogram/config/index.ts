@@ -32,6 +32,12 @@ export default defineConfig(async (merge) => {
     h5: {
       publicPath: '/',
       staticDirectory: 'static',
+      webpackChain(chain) {
+        // 与 mini.webpackChain 同型：webpackbar 5.x 把自身选项（color/reporters 等）
+        // 挂到 ProgressPlugin 的 this.options 上，webpack 5.111 严格 schema 校验不过
+        //（H5 prebundle 阶段炸）；进度条非构建必需，直接移除。
+        chain.plugins.delete('webpackbar')
+      },
       postcss: {
         autoprefixer: { enable: true, config: {} },
         cssModules: { enable: false },
