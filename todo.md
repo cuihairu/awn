@@ -292,8 +292,8 @@
 - [x] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留 ——复核：前提不成立，root /design/ui-system 本就是中文内容页（# AWN（麦芒网）UI 设计系统），:5 链接命中无死链（线上 200）；建 zh 副本会内容分叉，不建
 - [x] [m] 统一 source-layer-glossary 中英互链 locale 约定（docs/zh/architecture/source-layer-glossary.md:3）——两份互链统一为绝对路径（/…/source-layer-glossary 无 .md 后缀），与 nav/sidebar 约定一致；docs build 绿 — 8888458
 - [x] [m] 更新两份 glossary 超大文件证据到拆分后状态（docs/architecture/source-layer-glossary.md:53）——证据格改为「7e43d70 时 1080 行；e7a3bee 起已拆分：HEAD 87 行，样式移至 apps/web/app/styles/」，尾注并入格内（原 5 列破损格一并修掉）；globals.css 实测 87 行 — 8888458
-- [ ] [m] [BLOCKED·历史] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计 ——拆已推送历史需 rebase/force-push，舰队禁令禁止；若未来必须审计，只能以 revert+分立重放（新提交）方式补偿，需用户指令
-  - 复核（2026-11-21）：未收到 rebase/force-push 授权指令，拆分仍被舰队禁令禁止，维持卡点
+- [x] [m] [BLOCKED·历史] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计 ——**已以台账取代关闭（2026-11-21 用户令）**：本行如实登记 dfbe87a 混提交事实与改动面（依赖升级+配置迁移+死链修复，package.json:15、pnpm-workspace.yaml:8），台账记录即审计替代——未来审计凭本行回溯即可，无需 revert+分立重放；拆分仍受舰队禁令禁止（rebase/force-push 不执行），审计缺口由台账登记弥合 — dfbe87a
+  - 复核（2026-11-21）：用户令「以台账取代关闭」——台账记录作为审计替代，dfbe87a 混提交已由本行如实登记（package.json:15、pnpm-workspace.yaml:8），未来审计凭本行回溯；rebase/force-push 与 revert+重放均不执行，拆分维持禁止，缺口由台账登记弥合 — dfbe87a
 - [x] [m] 用声明级 CSS 契约替换仅选择器集合断言（apps/web/app/css-scope.test.ts:78）——防规则体与层叠顺序漂移 ——GOLDEN 选择器集合替换为声明级快照契约（css-scope.snapshot.json：157 条「选择器+归一化声明串」按源码序逐条比对，@media 内层 2 条入保=旧盲区闭合）+ layout.tsx 导入顺序断言（globals→chrome→catalog→events→checkout）；三路红验（规则体漂移/@media 漂移/导入顺序漂移全红）+ 旧探针失误自查（letter-spacing 不存在致假绿，取真实声明重验）；pnpm test 342/342 — b57d671
 - [x] [m] 修正文档中不存在的 design-system 路径引用（docs/zh/design/prototypes.md:7）——`design-system/awn/MASTER.md` 全仓无此文件（find 实证），改指真实令牌源 packages/ui/src/themes.ts（AWN_THEME_NAMES 8 套主题）；docs build 绿 — b259049
 
