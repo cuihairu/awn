@@ -26,6 +26,13 @@ overrides:
   # docs build 通过（87.69s），故用 `parent>child` 选择器把 vite 仅限到 vitepress 链
   # （admin 直依赖 ^7.1.0 仍解析 7.3.7，不受影响）。
   'vitepress>vite': 6.4.6
+  # 322：wds 4.15.2 被 6 个 moderate advisory 覆盖（patched ≥5.2.6）。Taro webpack5-runner 的
+  # getDevServerOptions 硬编码 `https:false`，wds 5.2.6+ 移除该键（additionalProperties:false）
+  # 且仅在构造 dev server 时 validate —— 但构造只发生在 dev/watch 分支（index.h5.js:109-124）；
+  # 生产 build 走 !isWatch 分支（:73）从不构造 dev server，weapp mini runner 根本不 import wds。
+  # 且 H5/weapp dev 已因 webpack-virtual-modules 0.6.2（另一上游死结）整体不可跑，无可用路径回归。
+  # 故升到 5.2.7（最新 patched 5.x）可清 6 findings 且不破生产构建/测试；dev 维持既断。
+  webpack-dev-server: 5.2.7
 
 allowBuilds:
   '@parcel/watcher': true
