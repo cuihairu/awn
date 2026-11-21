@@ -132,6 +132,16 @@ export default withMermaid(
       },
     },
 
+    // esbuild 0.28.2 无法把 mermaid 的 `(({ ... } = {}) => ...)` 参数解构降级到
+    // vite 默认 'modules' 目标展开的多浏览器列表（chrome87/edge88/es2020/firefox78/safari14），
+    // 报 "Transforming destructuring to the configured target environment ... is not supported yet"。
+    // 显式指定 es2020 走单目标路径，浏览器覆盖面与 'modules' 一致，不再触发降级。
+    vite: {
+      build: {
+        target: 'es2020',
+      },
+    },
+
     mermaid: {},
     lastUpdated: true,
   })
