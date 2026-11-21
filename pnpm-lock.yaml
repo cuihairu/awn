@@ -10,6 +10,7 @@ overrides:
   serialize-javascript: ^7.1.4
   minimatch: '>=11.0.1'
   postcss: ^8.5.29
+  swiper: ~12.2.0
 
 importers:
 
@@ -6234,8 +6235,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  swiper@11.1.15:
-    resolution: {integrity: sha512-IzWeU34WwC7gbhjKsjkImTuCRf+lRbO6cnxMGs88iVNKDwV+xQpBCJxZ4bNH6gSrIbbyVJ1kuGzo3JTtz//CBw==}
+  swiper@12.2.0:
+    resolution: {integrity: sha512-K8uXsBZU6ME97Ia3xbBge8IRCnR1lOmIILzvY/jGVic7dSTQ530s3uO8RvXbPUtkkXLWIwmZLRPbtDxRWVAFdg==}
     engines: {node: '>= 4.7.0'}
 
   symbol-tree@3.2.4:
@@ -8612,7 +8613,7 @@ snapshots:
       classnames: 2.5.1
       react: 18.3.1
       solid-js: 1.9.17
-      swiper: 11.1.15
+      swiper: 12.2.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - '@tarojs/helper'
@@ -8636,7 +8637,7 @@ snapshots:
       hammerjs: 2.0.8
       hls.js: 1.7.3
       resolve-pathname: 3.0.0
-      swiper: 11.1.15
+      swiper: 12.2.0
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.3.31
@@ -13334,7 +13335,7 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.6.1
 
-  swiper@11.1.15: {}
+  swiper@12.2.0: {}
 
   symbol-tree@3.2.4: {}
 

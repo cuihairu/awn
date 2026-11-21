@@ -21,7 +21,8 @@
       "glob": "^14.0.6",
       "serialize-javascript": "^7.1.4",
       "minimatch": ">=11.0.1",
-      "postcss": "^8.5.29"
+      "postcss": "^8.5.29",
+      "swiper": "~12.2.0"
     }
   }
 }
