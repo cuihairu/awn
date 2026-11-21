@@ -21,6 +21,11 @@ overrides:
   esbuild: 0.28.2
   uuid: 11.1.1
   webpack-dev-middleware: 7.4.6
+  # 310：vitepress 1.6.4 声明依赖 vite ^5.4.14（普通依赖而非 peer，无硬约束）；5.4.21 为
+  # 5.x 末版且被 8 个 advisory 覆盖（patched ≥6.4.2）。实测 vitepress 1.6.4 在 vite 6.4.6 下
+  # docs build 通过（87.69s），故用 `parent>child` 选择器把 vite 仅限到 vitepress 链
+  # （admin 直依赖 ^7.1.0 仍解析 7.3.7，不受影响）。
+  'vitepress>vite': 6.4.6
 
 allowBuilds:
   '@parcel/watcher': true
