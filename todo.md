@@ -254,7 +254,7 @@
 ## 漏洞扫描遗留（2026-11-03 全舰队扫描，源 scratch/vuln-scan-*.md）
 
 - [ ] VULN-AWN-001 [BLOCKED·上游无补丁·高危·命令注入] git-clone ≤0.2.0（@tarojs/cli>download-git-repo 链，终扫残留 1）：上游无 patched 版本，需替换 download-git-repo 链路；不勾，验收：链路替换后 pnpm audit --audit-level=high 中 git-clone 不再命中 + pnpm test 绿（338/338）
-- [ ] VULN-AWN-002 [BLOCKED·上游停维护·高危 REDoS] html-minifier ≤4.0.0（终扫残留 1）：上游停维护无补丁，需换 html-minifier-terser；不勾，验收：替换后 pnpm audit 中 html-minifier 不再命中 + pnpm test 绿（338/338）
+- [x] VULN-AWN-002 [高危 REDoS] html-minifier ≤4.0.0（终扫残留 1）——验收达成：pnpm.overrides `html-minifier@^5.4.0`（2026-11-21 f67b52b），audit 不再命中 + pnpm test 342/342 绿。旧「上游停维护无补丁」判定部分错误：5.x（至 5.4.0）存在且含修复；真边界是 5.x 纯 ESM（exports 仅 import 条件）vs MiniPlugin CJS require——由 node ≥22.12 require(esm) 跨越，weapp build exit=0 实证
 
 ## 源码分层分析 2026-11-07
 
@@ -286,7 +286,7 @@
 - [x] [M] lockfile 变更触发 frontend 与 docs CI（.github/workflows/ci.yml:6、docs.yml:5）——防安全相关锁文件更新绕过门禁 ——复核：lockfile 本就不在两份 workflow 的 paths-ignore 里，锁文件变更现即触发（字面前提不成立）；真缺陷是 docs.yml 把 docs/** 排除＝文档站部署忽略文档自身变更（root 404 拖三周的机制根因），已改正向 paths（docs/**/pnpm-lock.yaml/package.json/pnpm-workspace.yaml/docs.yml）— f39ecdc；actionlint 过
 - [x] [M] 增加精确阻断 git-clone/html-minifier 的依赖审计断言（todo.md:281）——把已记录高危残留变成可执行回归检查 ——scripts/check-vuln-deps.mjs 扫全部 workspace package.json，git-clone/download-git-repo/html-minifier 出现为直接依赖即红；接入 ci.yml frontend 腿 + pnpm audit:vuln-deps；双路实测 green rc=0 / 注入假依赖 red rc=1 列出违者 — d12c53c；pnpm test 341/341 绿
 - [ ] [M] [BLOCKED·上游] 替换或移除 download-git-repo 链路并更新锁文件（pnpm-lock.yaml:11411）——消除已知命令注入依赖 ——`pnpm why` 实证唯一入口 @tarojs/cli@4.1.2→download-git-repo@3.0.2（仅 @awn/miniprogram devDeps）；上游 @tarojs/cli@4.3.3 最新版仍钉 ^3.0.2、npm 无 patched 版本，替换需 fork Taro 工具链；与 VULN-AWN-001 同源同 BLOCKED 面，已由 287 断言守住「不得成为直接依赖」
-- [ ] [M] [BLOCKED·上游] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖 ——唯一入口 @tarojs/webpack5-runner@4.1.2→html-minifier@4.0.0（weapp 构建链，非运行时）；@tarojs/webpack5-runner@latest 仍钉 ^4.0.0、上游停维护，无法以 override 换维护版（无版本可选）；与 VULN-AWN-002 同源，同被 287 断言守住
+- [x] [M] 用维护版替代 html-minifier 并更新锁文件（pnpm-lock.yaml:12089）——消除已知 REDoS 依赖 ——11-15「无版本可选」结论翻案：npm 存在 5.x 系列（5.4.0，含 advisory 修复）；pnpm.overrides `^5.4.0` 全树唯一版本（4.0.0 消失）；门禁 weapp build exit=0（wxml 压缩链正常，dist 产物完整）+ pnpm test 342/342 + audit html-minifier 清零；运行前提 node ≥22.12（require(esm)，CI node 22 latest 满足）— f67b52b；与 257 同步勾
 - [x] [M] 修正中文首页 hero 链接为 /zh/...（docs/zh/index.md:14）——中文入口现落到英文路由 ——复核：dfbe87a 已修，hero 三链接现全 /zh/ 前缀（git log -p 实证：`/architecture/system-overview`→`/zh/architecture/system-overview` 等），线上 200
 - [x] [M] 恢复英文 /design/prototypes 页或改配置链到中文页（docs/.vitepress/config.mts:44）——消除文档站导航 404 ——采 B 支：nav 5 处 + sidebar 5 处死链全改指 /zh/ 真页（系统总览/API 契约/界面原型/实施计划/ADR-0001，中文标签配中文页自洽）；5 个 /zh/ 目标页线上 200 实证；pnpm -C docs build 绿 — ef2d57e。注：G2-009（根 locale 是否建英文页区）结构性决策仍开放
 - [x] [m] 补齐中文 ui-system 页或修正中文原型页链接（docs/zh/design/prototypes.md:5）——死链修复同型残留 ——复核：前提不成立，root /design/ui-system 本就是中文内容页（# AWN（麦芒网）UI 设计系统），:5 链接命中无死链（线上 200）；建 zh 副本会内容分叉，不建
@@ -295,3 +295,18 @@
 - [ ] [m] [BLOCKED·历史] dfbe87a 依赖升级/配置迁移/死链修复拆独立可回滚提交（package.json:15、pnpm-workspace.yaml:8）——安全与功能变更混提交不可审计 ——拆已推送历史需 rebase/force-push，舰队禁令禁止；若未来必须审计，只能以 revert+分立重放（新提交）方式补偿，需用户指令
 - [x] [m] 用声明级 CSS 契约替换仅选择器集合断言（apps/web/app/css-scope.test.ts:78）——防规则体与层叠顺序漂移 ——GOLDEN 选择器集合替换为声明级快照契约（css-scope.snapshot.json：157 条「选择器+归一化声明串」按源码序逐条比对，@media 内层 2 条入保=旧盲区闭合）+ layout.tsx 导入顺序断言（globals→chrome→catalog→events→checkout）；三路红验（规则体漂移/@media 漂移/导入顺序漂移全红）+ 旧探针失误自查（letter-spacing 不存在致假绿，取真实声明重验）；pnpm test 342/342 — b57d671
 - [x] [m] 修正文档中不存在的 design-system 路径引用（docs/zh/design/prototypes.md:7）——`design-system/awn/MASTER.md` 全仓无此文件（find 实证），改指真实令牌源 packages/ui/src/themes.ts（AWN_THEME_NAMES 8 套主题）；docs build 绿 — b259049
+
+## 依赖审计（2026-11-21，Dependabot 报 9 项起盘；pnpm 10.22.0 重装锁文件后 audit 检测面扩至 38 项发现/16 包）
+
+背景：11-15 push 后 Dependabot 报 9 advisories（3 high/5 moderate/1 low）；用 CI 同版 pnpm 10.22.0 重建 node_modules 后，optional peer 全量解析使检测面扩至 38。本轮清掉全部有补丁可 override 项，逐项门禁（weapp build exit=0 / pnpm test 342/342 / pnpm audit 相应清零 / web build exit=0）。
+
+- [x] [M] next 升至 ≥15.5.29（apps/web/package.json:16）——SVG 拒绝绕过、HttpOnly cookie 内部响应泄露、跨客户端响应注入 3 个 moderate，生产 web 运行面 ——^15.5.4→^15.5.29 同 minor patch；weapp 之外四门禁全绿 — 2dc24b0
+- [x] [M] html-minifier override 5.4.0（289/257 见上，勾）
+- [x] [m] glob override ^14.0.6（globs@0.1.4←scss-bundle←@tarojs/runner-utils，AbortSignal 取消绕过）——weapp build 绿（scss-bundle 链实跑） — 1c4c887
+- [x] [m] serialize-javascript override ^7.1.4（7.0.5→7.1.4，XSS；copy-webpack-plugin/css-minimizer-webpack-plugin 消费）— 1c4c887
+- [x] [m] minimatch override ≥11.0.1（postcss-url@10.1.4 消费 minimatch@3.1.5、globparts 放大 DoS）——全树压平至 11.0.9 单版；推演判 CJS require 炸、实证门禁否（weapp 0 / 342 tests） — 1e34c9e
+- [x] [m] postcss override ^8.5.29（树中 8.4.31 旧版并存 5 advisory；8.5.29 本已被大量 peer 变体使用，压平单版）——四门禁全绿 — 4439114
+- [ ] [M] [BLOCKED·上游无补丁] vite fs.deny 查询绕过（docs，patched:none）——docs 为静态构建站，dev-server 漏洞无生产暴露面；待上游 vite 发补丁版后升级
+- [ ] [M] swiper 11.1.15→≥12.1.2（critical；@tarojs H5 传递，src 无直接 import）——major 跳变需先验证 taro 4 对 swiper 12 适配，weapp 不受影响（仅 H5 面）
+- [ ] [m] [BLOCKED·上游无补丁] decompress（critical，patched:<0.0.0 弃用包；taro 模板解压链）——与 git-clone 同属 taro init 死链，仅 dev 面且 weapp/h5 构建不调用
+- [ ] 存量分类（pnpm 10 重装后新暴露，均 dev 链非运行时）：adm-zip×8（≥0.6.1）、got（≥11.8.5）、http-cache-semantics（≥4.1.1）、lodash-es×2（≥4.18.0）、uuid（≥11.1.1）、decode-uri-component×2（≥0.5.1）、esbuild 0.21.5 旧版并存（≥0.25.0，0.x minor 跳变有 breaking 需逐消费链验证）、webpack-dev-server×6（≥5.2.1）、webpack-dev-middleware（≥7.4.6）、katex（docs，≥0.18.2）——多属 download-git-repo/taro init 生态（288 同链），可按本轮 override 模式逐项处理
